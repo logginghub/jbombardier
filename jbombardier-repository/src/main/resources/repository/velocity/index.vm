@@ -1,0 +1,31 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="/style/repository.css" />
+</head>
+<body>
+<div class="wide-box">
+
+<h1><a href='/'><img src="/images/black-flask-hi.png" width='32' height='32'/></a>   JBombardierResults Browser</h1>
+
+<table id="rounded-corner">
+    <thead >
+        <tr>
+            <th>Name</th>
+            <th>Total Runs</th>
+        </tr>
+    </thead>
+    <tbody >                    
+    #foreach( $test in $tests)
+        <tr>
+            <td><a href="overview/$test.name">$test.name</a></td>
+            <td>${test.getCount()}</td>
+        </tr>
+    #end
+    </tbody>    
+</table>
+
+</div>
+</body>
+
+</html>

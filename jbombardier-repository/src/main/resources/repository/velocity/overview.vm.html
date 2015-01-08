@@ -1,0 +1,163 @@
+<!--
+  ~ Copyright (c) 2009-2015 Vertex Labs Limited.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="/style/repository.css" />
+
+<script type="text/javascript" src="/scripts/jquery.min.js"></script>
+
+<script type="text/javascript">
+	(function($) {
+		$.fn.rotateTableCellContent = function(options) {
+			/*
+			Version 1.0
+			7/2011
+			Written by David Votrubec (davidjs.com) and
+			Michal Tehnik (@Mictech) for ST-Software.com
+			 */
+
+			var cssClass = ((options) ? options.className : false) || "vertical";
+
+			var cellsToRotate = $('.' + cssClass, this);
+
+			var betterCells = [];
+			cellsToRotate.each(function() {
+				
+				var cell = $(this);
+				var newText = cell.text();
+				var height = cell.height();
+				var width = cell.width();
+				
+				var newDiv = $('<div>', {
+					height : width,
+					width : height
+				});
+				var newInnerDiv = $('<div>', {
+					text : newText,
+					'class' : 'rotated'
+				});
+
+				newDiv.append(newInnerDiv);
+
+				betterCells.push(newDiv);
+			});
+
+			cellsToRotate.each(function(i) {
+				$(this).html(betterCells[i]);
+			});
+		};
+	})(jQuery);
+
+	$(function() {
+		$('table').rotateTableCellContent();
+
+	});
+</script>
+
+</head>
+<body>
+
+	<div class="wide-box">
+
+		<h1>
+			<a href='/'><img src="/images/black-flask-hi.png" width='32'
+				height='32' /></a> JBombardier Results Browser
+		</h1>
+		<h2>Test name : $repositoryTestModel.name</h2>
+
+		<div><a href="/runs/$repositoryTestModel.name">$repositoryTestModel.name run overview</a></div>
+		<div><a href="/detail/$repositoryTestModel.name">$repositoryTestModel.name detailed view</a></div>
+
+		<table id="rounded-corner" class="smallFont" border="1">
+			<thead>
+				<tr>
+					<th nowrap="nowrap" rowspan="2">Test time</th> 
+					
+					#foreach($testName in $testNames)
+					  <th colspan="1" class="vertical"><a href="$repositoryTestModel.name/$testName">$testName </a></th> 
+					#end
+
+					<th nowrap="nowrap" rowspan="1">Status</th>
+				</tr>
+
+			</thead>
+			<tbody>
+				#foreach( $delta in $deltas) #if($delta.status.length() > 0)
+				#set($class = "failure") #else #set($class = "success") #end
+
+				<tr>
+					<td class="$class">$utils.toDateTimeString($delta.startTime)</td>
+
+                    #foreach($resultDelta in $delta.resultDeltas)
+                    
+				    #if($resultDelta.percentageDeltaTransactionTime > 0) 
+		                #set($resultClass = "resultGood")        
+		            #elseif($resultDelta.percentageDeltaTransactionTime < 0)
+		               #set($resultClass = "resultBad")
+		            #end    
+					
+					<td>					
+					#if($resultDelta.percentageDeltaTransactionTime > 1 || $resultDelta.percentageDeltaTransactionTime < -1)
+					  <span class="$resultClass">
+					   t $utils.formatDelta(1, $resultDelta.percentageDeltaTransactionTime) %
+					  </span>
+					 #end
+					 
+					 <br/>
+					 
+					     #if($resultDelta.percentageDeltaTransactions > 0) 
+                        #set($resultClass = "resultGood")        
+                    #elseif($resultDelta.percentageDeltaTransactions < 0)
+                       #set($resultClass = "resultBad")
+                    #end    
+					 
+					 #if($resultDelta.percentageDeltaTransactions > 1 || $resultDelta.percentageDeltaTransactions < -1)
+					  <span class="$resultClass">
+                       t/s $utils.formatDelta(1, $resultDelta.percentageDeltaTransactions) %
+                      </span>
+                     #end
+                     
+                     <br/>
+                     
+                         #if($resultDelta.percentageDeltaTotalTransactions > 0) 
+                        #set($resultClass = "resultGood")        
+                    #elseif($resultDelta.percentageDeltaTotalTransactions < 0)
+                       #set($resultClass = "resultBad")
+                    #end    
+                     
+                     #if($resultDelta.percentageDeltaTotalTransactions > 1 || $resultDelta.percentageDeltaTotalTransactions < -1)
+                     <span class="$resultClass">
+                       c $utils.formatDelta(1, $resultDelta.percentageDeltaTotalTransactions) %
+                      </span>
+                     #end
+					 
+					</td> 
+					#end
+
+					<td class="$class">$delta.status</td>
+				</tr>
+				#end
+			</tbody>
+		</table>
+
+
+	</div>
+
+</body>
+
+</html>

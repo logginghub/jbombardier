@@ -1,0 +1,121 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="/style/jquery.jqplot.min.css" />
+<link rel="stylesheet" type="text/css" href="/style/repository.css" />
+
+<!--[if lt IE 9]><script language="javascript" type="text/javascript" src="/scripts/excanvas.js"></script><![endif]-->
+<script language="javascript" type="text/javascript" src="/scripts/jquery.min.js"></script>
+<script language="javascript" type="text/javascript" src="/scripts/jquery.jqplot.min.js"></script>
+<script language="javascript" type="text/javascript" src="/scripts/jqplot.dateAxisRenderer.min.js"></script>
+<script language="javascript" type="text/javascript" src="/scripts/jqplot.canvasAxisTickRenderer.min.js"></script>
+<script language="javascript" type="text/javascript" src="/scripts/jqplot.canvasTextRenderer.min.js"></script>
+
+<script language="javascript">
+
+$(document).ready(function() {
+    
+     var ajaxDataRenderer = function(url, plot, options) {
+       var ret = null;
+       $.ajax({async: false, url: url, dataType:"json", success: function(data) { ret = data; }});
+       return ret;
+     };
+    
+     var plot1 = $.jqplot('chart1', "/resultsSuccessPerSecond/$testName/$resultName",{
+       title: "Successful transaction rate (ops/s)",
+       dataRenderer: ajaxDataRenderer,      
+       axes:{
+           xaxis:{
+               renderer:$.jqplot.DateAxisRenderer,
+               tickOptions: { formatString: "%b %#d" },
+               tickInterval:'1 day'
+           },
+           yaxis:{
+               min: 0
+           }
+           
+       },
+           seriesDefaults: {
+                showMarker: false,
+                  shadow: false
+            }
+     });
+     
+     var plot2 = $.jqplot('chart2', "/resultsSuccessTimes/$testName/$resultName",{
+       title: "Successful transaction times (ms)",
+       dataRenderer: ajaxDataRenderer,      
+       axes:{
+           xaxis:{
+               renderer:$.jqplot.DateAxisRenderer,
+               tickOptions: { formatString: "%b %#d" },
+               tickInterval:'1 day'
+           },
+           yaxis:{
+               min: 0
+           }
+           
+       },
+       seriesDefaults: {
+           showMarker: false,
+           shadow: false
+       },
+       series:[{},{
+           color: 'red'
+       }]
+     });
+});
+
+</script>
+
+
+</head>
+<body>
+
+<div class="wide-box">
+
+<h1><a href='/'><img src="/images/black-flask-hi.png" width='32' height='32'/></a>   JBombardier Results Browser</h1>
+<h2>Results for : <a href='/test/$testName'> $testName </a> / $resultName</h2>
+
+
+<div id="container">
+
+
+<div id="chart2" class="chart"></div>
+<div id="chart1" class="chart"></div>
+
+<div class="table">
+<h1>Raw results:</h1>
+<table id="rounded-corner">
+    <thead >
+        <tr>
+            <th nowrap="nowrap">Test date</th>
+            <th>Total transactions</th>
+            <th>Successful transations (/s)</th>
+            <th>Successful transations (ms)</th>
+            <th>Successful transation sla (ms)</th>
+            <th>Failed transactions (/s)</th>
+            <th>Failed transactions (ms)</th>
+        </tr>
+    </thead>
+    <tbody >
+    #foreach( $transactionResultSnapshot in $results)
+        <tr>
+            <td>$utils.toDateTimeString($transactionResultSnapshot.testTime)</td>
+            <td>$utils.format($transactionResultSnapshot.transactionCount)</td>
+            
+            <td>$utils.format($transactionResultSnapshot.transactionsSuccess)</td>
+            <td>$utils.format($transactionResultSnapshot.getSuccessDurationMS())</td>
+            <td>$utils.format($transactionResultSnapshot.sla)</td>
+            
+            <td>$utils.format($transactionResultSnapshot.transactionsFailed)</td>
+            <td>$utils.format($transactionResultSnapshot.getFailedDurationMS())</td>
+        </tr>
+    #end
+    </tbody>
+</table>
+</div>
+</div>
+</div>
+</body>
+
+</html>

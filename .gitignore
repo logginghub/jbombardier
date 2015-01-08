@@ -1,0 +1,10 @@
+.gradle/
+*/build/
+*.iml
+*.log
+*.classpath
+*.project
+*/target/
+.idea/
+.settings
+jbombardier-integrationtests/test-output/

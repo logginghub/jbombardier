@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<!--
+  ~ Copyright (c) 2009-2015 Vertex Labs Limited.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!-- Test that have very predictable results, used to verify stats and reporting -->
+<interactiveConfiguration>
+	
+	<agents>
+		<agent name="embedded"/>
+		<agent name="agent1" address="localhost" port="20001"/>
+		<agent name="agent2" address="localhost" port="20002"/>
+		<agent name="agent3" address="localhost" port="20003"/>	
+	</agents>
+	
+	<tests>
+	<!-- 
+	    <test name='Gaussian-millis' class='com.jbombardier.performance.console.sample.GaussianDistributionMillisecondResolution' targetThreads='10' threadStep='1' threadStepTime='1000' targetRate='-1' rateStep='1' rateStepTime='1000'/>
+	 -->
+<!-- 
+	    <test name='Gaussian-nanos' class='com.jbombardier.performance.console.sample.GaussianDistributionNanosecondResolution' targetThreads='1' threadStep='1' threadStepTime='1000' targetRate='1' rateStep='1' rateStepTime='1000' recordAllValues='true'/>
+	     -->
+	     
+	     <!-- 
+	     <test name='Gaussian-nanos' class='com.jbombardier.performance.console.sample.GaussianDistributionNanosecondSpinWait' targetThreads='1' threadStep='1' threadStepTime='1000' targetRate='1' rateStep='1' rateStepTime='1000' recordAllValues='true'/>
+	      -->
+	      
+	      <!-- 
+	      <test name='Flat-rate-10000' class='com.jbombardier.performance.console.sample.NoopTest' targetThreads='1' threadStep='1' threadStepTime='1000' targetRate='10000' rateStep='500' rateStepTime='1000' recordAllValues='false'/>
+	       -->
+	      
+	       <!--  <test name="Broken-Setup" class="com.jbombardier.performance.console.sample.BrokenSetupTest"/> -->
+	       <test name="Broken-Run" class="com.jbombardier.performance.console.sample.BrokenRunTest"/>
+	       
+	      <test name='Steadystate' class='com.jbombardier.performance.console.sample.SubtransactionConfigurationDelayTest' targetThreads='1' threadStep='1' threadStepTime='1000' targetRate='100' rateStep='10' rateStepTime='1000' recordAllValues='true'>
+	      <properties>
+	      	<property name="delay" value="subtransaction1 30|subtransaction2 20|subtransaction3 10"/>
+	      </properties>
+	      	<transactionSLAs>
+	      		<transactionSLA name="" value="80"/>
+	      		<transactionSLA name="subtransaction1" value="25"/>
+	      		<transactionSLA name="subtransaction2" value="40"/>
+	      		<transactionSLA name="subtransaction3" value="5"/>
+	      	</transactionSLAs>
+	      </test>
+	      
+	</tests>
+	
+</interactiveConfiguration>

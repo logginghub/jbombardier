@@ -1,0 +1,9 @@
+"Test","Transaction","Total transactions","Tps","Mean","Absdev","%","tp90","SLA","Median","Min","Max","Stddev","Maximum tps (mean)","Failures per second","Average failure time (ms)"
+#foreach( $test in $results)
+#set($testName = $test.testName)									
+#if($resultsController.successStatsByTest.get($testName).count > 0)
+"$testName","$test.transactionName","$number.format($results.get($testName).totalTransactions)","$number.format($results.get($testName).successPerSecondNew)","$number.format($results.get($testName).successTimeMeanMillis)","$number.format($math.div($resultsController.successStatsByTest.get($test.key).absoluteDeviation, 1000000))","$number.integer($resultsController.successStatsByTest.get($test.key).percentageAbsoluteDeviation) %","$number.format($math.div($resultsController.successStatsByTest.get($test.key).percentiles[90], 1000000))","$test.transactionSLA","$number.format($math.div($resultsController.successStatsByTest.get($test.key).median, 1000000))","$number.format($math.div($resultsController.successStatsByTest.get($test.key).minimum, 1000000))","$number.format($math.div($resultsController.successStatsByTest.get($test.key).maximum, 1000000))","$number.format($math.div($resultsController.successStatsByTest.get($test.key).standardDeviationSampleDistribution, 1000000))","$number.format($resultsController.successStatsByTest.get($test.key).meanOps)","$number.format($results.get($testName).failuresPerSecond)","$number.format($results.get($testName).failureElapsedMS)"
+#else
+"$testName","$test.transactionName","0","0","-","-","-","-","-","-","-","-","-","$number.format($results.get($testName).failuresPerSecond)","$number.format($results.get($testName).failureElapsedMS)"	
+#end
+#end

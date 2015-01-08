@@ -1,0 +1,4 @@
+DocType,Protocol,Date,Path4,Path5,Path6,Path7,Path8,Path9,Path10,XMLContent
+type1,p1,01012011,p4,p5,p6,p7,p8,p9,p10,contents.xml
+type2,p2,02012011,p4-2,p5-2,p6-2,p7-2,p8-2,p9-2,p10-2,contents2.xml
+type3,p3,03012011,p4-3,p5-3,p6-3,p7-3,p8-3,p9-3,p10-3,contents3.xml

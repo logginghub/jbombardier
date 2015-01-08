@@ -1,0 +1,131 @@
+
+<html>
+	<head>		
+		<LINK href="report.css" rel="stylesheet" type="text/css">
+			
+        <title>JBombardierTest Report</title>
+    </head>
+<body>
+	
+	<div id="container">
+	<div id="header">		
+		<table>
+			<tr><td><img width="45" height="50" src="http://www.vertexlabs.co.uk/images/black-flask-hi.png"/></td><td style="vertical-align:middle"><h1>Vertex Labs Performance Tester - Report</h1></td></tr>
+		</table>
+	</div>
+	<div id="navigation">
+		<ul>
+			<li><a href="output.html">Overview</a></li>
+			<li><a href="#">Agents</a></li>
+			<li><a href="#">Tests</a></li>			
+			<li><a href="#">Contact us</a></li>
+		</ul>
+	</div>
+	<div id="content-container">		
+		<div id="content">
+			<h2>
+				Test results
+			</h2>			
+			
+			<p>								
+				<h2>Transaction results</h2>
+				
+				<table id="rounded-corner">
+					<THEAD >
+                        <tr>
+							<th scope="col" class="rounded-start" nowrap="nowrap">Test</th>
+							<th scope="col" class="rounded-q1" nowrap="nowrap">Transaction</th>
+							<th scope="col" class="rounded-q1">Total transactions</th>
+							<th scope="col" class="rounded-q2">Tps</th>
+							<th scope="col" class="rounded-q1">Mean</th>
+							<th scope="col" class="rounded-q1">Absdev</th>
+							<th scope="col" class="rounded-q1">%</th>
+							<th scope="col" class="rounded-q3">tp90</th>
+							<th scope="col" class="rounded-q3">SLA</th>
+							<th scope="col" class="rounded-q1">Median</th>
+							<th scope="col" class="rounded-q1">Min</th>
+							<th scope="col" class="rounded-q1">Max</th>							
+							<th scope="col" class="rounded-q1">Stddev</th>
+							<th scope="col" class="rounded-q1">Maximum tps (mean)</th>
+							<th scope="col" class="rounded-q4">Failures per second</th>
+							<th scope="col" class="rounded-end">Average failure time (ms)</th>
+						</tr>
+                    </THEAD>
+					<TBODY >                    
+						#if($math.div($resultsController.successStatsByTest.get($test.key).percentiles[90], 1000000) > $test.transactionSLA)
+							#set($rowClass = 'slaFail')
+						#else
+							#set($rowClass = 'slaPass')
+						#end
+						<tr>							
+							#set($testName = $test.testName)														
+							<td nowrap="nowrap"><strong>$testName</strong></td>
+							<td nowrap="nowrap"><strong>$test.transactionName</strong></td>
+							#if($resultsController.successStatsByTest.get($test.key).count > 0)
+							<td>$number.format($resultsController.successStatsByTest.get($test.key).count)</td>
+							<td>$number.format($results.get($testName).successPerSecond)</td>
+							<td>$number.format($math.div($resultsController.successStatsByTest.get($test.key).mean, 1000000))</td>
+							<td>$number.format($math.div($resultsController.successStatsByTest.get($test.key).absoluteDeviation, 1000000))</td>
+							<td nowrap="nowrap">$number.integer($resultsController.successStatsByTest.get($test.key).percentageAbsoluteDeviation) %</td>							
+							<td class="$rowClass">$number.format($math.div($resultsController.successStatsByTest.get($test.key).percentiles[90], 1000000))</td>
+							<td class="$rowClass" nowrap="nowrap">$test.transactionSLA</td>
+							<td>$number.format($math.div($resultsController.successStatsByTest.get($test.key).median, 1000000))</td>
+							<td>$number.format($math.div($resultsController.successStatsByTest.get($test.key).minimum, 1000000))</td>
+							<td>$number.format($math.div($resultsController.successStatsByTest.get($test.key).maximum, 1000000))</td>
+							<td>$number.format($math.div($resultsController.successStatsByTest.get($test.key).standardDeviationSampleDistribution, 1000000))</td>
+							<td>$number.format($resultsController.successStatsByTest.get($test.key).meanOps)</td>																																													
+							<td>$number.format($results.get($testName).failuresPerSecond)</td>
+							<td>$number.format($results.get($testName).failureElapsedMS)</td>	
+							#else
+							<td>0</td>
+							<td>0</td>
+							<td>-</td>
+							<td>-</td>
+							<td>-</td>							
+							<td>-</td>
+							<td>-</td>
+							<td>-</td>
+							<td>-</td>
+							<td>-</td>
+							<td>-</td>																																													
+							<td>$number.format($results.get($testName).failuresPerSecond)</td>
+							<td>$number.format($results.get($testName).failureElapsedMS)</td>	
+							#end
+						</tr>
+					</TBODY>
+					<TFOOT >
+							<tr>								
+								<td class="rounded-foot-left">&nbsp;</td>
+								<td colspan="14">&nbsp;</td>
+								<td class="rounded-foot-right">&nbsp;</td>
+							</tr>	
+                    </TFOOT>
+				</table>
+				
+			</p>
+			
+			<p>
+				<img src="${test.key}.frequency.png"/>
+			</p>
+			
+		</div>
+		<div id="aside">
+			#*
+			<h3>
+				Overview
+			</h3>
+			<p>
+				<em>The overview provides a high level summary of the test execution.</em>
+			</p>
+			*#
+		</div>
+		
+		<div id="footer">
+			&nbsp;
+		</div>
+		
+	</div>
+</div>
+
+</body>
+<html>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  ~ Copyright (c) 2009-2015 Vertex Labs Limited.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<hostConfiguration>
+
+    <agentInstruction host="localhost">
+        <testInstruction threads="1" duration="10000" classname="com.jbombardier.sample1.TestA"/>
+        <testInstruction threads="2" duration="10000" classname="com.jbombardier.sample1.TestB"/>
+    </agentInstruction>
+        
+    <csvProperties>  
+    	<csvProperty name="data" csvfile="examples/sample1/data.csv" strategy="consistentPerThread"/>
+    </csvProperties>    	
+        
+</hostConfiguration>

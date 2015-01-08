@@ -1,0 +1,273 @@
+
+table.smallFont td {
+	font-size: 10px;
+}
+
+table.smallFont th {
+    font-size: 10px;
+}
+
+.chart {
+	height:400px;
+	width:800px;
+	margin-left: auto ;
+    margin-right: auto ;
+}
+
+.table {
+    width:800px;
+    margin-left: auto ;
+    margin-right: auto ;
+}
+
+td {
+white-space: nowrap;
+}
+
+
+#container
+{
+	margin: 0 auto;
+	width: 90%;
+	background: #fff;
+	
+	font-family: arial, helvetica, freesans, sans-serif;
+    font-size: 100%;
+    color: #333;
+}
+
+h1 {
+	font-family: arial, helvetica, freesans, sans-serif;
+    font-size: 200%;
+    color: #333;
+}
+
+h2 {
+    font-family: arial, helvetica, freesans, sans-serif;
+    font-size: 120%;
+    color: #444;
+}
+
+.wide-box
+{
+    position: relative;
+    width: 95%; 
+    padding: 25px;
+    margin: 0 auto;
+    background-color: #fff;
+    -webkit-box-shadow: 0 0 4px rgba(0, 0, 0, 0.2), inset 0 0 50px rgba(0, 0, 0, 0.1);
+    -moz-box-shadow: 0 0 4px rgba(0, 0, 0, 0.2), inset 0 0 50px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2), inset 0 0 50px rgba(0, 0, 0, 0.1);
+}
+
+
+
+.wide-box:before, .wide-box:after
+{
+    position: absolute;
+    width: 40%;
+    height: 10px;
+    content: ' ';
+    left: 12px;
+    bottom: 35px;
+    background: transparent;
+    
+    -webkit-transform: skew(-5deg) rotate(-5deg);
+    -moz-transform: skew(-5deg) rotate(-5deg);
+    -ms-transform: skew(-5deg) rotate(-5deg);
+    -o-transform: skew(-5deg) rotate(-5deg);
+    transform: skew(-5deg) rotate(-5deg);
+    
+    -webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    -moz-box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    
+    z-index: -1;
+} 
+
+.wide-box:after
+{
+    left: auto;
+    right: 12px;
+    -webkit-transform: skew(5deg) rotate(5deg);
+    -moz-transform: skew(5deg) rotate(5deg);
+    -ms-transform: skew(5deg) rotate(5deg);
+    -o-transform: skew(5deg) rotate(5deg);
+    transform: skew(5deg) rotate(5deg);
+} 
+
+.box-table-a
+{ 
+	font:12px "Lucida Sans Unicode","Lucida Grande",Sans-Serif;
+  	width:90%;
+  	text-align:left;
+  	border-collapse:collapse;
+  	margin:20px;
+  	margin-left: auto;
+	margin-right: auto;
+}
+
+.box-table-a th
+{ font-size:13px;
+  font-weight:normal;
+  background:#b9c9fe;
+  border-top:4px solid #aabcfe;
+  border-bottom:1px solid #fff;
+  color:#039;
+  padding:8px; }
+
+.box-table-a td
+{ background:#e8edff;
+  border-bottom:1px solid #fff;
+  color:#669;
+  border-top:1px solid transparent;
+  padding:8px; }
+
+.box-table-a tr:hover td
+{ background:#d0dafd;
+  color:#339; }
+
+#box-table-b
+{ font:12px "Lucida Sans Unicode","Lucida Grande",Sans-Serif;
+  width:480px;
+  text-align:center;
+  border-collapse:collapse;
+  border-top:7px solid #9baff1;
+  border-bottom:7px solid #9baff1;
+  margin:20px; }
+
+#box-table-b th
+{ font-size:13px;
+  font-weight:normal;
+  background:#e8edff;
+  border-right:1px solid #9baff1;
+  border-left:1px solid #9baff1;
+  color:#039;
+  padding:8px; }
+
+#box-table-b td
+{ background:#e8edff;
+  border-right:1px solid #aabcfe;
+  border-left:1px solid #aabcfe;
+  color:#669;
+  padding:8px; }
+
+#rounded-corner
+{ font:12px "Lucida Sans Unicode","Lucida Grande",Sans-Serif;
+  width:480px;
+  text-align:left;
+  border-collapse:collapse;
+  margin:2px; }
+
+#rounded-corner thead th.rounded-start
+{ background:#b9c9fe url("http://www.smashingmagazine.com/images/express-css-table-design/table-images/left.png") left -1px no-repeat; }
+
+#rounded-corner thead th.rounded-end
+{ background:#b9c9fe url("http://www.smashingmagazine.com/images/express-css-table-design/table-images/right.png") right -1px no-repeat; }
+
+#rounded-corner th
+{ font-weight:normal;
+  font-size:13px;
+  color:#039;
+  background:#b9c9fe;
+  padding:3px; }
+
+#rounded-corner td
+{ background:#e8edff;
+  border-top:1px solid #fff;
+  color:#669;
+  padding:3px; }
+
+#rounded-corner tfoot td.rounded-foot-left
+{ background:#e8edff url("http://www.smashingmagazine.com/images/express-css-table-design/table-images/botleft.png") left bottom no-repeat; }
+
+#rounded-corner tfoot td.rounded-foot-right
+{ background:#e8edff url("http://www.smashingmagazine.com/images/express-css-table-design/table-images/botright.png") right bottom no-repeat; }
+
+#rounded-corner tbody tr:hover td
+{ background:#d0dafd; }
+
+#background-image
+{ font:12px "Lucida Sans Unicode","Lucida Grande",Sans-Serif;
+  width:480px;
+  text-align:left;
+  border-collapse:collapse;
+  background:url("http://www.smashingmagazine.com/images/express-css-table-design/table-images/blurry.jpg") 330px 59px no-repeat;
+  margin:20px; }
+
+#background-image th
+{ font-weight:normal;
+  font-size:14px;
+  color:#339;
+  padding:12px; }
+
+#background-image td
+{ color:#669;
+  border-top:1px solid #fff;
+  padding:9px 12px; }
+
+#background-image tfoot td
+{ font-size:11px; }
+
+#background-image tbody td
+{ background:url("http://www.smashingmagazine.com/images/express-css-table-design/table-images/back.png"); }
+
+* html #background-image tbody td
+{ filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='table-images/back.png',sizingMethod='crop');
+  background:none; }
+
+#background-image tbody tr:hover td
+{ color:#339;
+  background:none; }
+
+a img
+{
+  border:none;
+}
+
+A:link {text-decoration: none}
+A:visited {text-decoration: none}
+A:active {text-decoration: none}
+A:hover {text-decoration: none}
+
+#rounded-corner td.failure {
+    background-color: rgb(252,202,202);
+}
+
+#rounded-corner td.success{
+    background-color: rgb(202,252,202);
+}
+
+
+#rounded-corner td.resultGood {
+    color: green;    
+}
+
+#rounded-corner td.resultBad{
+    color: red;    
+}
+
+#rounded-corner span.resultGood {
+    color: green;    
+}
+
+#rounded-corner span.resultBad{
+    color: red;    
+}
+
+
+/* Styles for rotateTableCellContent plugin*/
+table div.rotated {
+  -webkit-transform: rotate(90deg);
+  -moz-transform: rotate(90deg);
+  writing-mode:tb-rl;
+  white-space: nowrap;
+}
+
+thead th {
+  vertical-align: top;  
+}
+
+table .vertical {
+  white-space: nowrap;
+}

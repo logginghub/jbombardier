@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  ~ Copyright (c) 2009-2015 Vertex Labs Limited.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<interactiveConfiguration>
+    
+    <agents>        
+        <agent name="server" address="server" port="20001" objectBufferSize="2000000" writeBufferSize="4000000"/>
+    </agents>
+    
+    <tests>
+        <test name='test1' class='com.jbombardier.performance.console.sample.BigDataTest'/>
+    </tests>
+        
+    <properties>        
+        <property name='testVariable' value='value'/>           
+    </properties>
+    
+    <data>
+        <csvProperty name="property1" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property2" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property3" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property4" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property5" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property6" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property7" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property8" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property9" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property10" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property11" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property12" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property13" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property14" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property15" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property16" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property17" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property18" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property19" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property20" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property21" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property22" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property23" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property24" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>                                                                                                                                                                                  
+        <csvProperty name="property25" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property26" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property27" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property28" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property29" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property30" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property31" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property32" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property33" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property34" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property35" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property36" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property37" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property38" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property39" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>
+        <csvProperty name="property40" csvfile="/com/jbombardier/console/bigdata/data1.csv" strategy="pooledAgent"/>  
+    </data>
+    
+    
+</interactiveConfiguration>

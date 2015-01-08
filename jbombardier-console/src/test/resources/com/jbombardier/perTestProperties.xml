@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  ~ Copyright (c) 2009-2015 Vertex Labs Limited.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<interactiveConfiguration telemetryHubPort="-1" visualErrorMessages="false">
+ 
+	<agents>
+	   <agent name="embedded"/>
+	</agents>
+ 
+	<tests>
+	
+	    <test name='test1' class='com.jbombardier.console.sample.old.Test1' targetThreads='5' threadStep='1' threadStepTime='1000' targetRate='1' rateStep='1' rateStepTime='1000'>
+	  	  	<properties>
+	  	  	<property name='property' value='firstInstance'/>
+	  	  	</properties>	
+	    </test>
+	    
+	    <test name='test2' class='com.jbombardier.console.sample.old.Test1' targetThreads='2' threadStep='1' threadStepTime='100' targetRate='1' rateStep='1' rateStepTime='1000'>
+	    	<properties>
+	    	<property name='property' value='secondInstance'/>
+	    	</properties>
+	    </test>	     
+	    
+	    <test name='test3' class='com.jbombardier.console.sample.old.Test1' targetThreads='2' threadStep='1' threadStepTime='100' targetRate='1' rateStep='1' rateStepTime='1000'>
+	    	<!-- deliberately missing -->
+	    </test>
+		
+	</tests>
+	
+	<properties>		
+		<property name='property' value='default'/>			
+	</properties>
+	
+	
+</interactiveConfiguration>

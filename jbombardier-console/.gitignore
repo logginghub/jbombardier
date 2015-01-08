@@ -1,0 +1,11 @@
+/target
+/velocity.log
+/.classpath
+/.project
+/.settings
+/codecover
+/reports
+/chart.png
+/data1.csv
+/output.html
+/shakespeare.txt

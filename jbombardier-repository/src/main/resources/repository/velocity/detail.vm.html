@@ -1,0 +1,110 @@
+<!--
+  ~ Copyright (c) 2009-2015 Vertex Labs Limited.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="/style/repository.css" />
+</head>
+<body>
+
+<div class="wide-box">
+
+<h1><a href='/'><img src="/images/black-flask-hi.png" width='32' height='32'/></a>   JBombardierResults Browser</h1>
+<h2>Test name : $repositoryTestModel.name</h2>
+
+
+<table id="rounded-corner" border="1">
+    <thead >
+        <tr>
+            <th nowrap="nowrap" rowspan="2">Test time</th>
+			
+			#foreach($testName in $testNames)
+			   <th colspan="6">
+			   <a href="$repositoryTestModel.name/$testName">
+			   $testName
+			   </a>
+			   </th>
+			#end
+			            
+            <th nowrap="nowrap" rowspan="2">Status</th>
+        </tr>
+		<tr>
+			#foreach($testName in $testNames)
+			<th colspan="1">T</th>
+			<th colspan="2">Tps</th>
+			<th colspan="3">Time</th>
+			#end
+		</tr>
+    </thead>
+    <tbody >
+    #foreach( $delta in $deltas)
+    
+      #if($delta.status.length() > 0) 
+        #set($class = "failure")        
+      #else
+        #set($class = "success")
+      #end
+      
+         <tr>
+            <td class="$class">$utils.toDateTimeString($delta.startTime)</td>
+            
+            #foreach($resultDelta in $delta.resultDeltas)            
+            
+               <td>$utils.format($resultDelta.transactionCount)</td>
+               <td>$utils.format($resultDelta.currentTransactions)</td>
+               <td>$utils.formatDelta($resultDelta.deltaTransactionsPerSecond)</td>
+          
+             #if($resultDelta.currentTransactionTime > $resultDelta.sla) 
+                #set($resultClass = "resultBad")        
+              #else
+                #set($resultClass = "resultGood")
+              #end
+              
+               <td class="$resultClass">
+               $utils.format($resultDelta.currentTransactionTime) 
+               </td>
+              
+              #if($resultDelta.deltaTransactionTime > 0) 
+                #set($resultClass = "resultBad")        
+              #else
+                #set($resultClass = "resultGood")
+              #end     
+               
+               
+               <td class="$resultClass">
+                  $utils.formatDelta($resultDelta.deltaTransactionTime)
+               </td>
+               <td class="$resultClass">
+               #if($resultDelta.deltaTransactionTime != 0)
+                   $utils.formatDelta(1, $resultDelta.percentageDeltaTransactionTime) %
+               #end
+               </td>        
+               
+            #end
+            
+            <td  class="$class">$delta.status</td>
+        </tr>
+    #end
+    </tbody>
+</table>
+
+
+</div>
+
+</body>
+
+</html>
