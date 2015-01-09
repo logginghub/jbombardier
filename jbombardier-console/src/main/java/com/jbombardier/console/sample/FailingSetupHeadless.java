@@ -18,7 +18,7 @@ package com.jbombardier.console.sample;
 
 import com.jbombardier.common.PerformanceTestAdaptor;
 import com.jbombardier.common.TestContext;
-import com.jbombardier.console.configuration.ConfigurationBuilder;
+import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
 
 public class FailingSetupHeadless extends PerformanceTestAdaptor {
 
@@ -29,10 +29,10 @@ public class FailingSetupHeadless extends PerformanceTestAdaptor {
     public void runIteration(TestContext pti) throws Exception {}
 
     public static void main(String[] args) {
-        ConfigurationBuilder.builder().testName("FailingSetupHeadless")
-                 .addTest(ConfigurationBuilder.test(FailingSetupHeadless.class).name("Failure1").targetRate(100).rateStep(100))
-                 .addTest(ConfigurationBuilder.test(FailingSetupHeadless.class).name("Failure2").targetRate(100).rateStep(100))
-                 .addAgent(ConfigurationBuilder.embeddedAgent())
+        JBombardierConfigurationBuilder.configurationBuilder().testName("FailingSetupHeadless")
+                 .addTest(JBombardierConfigurationBuilder.test(FailingSetupHeadless.class).name("Failure1").targetRate(100).rateStep(100))
+                 .addTest(JBombardierConfigurationBuilder.test(FailingSetupHeadless.class).name("Failure2").targetRate(100).rateStep(100))
+                 .addAgent(JBombardierConfigurationBuilder.embeddedAgent())
                  .autostart(1)
                  .executeHeadless();
     }

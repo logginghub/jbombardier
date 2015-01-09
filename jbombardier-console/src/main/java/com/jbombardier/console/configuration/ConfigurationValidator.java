@@ -25,12 +25,12 @@ import com.logginghub.utils.StringUtils;
 
 public class ConfigurationValidator {
 
-    public static void validateConfiguration(InteractiveConfiguration configuration) {
+    public static void validateConfiguration(JBombardierConfiguration configuration) {
         ConfigurationValidator validator = new ConfigurationValidator();
         validator.validate(configuration);
     }
 
-    public void validate(InteractiveConfiguration configuration) {
+    public void validate(JBombardierConfiguration configuration) {
 
         Is.notEmpty(configuration.getTests(), "No tests have been specified in your configuration; you must provide at least one test to start the console");
         Is.notEmpty(configuration.getAgents(),

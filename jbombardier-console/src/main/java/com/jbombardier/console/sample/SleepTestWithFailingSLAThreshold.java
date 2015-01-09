@@ -16,15 +16,15 @@
 
 package com.jbombardier.console.sample;
 
-import com.jbombardier.console.configuration.ConfigurationBuilder;
+import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
 import com.jbombardier.console.model.TransactionResultModel.TransactionTimeThresholdMode;
 
 public class SleepTestWithFailingSLAThreshold {
 
     public static void main(String[] args) {
-        ConfigurationBuilder.builder().testName("SleepBenchmark-withfailure")
-                 .addTest(ConfigurationBuilder.test(SleepTest.class).name("sleep 10@100").properties("delay=10").targetRate(100).rateStep(100))
-                 .addTest(ConfigurationBuilder.test(SleepTest.class).name("sleep 25@40")
+        JBombardierConfigurationBuilder.configurationBuilder().testName("SleepBenchmark-withfailure")
+                 .addTest(JBombardierConfigurationBuilder.test(SleepTest.class).name("sleep 10@100").properties("delay=10").targetRate(100).rateStep(100))
+                 .addTest(JBombardierConfigurationBuilder.test(SleepTest.class).name("sleep 25@40")
                                                .properties("delay=25")
                                                .targetRate(40)
                                                .rateStep(40)
@@ -32,10 +32,10 @@ public class SleepTestWithFailingSLAThreshold {
                                                .failureThreshold(9)
                                                .failureThresholdMode(TransactionTimeThresholdMode.Mean)
                                                .failureThresholdResultCountMinimum(20))
-                 .addTest(ConfigurationBuilder.test(SleepTest.class).name("sleep 100@10").properties("delay=100").targetRate(10).rateStep(10))
-                 .addAgent(ConfigurationBuilder.embeddedAgent())
+                 .addTest(JBombardierConfigurationBuilder.test(SleepTest.class).name("sleep 100@10").properties("delay=100").targetRate(10).rateStep(10))
+                 .addAgent(JBombardierConfigurationBuilder.embeddedAgent())
                  .autostart(1)
-                 .warmupTime(2000)
+                 .warmUpTime(2000)
                  .testDuration(5000000)
                  .executeHeadless();
     }

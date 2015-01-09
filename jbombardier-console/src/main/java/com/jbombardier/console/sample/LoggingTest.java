@@ -18,7 +18,7 @@ package com.jbombardier.console.sample;
 
 import com.jbombardier.common.PerformanceTestAdaptor;
 import com.jbombardier.common.TestContext;
-import com.jbombardier.console.SwingConsole;
+import com.jbombardier.console.JBombardierSwingConsole;
 
 public class LoggingTest extends PerformanceTestAdaptor {
 
@@ -27,7 +27,7 @@ public class LoggingTest extends PerformanceTestAdaptor {
     }
  
     public static void main(String[] args) {
-        SwingConsole.run("/example/loggingtest.xml");
+        JBombardierSwingConsole.run("/example/loggingtest.xml");
     }
     
 }

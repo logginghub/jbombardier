@@ -18,7 +18,7 @@ package com.jbombardier.console.sample;
 
 import java.net.InetSocketAddress;
 
-import com.jbombardier.console.configuration.ConfigurationBuilder;
+import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
 import com.logginghub.logging.DefaultLogEvent;
 import com.logginghub.logging.LogEvent;
 import com.logginghub.logging.LogEventFactory;
@@ -109,9 +109,9 @@ public class LoggingHubTest {
     }
 
     public static void main(String[] args) {
-        ConfigurationBuilder.builder().testName("LoggingHubTest")
-                 .addTest(ConfigurationBuilder.test(LoggingHubTest.Writer.class).name("Log event writer").targetRate(1000).rateStep(100).threads(1).threadStep(1))
-                 .addTest(ConfigurationBuilder.test(LoggingHubTest.Reader.class).name("Log event reader").targetRate(1).rateStep(1).threads(2).threadStep(1).threadStepTime(1000))
+        JBombardierConfigurationBuilder.configurationBuilder().testName("LoggingHubTest")
+                 .addTest(JBombardierConfigurationBuilder.test(LoggingHubTest.Writer.class).name("Log event writer").targetRate(1000).rateStep(100).threads(1).threadStep(1))
+                 .addTest(JBombardierConfigurationBuilder.test(LoggingHubTest.Reader.class).name("Log event reader").targetRate(1).rateStep(1).threads(2).threadStep(1).threadStepTime(1000))
                  .addEmbeddedAgent()
                  .resultRepository("localhost")
                  .autostart(1)

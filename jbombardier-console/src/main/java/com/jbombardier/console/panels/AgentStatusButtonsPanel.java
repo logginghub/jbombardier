@@ -23,7 +23,7 @@ import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JButton;
 
-import com.jbombardier.console.ConsoleModel;
+import com.jbombardier.console.JBombardierModel;
 import com.jbombardier.console.components.JDynamicStateButton;
 import com.jbombardier.console.model.AgentModel;
 
@@ -49,11 +49,11 @@ public class AgentStatusButtonsPanel extends JPanel {
         add(button_1, "cell 0 0");
     }
 
-    public void initialise(ConsoleModel model) {
+    public void initialise(JBombardierModel model) {
         
         removeAll();
         
-        model.addListener(new ConsoleModel.InteractiveModelListenerAdaptor() {
+        model.addListener(new JBombardierModel.InteractiveModelListenerAdaptor() {
             public void onNewAgent(AgentModel model) {
                 addAgentButton(model);
             }

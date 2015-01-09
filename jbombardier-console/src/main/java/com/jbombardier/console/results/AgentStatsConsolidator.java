@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import com.jbombardier.console.ConsoleModel;
+import com.jbombardier.console.JBombardierModel;
 import com.logginghub.utils.FactoryMap;
 import com.logginghub.utils.logging.Logger;
 import com.jbombardier.common.AgentStats;
@@ -37,9 +37,9 @@ public class AgentStatsConsolidator {
     private static final Logger logger = Logger.getLoggerFor(AgentStatsConsolidator.class);
     private int agentsInTest;
     private volatile Map<String, AgentStats> currentAgentStats = new HashMap<String, AgentStats>();
-    private ConsoleModel model;
+    private JBombardierModel model;
 
-    public AgentStatsConsolidator(ConsoleModel model) {
+    public AgentStatsConsolidator(JBombardierModel model) {
         this.model = model;
     }
 

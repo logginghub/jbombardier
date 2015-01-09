@@ -18,7 +18,7 @@ package com.jbombardier.console.sample;
 
 import com.jbombardier.common.PerformanceTestAdaptor;
 import com.jbombardier.common.TestContext;
-import com.jbombardier.console.configuration.ConfigurationBuilder;
+import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
 
 public class FailingOverallTransactionThresholdTest extends PerformanceTestAdaptor {
 
@@ -32,10 +32,10 @@ public class FailingOverallTransactionThresholdTest extends PerformanceTestAdapt
     }
 
     public static void main(String[] args) {
-        ConfigurationBuilder.builder().testName("FailingOverallTransactionThreshold")
-                 .addTest(ConfigurationBuilder.test(FailingOverallTransactionThresholdTest.class).name("Failure1").targetRate(100).rateStep(100))
-                 .addTest(ConfigurationBuilder.test(FailingOverallTransactionThresholdTest.class).name("Failure2").targetRate(100).rateStep(100))
-                 .addAgent(ConfigurationBuilder.embeddedAgent())
+        JBombardierConfigurationBuilder.configurationBuilder().testName("FailingOverallTransactionThreshold")
+                 .addTest(JBombardierConfigurationBuilder.test(FailingOverallTransactionThresholdTest.class).name("Failure1").targetRate(100).rateStep(100))
+                 .addTest(JBombardierConfigurationBuilder.test(FailingOverallTransactionThresholdTest.class).name("Failure2").targetRate(100).rateStep(100))
+                 .addAgent(JBombardierConfigurationBuilder.embeddedAgent())
                  .autostart(1)
                  .failedTransactionCountFailureThreshold(30)
                  .executeHeadless();

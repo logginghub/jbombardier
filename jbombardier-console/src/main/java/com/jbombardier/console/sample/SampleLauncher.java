@@ -16,17 +16,17 @@
 
 package com.jbombardier.console.sample;
 
-import com.jbombardier.console.configuration.ConfigurationBuilder;
+import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
 
 
 public class SampleLauncher {
     
     public static void main(String[] args) {
         
-        ConfigurationBuilder.builder().addTest(ConfigurationBuilder.test(SleepTest.class).name("delay-20").properties("delay=20").threads(10))
-                 .addTest(ConfigurationBuilder.test(SleepTest.class).name("delay-10").properties("delay=10"))
-                 .addAgent(ConfigurationBuilder.embeddedAgent())
-                 .addAgent(ConfigurationBuilder.agent().address("localhost").port(444).name("agent1"))
+        JBombardierConfigurationBuilder.configurationBuilder().addTest(JBombardierConfigurationBuilder.test(SleepTest.class).name("delay-20").properties("delay=20").threads(10))
+                 .addTest(JBombardierConfigurationBuilder.test(SleepTest.class).name("delay-10").properties("delay=10"))
+                 .addAgent(JBombardierConfigurationBuilder.embeddedAgent())
+                 .addAgent(JBombardierConfigurationBuilder.agent().address("localhost").port(444).name("agent1"))
                  .autostart(1)
                  .execute();
         

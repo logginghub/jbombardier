@@ -16,34 +16,38 @@
 
 package com.jbombardier.console;
 
+import com.jbombardier.common.AgentFailedInstruction;
+import com.jbombardier.common.AgentStats;
+import com.jbombardier.common.AgentStats.TestStats;
+import com.jbombardier.common.StatisticProvider;
+import com.jbombardier.console.model.AgentModel;
+import com.jbombardier.console.model.ConsoleEventModel;
+import com.jbombardier.console.model.ConsoleEventModel.Severity;
+import com.jbombardier.console.model.TestModel;
+import com.jbombardier.console.model.TransactionResultModel;
+import com.logginghub.utils.AbstractBean;
+import com.logginghub.utils.ArrayListBackedHashMap;
+import com.logginghub.utils.FactoryMap;
+import com.logginghub.utils.ListBackedMap;
+import com.logginghub.utils.data.DataStructure;
+import com.logginghub.utils.logging.Logger;
+import com.logginghub.utils.observable.ObservableList;
+import com.logginghub.utils.observable.ObservableProperty;
+import com.logginghub.utils.observable.ObservablePropertyListener;
+
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.jbombardier.common.StatisticProvider;
-import com.jbombardier.console.model.AgentModel;
-import com.jbombardier.console.model.TestModel;
-import com.logginghub.utils.*;
-import com.logginghub.utils.data.DataStructure;
-import com.logginghub.utils.logging.Logger;
-import com.logginghub.utils.observable.ObservableList;
-import com.logginghub.utils.observable.ObservableProperty;
-import com.logginghub.utils.observable.ObservablePropertyListener;
-import com.jbombardier.common.AgentFailedInstruction;
-import com.jbombardier.common.AgentStats;
-import com.jbombardier.common.AgentStats.TestStats;
-import com.jbombardier.console.model.ConsoleEventModel;
-import com.jbombardier.console.model.ConsoleEventModel.Severity;
-import com.jbombardier.console.model.TransactionResultModel;
-
-public class ConsoleModel extends AbstractBean {
+public class JBombardierModel extends AbstractBean {
 
     private List<AgentModel> agentModels = new CopyOnWriteArrayList<AgentModel>();
 
@@ -82,12 +86,15 @@ public class ConsoleModel extends AbstractBean {
 
     private double transactionRateModifier;
 
-    private ObservableList<TransactionResultModel> transactionResultModels = new ObservableList<TransactionResultModel>(new ArrayList<TransactionResultModel>());
+    private ObservableList<TransactionResultModel> transactionResultModels = new ObservableList<TransactionResultModel>(
+            new ArrayList<TransactionResultModel>());
     private List<StatisticProvider> statisticsProviders = new ArrayList<StatisticProvider>();
 
     public List<StatisticProvider> getStatisticsProviders() {
         return statisticsProviders;
     }
+
+
 
     public static interface InteractiveModelListener {
         void onConsoleEvent(ConsoleEventModel event);
@@ -129,9 +136,9 @@ public class ConsoleModel extends AbstractBean {
         public void onTestStarted() {}
     }
 
-    private static final Logger logger = Logger.getLoggerFor(ConsoleModel.class);
+    private static final Logger logger = Logger.getLoggerFor(JBombardierModel.class);
 
-    public ConsoleModel() {
+    public JBombardierModel() {
 
         getTestRunning().addListener(new ObservablePropertyListener<Boolean>() {
             @Override public void onPropertyChanged(Boolean oldValue, Boolean newValue) {
@@ -139,8 +146,7 @@ public class ConsoleModel extends AbstractBean {
                     for (InteractiveModelListener listener : listeners) {
                         listener.onTestStarted();
                     }
-                }
-                else {
+                } else {
                     for (InteractiveModelListener listener : listeners) {
                         listener.onTestEnded();
                     }
@@ -289,18 +295,22 @@ public class ConsoleModel extends AbstractBean {
         for (TestStats testStats : testStatsList) {
             String testTransactionKey = testStats.getKey().toString();
 
-            TestStats previous = latestTestStatsByTestThenAgentName.get(testTransactionKey).put(agentStats.getAgentName(), testStats);
+            TestStats previous = latestTestStatsByTestThenAgentName.get(testTransactionKey)
+                                                                   .put(agentStats.getAgentName(), testStats);
             if (previous != null) {
-                logger.warn("We've replaced the test stats for agent '{}' and test '{}' - this shouldn't happen unless agents are sending back multiple results for the same test each second - in this case you agents may be running two tests in parallel and should be killed",
-                            agentStats.getAgentName(),
-                            previous.getKey());
+                logger.warn(
+                        "We've replaced the test stats for agent '{}' and test '{}' - this shouldn't happen unless agents are sending back multiple results for the same test each second - in this case you agents may be running two tests in parallel and should be killed",
+                        agentStats.getAgentName(),
+                        previous.getKey());
             }
 
             int size = latestTestStatsByTestThenAgentName.get(testTransactionKey).size();
             if (size == agentsInTest) {
                 // We have all of the values we need to put up an all agents
                 // total
-                logger.debug("{} results have been received for test '{}', this is enough to add a new data point", size, testTransactionKey);
+                logger.debug("{} results have been received for test '{}', this is enough to add a new data point",
+                             size,
+                             testTransactionKey);
 
                 Map<String, TestStats> map = latestTestStatsByTestThenAgentName.get(testTransactionKey);
                 Collection<TestStats> values = map.values();
@@ -314,8 +324,7 @@ public class ConsoleModel extends AbstractBean {
                     double tsla;
                     if (transactionSLA != null) {
                         tsla = transactionSLA;
-                    }
-                    else {
+                    } else {
                         tsla = Double.NaN;
                     }
 
@@ -346,7 +355,8 @@ public class ConsoleModel extends AbstractBean {
                     final TransactionResultModel finalPointer = transactionResultModel;
                     testModel.addPropertyChangeListener(new PropertyChangeListener() {
                         public void propertyChange(PropertyChangeEvent evt) {
-                            finalPointer.setTargetTransactions(testModel.getTargetRate() * getTransactionRateModifier() * testModel.getTargetThreads());
+                            finalPointer.setTargetTransactions(testModel.getTargetRate() * getTransactionRateModifier() * testModel
+                                    .getTargetThreads());
                         }
                     }, "targetRate", "targetThreads");
                 }
@@ -374,16 +384,14 @@ public class ConsoleModel extends AbstractBean {
                     if (perAgentTestStats.transactionsSuccess > 0) {
                         averageSuccess = perAgentTestStats.totalDurationSuccess / perAgentTestStats.transactionsSuccess;
                         averageTotalSuccess = perAgentTestStats.totalDurationTotalSuccess / perAgentTestStats.transactionsSuccess;
-                    }
-                    else {
+                    } else {
                         averageSuccess = 0;
                         averageTotalSuccess = 0;
                     }
 
                     if (perAgentTestStats.transactionsFailed > 0) {
                         averageFailures = perAgentTestStats.totalDurationFailed / perAgentTestStats.transactionsFailed;
-                    }
-                    else {
+                    } else {
                         averageFailures = 0;
                     }
 
@@ -413,7 +421,7 @@ public class ConsoleModel extends AbstractBean {
                                               totalSuccessDuration,
                                               totalFailureDuration,
                                               testStats.sampleDuration);
-                
+
                 logger.debug("Transaction {} successes {} failures {} success per second {} success mean {}",
                              testStats.getKey().toString(),
                              successes,
@@ -426,53 +434,6 @@ public class ConsoleModel extends AbstractBean {
             }
         }
     }
-
-    // public NewTransactionResultModel getNewTransactionResultModelForTest(TestKey testKey) {
-    //
-    // NewTransactionResultModel transactionResultModel = newTransactionResultsModelByTestName.get(testKey);
-    // if (transactionResultModel == null) {
-    //
-    // final TestModel testModel = testModelsByName.get(testKey.getTestName());
-    // Double transactionSLA = testModel.getTransactionSLAs().get(testKey.getTransactionName());
-    //
-    // double tsla;
-    // if (transactionSLA != null) {
-    // tsla = transactionSLA;
-    // }
-    // else {
-    // tsla = Double.NaN;
-    // }
-    //
-    // double targetRate = testModel.getTargetRate() * getTransactionRateModifier() * testModel.getTargetThreads();
-    //
-    // transactionResultModel = new NewTransactionResultModel(testKey);
-    //
-    // // TODO : we'll need some of this stuff back again
-    // // transactionResultModel = new NewTransactionResultModel(testName,
-    // // transactionName,
-    // // transactionName != null && transactionName.length() > 0,
-    // // targetRate,
-    // // tsla,
-    // // testModel.getFailureThreshold());
-    // // transactionResultModels.add(transactionResultModel);
-    // // totalTransactionModelsByTestName.put(testKey,
-    // // transactionResultModel);
-    //
-    // // Wire up the transaction results to listen for changes in
-    // // the target rate
-    // // TODO : we'll probably need this back
-    // // final TransactionResultModel finalPointer =
-    // // transactionResultModel;
-    // // testModel.addPropertyChangeListener(new PropertyChangeListener()
-    // // {
-    // // public void propertyChange(PropertyChangeEvent evt) {
-    // // finalPointer.setTargetTransactions(testModel.getTargetRate() *
-    // // getTransactionRateModifier() * testModel.getTargetThreads());
-    // // }
-    // // }, "targetRate", "targetThreads");
-    // }
-    // return transactionResultModel;
-    // }
 
     public void reset() {
         for (InteractiveModelListener listener : listeners) {
@@ -533,4 +494,18 @@ public class ConsoleModel extends AbstractBean {
             listener.onTelemetryData(mt);
         }
     }
+
+    public List<AgentModel> getConnectedAgents() {
+
+        List<AgentModel> connectedModels = new LinkedList<AgentModel>();
+        for (AgentModel agentModel : getAgentModels()) {
+            if (agentModel.isConnected()) {
+                connectedModels.add(agentModel);
+            }
+        }
+
+        return connectedModels;
+    }
+
+    public int getConnectionAgentCount() {return getConnectedAgents().size();}
 }

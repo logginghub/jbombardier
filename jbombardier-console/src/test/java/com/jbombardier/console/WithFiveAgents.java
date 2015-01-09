@@ -15,9 +15,9 @@
  */
 
 package com.jbombardier.console;
-import static com.jbombardier.console.configuration.ConfigurationBuilder.agent;
-import static com.jbombardier.console.configuration.ConfigurationBuilder.builder;
-import static com.jbombardier.console.configuration.ConfigurationBuilder.test;
+import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.agent;
+import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.configurationBuilder;
+import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.test;
 
 import com.jbombardier.console.sample.SleepTest;
 public class WithFiveAgents {
@@ -25,7 +25,7 @@ public class WithFiveAgents {
     public static void main(String[] args) {
 
 
-        builder().addTest(test(SleepTest.class).name("delay-20").properties("delay=20").threads(10))
+        configurationBuilder().addTest(test(SleepTest.class).name("delay-20").properties("delay=20").threads(10))
                  .addTest(test(SleepTest.class).name("delay-10").properties("delay=10"))                 
                  .addAgent(agent().address("localhost").port(20001).name("agent1"))
                  .addAgent(agent().address("localhost").port(20002).name("agent2"))

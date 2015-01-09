@@ -24,6 +24,112 @@ public class AgentStats {
     private String agentName;
     private List<TestStats> testStats = new ArrayList<AgentStats.TestStats>();
 
+    public static TestStatsBuilder testStats(String name, long... successStats) {
+
+        TestStatsBuilder builder = new TestStatsBuilder();
+        long total = 0;
+        for (long successStat : successStats) {
+            builder.successResult(successStat);
+            total += successStat;
+        }
+
+        // TODO : fake the rest of these so they are rougly consistent for tests?
+        builder.isTransaction(false);
+        builder.testName(name);
+        builder.totalDurationSuccess(total);
+
+        return builder;
+    }
+
+    public static class AgentStatsBuilder {
+        private AgentStats stats = new AgentStats();
+
+        public AgentStatsBuilder agentName(String agentName) {
+            stats.agentName = agentName;
+            return this;
+        }
+
+        public AgentStatsBuilder testStats(TestStatsBuilder testStats) {
+            stats.testStats.add(testStats.toStats());
+            return this;
+        }
+
+        public AgentStats toStats() {
+            return stats;
+        }
+    }
+
+    public static class TestStatsBuilder {
+        private TestStats stats = new TestStats();
+
+        public TestStatsBuilder testName(String testName) {
+            stats.testName = testName;
+            return this;
+        }
+
+        public TestStatsBuilder isTransaction(boolean isTransaction) {
+            stats.isTransaction = isTransaction;
+            return this;
+        }
+
+        public TestStatsBuilder threadCount(int threadCount) {
+            stats.threadCount = threadCount;
+            return this;
+        }
+
+        public TestStatsBuilder transactionsSuccess(long transactionsSuccess) {
+            stats.transactionsSuccess = transactionsSuccess;
+            return this;
+        }
+
+        public TestStatsBuilder transactionsFailed(long transactionsFailed) {
+            stats.transactionsFailed = transactionsFailed;
+            return this;
+        }
+
+        public TestStatsBuilder totalDurationSuccess(long totalDurationSuccess) {
+            stats.totalDurationSuccess = totalDurationSuccess;
+            return this;
+        }
+
+        public TestStatsBuilder totalDurationFailed(long totalDurationFailed) {
+            stats.totalDurationFailed = totalDurationFailed;
+            return this;
+        }
+
+        public TestStatsBuilder sampleDuration(long sampleDuration) {
+            stats.sampleDuration = sampleDuration;
+            return this;
+        }
+
+        public TestStatsBuilder transactionName(String transactionName) {
+            stats.transactionName = transactionName;
+            return this;
+        }
+
+        public TestStatsBuilder successResult(long result) {
+            stats.successResults.add(result);
+            return this;
+        }
+
+        public TestStatsBuilder failResult(long result) {
+            stats.failResults.add(result);
+            return this;
+        }
+
+        public TestStats toStats() {
+            return stats;
+        }
+    }
+
+    public static TestStatsBuilder testStats() {
+        return new TestStatsBuilder();
+    }
+
+    public static AgentStatsBuilder agentStats() {
+        return new AgentStatsBuilder();
+    }
+
     public static class TestStats {
 
         private String testName;
@@ -39,8 +145,7 @@ public class AgentStats {
         private String transactionName = "";
 
         /**
-         * The total of the total durations (before + iteration) for the
-         * successful tests.
+         * The total of the total durations (before + iteration) for the successful tests.
          */
         public long totalDurationTotalSuccess;
 
@@ -62,24 +167,24 @@ public class AgentStats {
 
         @Override public String toString() {
             return "TestStats [testName=" +
-                   testName +
-                   ", transactionName=" +
-                   transactionName +
-                   ", isTransaction=" +
-                   isTransaction +
-                   ", threadCount=" +
-                   threadCount +
-                   ", transactionsSuccess=" +
-                   transactionsSuccess +
-                   ", transactionsFailed=" +
-                   transactionsFailed +
-                   ", totalDurationSuccess=" +
-                   totalDurationSuccess +
-                   ", totalDurationFailed=" +
-                   totalDurationFailed +
-                   ", sampleDuration=" +
-                   sampleDuration +
-                   "]";
+                    testName +
+                    ", transactionName=" +
+                    transactionName +
+                    ", isTransaction=" +
+                    isTransaction +
+                    ", threadCount=" +
+                    threadCount +
+                    ", transactionsSuccess=" +
+                    transactionsSuccess +
+                    ", transactionsFailed=" +
+                    transactionsFailed +
+                    ", totalDurationSuccess=" +
+                    totalDurationSuccess +
+                    ", totalDurationFailed=" +
+                    totalDurationFailed +
+                    ", sampleDuration=" +
+                    sampleDuration +
+                    "]";
         }
 
         public void fromBasicTestStats(BasicTestStats basicTestStats) {

@@ -20,7 +20,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import com.jbombardier.console.headless.Headless;
+import com.jbombardier.console.headless.JBombardierHeadless;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -37,20 +37,18 @@ public class TestFailureMessage {
 
         File tempFile = File.createTempFile("testEmptyConfiguration", ".xml");
         TextFileBuilder builder = new TextFileBuilder(new FileWriter(tempFile));        
-        builder.appendLine("<interactiveConfiguration>");
+        builder.appendLine("<jbombardierConfiguration duration='100' warmUp='100'>");
         builder.appendLine("<agents><agent name='embedded'/></agents>");
         builder.appendLine("<tests><test name='propertyReader' class='com.jbombardier.console.sample.FailingTest' targetRate='10' rateStep='100' properties='failureReason=" + message + "'/></tests>");
-        builder.appendLine("</interactiveConfiguration>");
+        builder.appendLine("</jbombardierConfiguration>");
         builder.close();
         
-        Headless headless = new Headless();
+        JBombardierHeadless headless = new JBombardierHeadless();
         headless.setAgentsRequired(1);
-        headless.setSampleTime(100);
         headless.setTimeToWaitForAgents(5000);
-        headless.setWarmupTime(100);
-        SwingConsoleController controller = headless.run(tempFile.getAbsolutePath());
+        JBombardierController controller = headless.run(tempFile.getAbsolutePath());
         
-        ConsoleModel model = controller.getModel();
+        JBombardierModel model = controller.getModel();
         // TODO : refactor to use the event console
 //        assertThat(model.getEvents().size(), is(greaterThan(0)));
 //        

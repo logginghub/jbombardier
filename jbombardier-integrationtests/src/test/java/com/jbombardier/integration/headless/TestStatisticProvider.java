@@ -16,7 +16,7 @@
 
 package com.jbombardier.integration.headless;
 
-import com.jbombardier.console.configuration.ConfigurationBuilder;
+import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
 import com.jbombardier.integration.JBombardierTestBase;
 import org.testng.annotations.Test;
 
@@ -26,7 +26,7 @@ import org.testng.annotations.Test;
 public class TestStatisticProvider extends JBombardierTestBase {
 
     @Test(enabled = false) public void test_xml() {
-        ConfigurationBuilder.builder()
+        JBombardierConfigurationBuilder.configurationBuilder()
                                 .fromXml("statistic_provider.xml")
                                 .reportsFolder(dsl.getResultsFolder().getAbsolutePath())
                                 .executeHeadlessNoExit();

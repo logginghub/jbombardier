@@ -18,7 +18,7 @@ package com.jbombardier.console;
 
 import static org.hamcrest.Matchers.containsString;
 
-import com.jbombardier.console.configuration.InteractiveConfiguration;
+import com.jbombardier.console.configuration.JBombardierConfiguration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +29,7 @@ import com.jbombardier.console.configuration.TestConfiguration;
 
 public class TestConsoleStartFailures {
 
-    private InteractiveConfiguration configuration = new InteractiveConfiguration();
+    private JBombardierConfiguration configuration = new JBombardierConfiguration();
     private TestConfiguration testConfiguration1 = new TestConfiguration();
     private TestConfiguration testConfiguration2 = new TestConfiguration();
     private Agent agent1 = new Agent();
@@ -45,7 +45,7 @@ public class TestConsoleStartFailures {
     @Test public void test_fail_empty_configuration() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("No tests have been specified in your configuration"));
-        SwingConsole.run(configuration);
+        JBombardierSwingConsole.run(configuration);
     }
     
     @Test public void test_fail_no_agents_configuration() {
@@ -53,7 +53,7 @@ public class TestConsoleStartFailures {
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("No agents have been provided in your configuration"));
-        SwingConsole.run(configuration);
+        JBombardierSwingConsole.run(configuration);
     }
     
     @Test public void test_fail_test_has_null_classname() {        
@@ -63,7 +63,7 @@ public class TestConsoleStartFailures {
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("One of your tests has a null or empty classname"));
-        SwingConsole.run(configuration);
+        JBombardierSwingConsole.run(configuration);
     }
     
     @Test public void test_fail_test_has_empty_classname() {        
@@ -73,7 +73,7 @@ public class TestConsoleStartFailures {
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("One of your tests has a null or empty classname"));
-        SwingConsole.run(configuration);
+        JBombardierSwingConsole.run(configuration);
     }
     
     @Test public void test_fail_class_not_found() {
@@ -84,7 +84,7 @@ public class TestConsoleStartFailures {
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("One of your tests (test) specifies a class (class) that could not be loaded"));
-        SwingConsole.run(configuration);
+        JBombardierSwingConsole.run(configuration);
     }
     
     @Test public void test_fail_two_tests_with_same_name() {
@@ -98,7 +98,7 @@ public class TestConsoleStartFailures {
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("Some of your tests have the same name"));
-        SwingConsole.run(configuration);
+        JBombardierSwingConsole.run(configuration);
     }
 
     @Test public void test_fail_embedded_agent_has_address() {
@@ -111,7 +111,7 @@ public class TestConsoleStartFailures {
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("You have specified an address for the embedded agent"));
-        SwingConsole.run(configuration);
+        JBombardierSwingConsole.run(configuration);
     }
      
     @Test public void test_fail_agent_have_same_name() {
@@ -127,7 +127,7 @@ public class TestConsoleStartFailures {
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("Some of your agents have the same name (agent)"));
-        SwingConsole.run(configuration);
+        JBombardierSwingConsole.run(configuration);
     }
 
     @Test public void test_fail_agent_missing_address() {
@@ -140,7 +140,7 @@ public class TestConsoleStartFailures {
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("You haven't provided a valid address for agent 'agent'"));
-        SwingConsole.run(configuration);
+        JBombardierSwingConsole.run(configuration);
     }
     
     @Test public void test_fail_agent_invalid_port() {
@@ -154,6 +154,6 @@ public class TestConsoleStartFailures {
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("You haven't provided a valid port for agent 'agent'"));
-        SwingConsole.run(configuration);
+        JBombardierSwingConsole.run(configuration);
     }
 }

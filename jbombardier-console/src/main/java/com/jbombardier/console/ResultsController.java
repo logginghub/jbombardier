@@ -165,7 +165,7 @@ public class ResultsController {
         failureStatsByTest.clear();
     }
 
-    public void startStatsUpdater(final ConsoleModel model) {
+    public void startStatsUpdater(final JBombardierModel model) {
 
         statsUpdater = TimerUtils.everySecond("DetailedStatsUpdater", new Runnable() {
             @Override public void run() {

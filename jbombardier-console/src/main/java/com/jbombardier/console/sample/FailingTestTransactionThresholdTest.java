@@ -16,14 +16,14 @@
 
 package com.jbombardier.console.sample;
 
-import static com.jbombardier.console.configuration.ConfigurationBuilder.builder;
-import static com.jbombardier.console.configuration.ConfigurationBuilder.embeddedAgent;
-import static com.jbombardier.console.configuration.ConfigurationBuilder.test;
+import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.configurationBuilder;
+import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.embeddedAgent;
+import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.test;
 
 public class FailingTestTransactionThresholdTest  {
 
     public static void main(String[] args) {
-        builder().testName("FailingIndividualTestTransactionThreshold")
+        configurationBuilder().testName("FailingIndividualTestTransactionThreshold")
                  .addTest(test(FailingOverallTransactionThresholdTest.class).name("Failure1").targetRate(100).rateStep(100).failedTransactionCountFailureThreshold(20))
                  .addTest(test(FailingOverallTransactionThresholdTest.class).name("Failure2").targetRate(100).rateStep(100).failedTransactionCountFailureThreshold(15))
                  .addAgent(embeddedAgent())

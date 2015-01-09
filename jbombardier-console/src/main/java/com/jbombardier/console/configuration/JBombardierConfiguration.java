@@ -17,20 +17,30 @@
 package com.jbombardier.console.configuration;
 
 import com.jbombardier.xml.CsvProperty;
+import com.logginghub.utils.EnvironmentProperties;
 import com.logginghub.utils.ResourceUtils;
 import com.logginghub.utils.VLPorts;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.ValidationEvent;
-import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.helpers.DefaultValidationEventHandler;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-@XmlAccessorType(XmlAccessType.FIELD) @XmlRootElement public class InteractiveConfiguration {
+@XmlAccessorType(XmlAccessType.FIELD) @XmlRootElement(name = "jbombardierConfiguration")
+public class JBombardierConfiguration {
+
+    @XmlElementWrapper(name = "phases") @XmlElement(name = "phase")
+    private List<PhaseConfiguration> phases = new ArrayList<PhaseConfiguration>();
 
     @XmlElementWrapper(name = "agents") @XmlElement(name = "agent") private List<Agent> agents = new ArrayList<Agent>();
     @XmlElementWrapper(name = "tests") @XmlElement(name = "test")
@@ -65,9 +75,13 @@ import java.util.List;
     @XmlAttribute private String resultRepositoryHost = null;
 
     @XmlAttribute private boolean outputEmbeddedAgentStats;
-    @XmlAttribute private boolean outputControllerStats;
+    @XmlAttribute private boolean outputControllerStats = EnvironmentProperties.getBoolean(
+            "jbombardierConsoleController.disableStats");
     @XmlAttribute private int resultRepositoryPort = VLPorts.getRepositoryDefaultPort();
     @XmlAttribute private String reportsFolder = "reports";
+
+    @XmlAttribute private String warmupTime = "0";
+    @XmlAttribute private String duration = "1 minute";
 
     public String getResultRepositoryHost() {
         return resultRepositoryHost;
@@ -173,10 +187,10 @@ import java.util.List;
         this.tests = tests;
     }
 
-    public static InteractiveConfiguration loadConfiguration(String configurationPath) {
+    public static JBombardierConfiguration loadConfiguration(String configurationPath) {
         try {
             InputStream resource = ResourceUtils.openStream(configurationPath);
-            JAXBContext context = JAXBContext.newInstance(InteractiveConfiguration.class);
+            JAXBContext context = JAXBContext.newInstance(JBombardierConfiguration.class);
             Unmarshaller um = context.createUnmarshaller();
             um.setEventHandler(new DefaultValidationEventHandler() {
                 @Override public boolean handleEvent(ValidationEvent event) {
@@ -186,7 +200,7 @@ import java.util.List;
                     return super.handleEvent(event);
                 }
             });
-            InteractiveConfiguration configuration = (InteractiveConfiguration) um.unmarshal(new InputStreamReader(
+            JBombardierConfiguration configuration = (JBombardierConfiguration) um.unmarshal(new InputStreamReader(
                     resource));
             return configuration;
         } catch (Exception e) {
@@ -289,5 +303,25 @@ import java.util.List;
 
     public List<JmxCapture> getJmxCapture() {
         return jmxCapture;
+    }
+
+    public List<PhaseConfiguration> getPhases() {
+        return phases;
+    }
+
+    public void setWarmUpTime(String warmupTime) {
+        this.warmupTime = warmupTime;
+    }
+
+    public String getWarmupTime() {
+        return warmupTime;
+    }
+
+    public String getDuration() {
+        return duration;
+    }
+
+    public void setDuration(String duration) {
+        this.duration = duration;
     }
 }

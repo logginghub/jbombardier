@@ -31,14 +31,14 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jbombardier.console.SwingConsoleController;
-import com.jbombardier.console.ConsoleModel;
+import com.jbombardier.console.JBombardierController;
+import com.jbombardier.console.JBombardierModel;
 import com.logginghub.utils.data.DataStructure;
 import com.logginghub.utils.observable.ObservablePropertyListener;
 
 public class SwingConsoleMainPanel extends JPanel {
 
-    private SwingConsoleController controller;
+    private JBombardierController controller;
     private AgentStatusButtonsPanel agentStatusPanel;
     private RateControlPanel threadStatePanel;
     private JDynamicStateButton stopTestButton;
@@ -56,7 +56,7 @@ public class SwingConsoleMainPanel extends JPanel {
     private static final Logger logger = LoggerFactory.getLogger(SwingConsoleMainPanel.class);
     private JPanel agentControlPanel;
 
-    public void setController(SwingConsoleController controller) {
+    public void setController(JBombardierController controller) {
         this.controller = controller;
     }
 
@@ -81,7 +81,7 @@ public class SwingConsoleMainPanel extends JPanel {
         startTestButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 try {
-                    controller.startTest();
+                    controller.publishTestInstructionsAndStartRunning();
                 }
                 catch (Throwable t) {
                     JOptionPane.showMessageDialog(SwingConsoleMainPanel.this, t.getMessage(), "Failed to start test", JOptionPane.ERROR_MESSAGE);
@@ -94,7 +94,7 @@ public class SwingConsoleMainPanel extends JPanel {
         stopTestButton = new JDynamicStateButton("Stop test");
         stopTestButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                controller.stopTest(true);
+                controller.endTestAbnormally();
             }
         });
         agentControlPanel.add(stopTestButton, "cell 0 0");
@@ -153,12 +153,12 @@ public class SwingConsoleMainPanel extends JPanel {
         }
     }
 
-    public void setModel(ConsoleModel model) {
+    public void setModel(JBombardierModel model) {
         agentStatusPanel.initialise(model);
         threadStatePanel.initialise(model, controller);
         transactionStatePanel.initialise(model);
 
-        model.addListener(new ConsoleModel.InteractiveModelListenerAdaptor() {
+        model.addListener(new JBombardierModel.InteractiveModelListenerAdaptor() {
 
             @Override public void onTelemetryData(DataStructure data) {
                 machineTelemetryPanel.update(data);
@@ -184,7 +184,7 @@ public class SwingConsoleMainPanel extends JPanel {
 
         consolePanel.initialise(model);
 
-        model.addListener(new ConsoleModel.InteractiveModelListenerAdaptor() {
+        model.addListener(new JBombardierModel.InteractiveModelListenerAdaptor() {
             public void onTestAbandoned(String reason) {
                 JOptionPane.showMessageDialog(SwingConsoleMainPanel.this, reason, "Test abandoned", JOptionPane.WARNING_MESSAGE);
             };

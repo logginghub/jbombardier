@@ -16,8 +16,8 @@
 
 package com.jbombardier.examples;
 
-import static com.jbombardier.console.configuration.ConfigurationBuilder.builder;
-import static com.jbombardier.console.configuration.ConfigurationBuilder.test;
+import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.configurationBuilder;
+import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.test;
 
 import com.jbombardier.common.PerformanceTestAdaptor;
 import com.jbombardier.common.TestContext;
@@ -33,7 +33,7 @@ public class LoggingTest extends PerformanceTestAdaptor {
     }
 
     public static void main(String[] args) {
-        builder().addTest(test(LoggingTest.class).name("test").threads(1).targetRate(1))
+        configurationBuilder().addTest(test(LoggingTest.class).name("test").threads(1).targetRate(1))
                  .addAgent("Agent1", "localhost", 20001)
                  .addAgent("Agent2", "localhost", 20002)
                  .addAgent("Agent3", "localhost", 20003)

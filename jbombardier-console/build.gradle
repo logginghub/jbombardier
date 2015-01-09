@@ -47,8 +47,10 @@ dependencies {
     compile 'com.logginghub:vl-swing-utils:1.4.4'
     compile 'com.logginghub:vl-logging-frontend:1.4.4'
     compile 'com.logginghub:vl-analytics:1.4.4'
+    compile 'com.logginghub:vl-utils:1.4.4'
 
-    compile 'com.logginghub:logginghub-utils:1.4.4-b2'
+    // TODO : move to this
+    // compile 'com.logginghub:logginghub-utils:1.4.4-b2'
 
     compile 'org.apache.velocity:velocity:1.7'
     compile 'com.seaglasslookandfeel:seaglasslookandfeel:0.1.7.3'

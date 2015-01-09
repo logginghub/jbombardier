@@ -16,8 +16,8 @@
 
 package com.jbombardier.console.sample;
 
-import static com.jbombardier.console.configuration.ConfigurationBuilder.builder;
-import static com.jbombardier.console.configuration.ConfigurationBuilder.test;
+import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.configurationBuilder;
+import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.test;
 
 import com.logginghub.logging.utils.LoggingUtils;
 import com.jbombardier.common.PerformanceTestAdaptor;
@@ -55,7 +55,7 @@ public class DeviationTest extends PerformanceTestAdaptor {
 
     public static void main(String[] args) {
         LoggingUtils.setupRemoteVLLoggingFromSystemProperties();
-        builder().testName("DeviationTest")
+        configurationBuilder().testName("DeviationTest")
                  .addTest(test(DeviationTest.class).name("sleep 100@10").targetRate(10).rateStep(10))
                  .warmupTime(warmupTime)
                  .testDuration(warmupTime)

@@ -15,7 +15,7 @@
   ~ limitations under the License.
   -->
 
-<interactiveConfiguration telemetryHubPort="-1" visualErrorMessages="false">
+<jbombardierConfiguration telemetryHubPort="-1" visualErrorMessages="false">
  
 	<agents>
 	   <agent name="embedded"/>
@@ -46,4 +46,4 @@
 	</properties>
 	
 	
-</interactiveConfiguration>
+</jbombardierConfiguration>

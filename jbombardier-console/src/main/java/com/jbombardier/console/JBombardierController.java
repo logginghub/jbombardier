@@ -16,17 +16,43 @@
 
 package com.jbombardier.console;
 
+import com.jbombardier.agent.Agent2;
+import com.jbombardier.common.AgentClassRequest;
+import com.jbombardier.common.AgentClassResponse;
+import com.jbombardier.common.AgentFailedInstruction;
+import com.jbombardier.common.AgentKillInstruction;
+import com.jbombardier.common.AgentLogMessage;
+import com.jbombardier.common.AgentPropertyEntryRequest;
 import com.jbombardier.common.AgentPropertyEntryResponse;
+import com.jbombardier.common.AgentPropertyRequest;
+import com.jbombardier.common.AgentPropertyResponse;
+import com.jbombardier.common.AgentStats;
 import com.jbombardier.common.CsvPropertiesProvider;
+import com.jbombardier.common.DataBucket;
+import com.jbombardier.common.DataStrategy;
 import com.jbombardier.common.KryoHelper;
+import com.jbombardier.common.PerformanceTest;
+import com.jbombardier.common.PingMessage;
 import com.jbombardier.common.PropertyEntry;
+import com.jbombardier.common.SendTelemetryRequest;
+import com.jbombardier.common.StatisticProvider;
+import com.jbombardier.common.StopTelemetryRequest;
+import com.jbombardier.common.StopTestRequest;
+import com.jbombardier.common.StopTestResponse;
+import com.jbombardier.common.TestField;
+import com.jbombardier.common.TestInstruction;
+import com.jbombardier.common.TestPackage;
+import com.jbombardier.common.TestVariableUpdateRequest;
+import com.jbombardier.common.ThreadsChangedMessage;
+import com.jbombardier.common.serialisableobject.CapturedStatistic;
 import com.jbombardier.console.charts.FrequencyChart;
 import com.jbombardier.console.configuration.Agent;
 import com.jbombardier.console.configuration.HubCapture;
 import com.jbombardier.console.configuration.HubCapturePattern;
-import com.jbombardier.console.configuration.InteractiveConfiguration;
+import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.configuration.JmxCapture;
 import com.jbombardier.console.configuration.JmxTarget;
+import com.jbombardier.console.configuration.PhaseConfiguration;
 import com.jbombardier.console.configuration.Property;
 import com.jbombardier.console.configuration.StatisticsCapture;
 import com.jbombardier.console.configuration.TestConfiguration;
@@ -39,16 +65,36 @@ import com.jbombardier.console.model.TransactionResultModel;
 import com.jbombardier.console.model.result.TestRunResult;
 import com.jbombardier.console.statisticcapture.JMXStatisticCapture;
 import com.jbombardier.console.statisticcapture.LoggingHubStatisticCapture;
+import com.jbombardier.xml.CsvProperty;
 import com.logginghub.messaging2.ReflectionDispatchMessageListener;
 import com.logginghub.messaging2.api.ConnectionListener;
 import com.logginghub.messaging2.kryo.KryoClient;
 import com.logginghub.messaging2.kryo.ResponseHandler;
-import com.jbombardier.agent.Agent2;
-import com.jbombardier.common.serialisableobject.CapturedStatistic;
-import com.jbombardier.xml.CsvProperty;
-import com.logginghub.utils.*;
+import com.logginghub.utils.BrowserUtils;
+import com.logginghub.utils.Destination;
+import com.logginghub.utils.FactoryMap;
+import com.logginghub.utils.FileUtils;
+import com.logginghub.utils.HTMLBuilder2;
+import com.logginghub.utils.IntegerStat;
+import com.logginghub.utils.Is;
+import com.logginghub.utils.ListBackedMap;
+import com.logginghub.utils.MemorySnapshot;
 import com.logginghub.utils.MemorySnapshot.LowMemoryNotificationHandler;
+import com.logginghub.utils.Metadata;
+import com.logginghub.utils.NamedThreadFactory;
+import com.logginghub.utils.NetUtils;
+import com.logginghub.utils.QuietLatch;
+import com.logginghub.utils.ReflectionUtils;
+import com.logginghub.utils.ResourceUtils;
+import com.logginghub.utils.SinglePassStatisticsLongPrecisionCircular;
+import com.logginghub.utils.StatBundle;
+import com.logginghub.utils.Stream;
+import com.logginghub.utils.StringUtils;
 import com.logginghub.utils.StringUtils.StringUtilsBuilder;
+import com.logginghub.utils.ThreadUtils;
+import com.logginghub.utils.TimeUtils;
+import com.logginghub.utils.TimerUtils;
+import com.logginghub.utils.WorkerThread;
 import com.logginghub.utils.logging.Logger;
 import com.logginghub.utils.remote.ClasspathResolver;
 import org.apache.velocity.VelocityContext;
@@ -66,31 +112,40 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Timer;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class SwingConsoleController {
+public class JBombardierController {
 
-    private static final Logger logger = Logger.getLoggerFor(SwingConsoleController.class);
+    private static final Logger logger = Logger.getLoggerFor(JBombardierController.class);
     // TODO : figure out a nicer way of doing this!!
     private static Stream<String> eventStream = new Stream<String>();
     // private InteractiveConfiguration configuration;
-    private ConsoleModel model;
+    private final JBombardierModel model;
     private Map<String, String> properties = new ConcurrentHashMap<String, String>();
     private Map<String, CsvPropertiesProvider> csvPropertyProviders = new HashMap<String, CsvPropertiesProvider>();
     private Map<ReflectionDispatchMessageListener, KryoClient> dispatchingListeners = new HashMap<ReflectionDispatchMessageListener, KryoClient>();
     private Map<String, DataSource> dataByName = new HashMap<String, DataSource>();
     private ResultsController resultsController;
-    private ExecutorService pool = Executors.newCachedThreadPool();
-    private int autostartAgents;
-    private File reportsPath = new File("reports");
+    private ExecutorService pool = Executors.newCachedThreadPool(new NamedThreadFactory("JBombardierController-worker-"));
+    //    private int autostartAgents;
+    //private File reportsPath = new File("reports");
     private StatBundle statBundle = new StatBundle();
-    private boolean sendCloseMessageOnWindowClose = true;
+    //    private boolean sendCloseMessageOnWindowClose = true;
     private Timer agentPingTimer;
-    private InteractiveConfiguration configuration;
+    private JBombardierConfiguration configuration;
     private IntegerStat newConnectionsStat;
     private IntegerStat disconnectionsStat;
     private IntegerStat connectionsStat;
@@ -99,9 +154,68 @@ public class SwingConsoleController {
     private IntegerStat expectedAgentsStat;
     private WorkerThread memoryMonitorWorkerThread;
     private ClasspathResolver resolver = new ClasspathResolver();
-    private boolean outputControllerStats = !EnvironmentProperties.getBoolean("jbombardierConsoleController.disableStats");
+    //    private boolean outputControllerStats = !EnvironmentProperties.getBoolean(
+    //            "jbombardierConsoleController.disableStats");
 
-    public synchronized void startTest() {
+
+    public enum State {
+        Configured, AgentConnectionsRunning, Warmup, TestRunning, Stopped, Completed
+    }
+
+    private State state;
+    private List<Agent2> embeddedAgents = new ArrayList<Agent2>();
+    private PhaseConfiguration currentPhase;
+    private Iterator<PhaseConfiguration> phaseIterator;
+
+    public JBombardierController(JBombardierModel model, JBombardierConfiguration configuration) {
+        this.model = model;
+        this.configuration = configuration;
+
+        model.setNoResultsTimeout((int) (configuration.getNoResultsTimeout() / 1000));
+        model.setTestName(configuration.getTestName());
+        model.setFailedTransactionCountFailureThreshold(configuration.getFailedTransactionCountFailureThreshold());
+        model.setMaximumConsoleEntries(configuration.getMaximumConsoleEntries());
+
+        resultsController = new ResultsController(new File(configuration.getReportsFolder()));
+        resultsController.setMaximumResultsPerKey(configuration.getMaximumResultToStore());
+
+        initialiseStats();
+
+        // Attach a listener to pickup changes to the transaction rate modifier
+        // changer
+        model.addPropertyChangeListener("transactionRateModifier", new PropertyChangeListener() {
+            public void propertyChange(PropertyChangeEvent evt) {
+                updateTransactionRateModifier(JBombardierController.this.model.getTransactionRateModifier());
+            }
+        });
+
+        initialiseStatisticsCapture(configuration, model);
+        initialiseTests(configuration, model);
+        initialiseProperties(configuration, model);
+
+        state = State.Configured;
+    }
+
+    public State getState() {
+        return state;
+    }
+
+    public void startAgentConnections() {
+
+        memoryMonitorWorkerThread = MemorySnapshot.runMonitorToLogging(90, new LowMemoryNotificationHandler() {
+            @Override public void onLowMemory(float percentage, int consecutive) {
+                if (consecutive >= 2) {
+                    handleLowMemory();
+                }
+            }
+        });
+
+        initialiseAgents(configuration, model);
+
+        state = State.AgentConnectionsRunning;
+    }
+
+    public synchronized void publishTestInstructionsAndStartRunning() {
 
         if (model.isTestRunning()) {
             throw new IllegalStateException("Test has already been started");
@@ -109,6 +223,7 @@ public class SwingConsoleController {
             model.getTestRunning().set(true);
         }
         logger.debug("Starting test...");
+        state = State.TestRunning;
 
         resultsController.resetStats();
         try {
@@ -119,13 +234,13 @@ public class SwingConsoleController {
 
         startStatisticsCapture();
 
-        List<AgentModel> connectedAgentModels = getConnectedAgents();
+        List<AgentModel> connectedAgentModels = model.getConnectedAgents();
         logger.debug("We have {} connected agents", connectedAgentModels.size());
 
-        List<com.jbombardier.common.TestInstruction> instructions = new ArrayList<com.jbombardier.common.TestInstruction>();
+        List<TestInstruction> instructions = new ArrayList<TestInstruction>();
         List<TestModel> tests = model.getTestModels();
 
-        FactoryMap<String, FactoryMap<String, com.jbombardier.common.DataBucket>> dataBucketsByAgentName = divideDataIntoBuckets(
+        FactoryMap<String, FactoryMap<String, DataBucket>> dataBucketsByAgentName = divideDataIntoBuckets(
                 connectedAgentModels);
 
         populateTestInstructionsList(instructions, tests);
@@ -148,29 +263,29 @@ public class SwingConsoleController {
         for (final AgentModel agentModel : model.getAgentModels()) {
             if (agentModel.isConnected()) {
                 KryoClient client = agentModel.getKryoClient();
-                client.send("agent", new com.jbombardier.common.PingMessage());
+                client.send("agent", new PingMessage());
             }
         }
     }
 
-    public ConsoleModel getModel() {
+    public JBombardierModel getModel() {
         return model;
     }
 
-    public void setModel(final ConsoleModel model) {
-        this.model = model;
-    }
+    //    public void setModel(final JBombardierModel model) {
+    //        this.model = model;
+    //    }
 
     @SuppressWarnings("serial")
-    public FactoryMap<String, FactoryMap<String, com.jbombardier.common.DataBucket>> divideDataIntoBuckets(List<AgentModel> connectedAgentModels) {
+    public FactoryMap<String, FactoryMap<String, DataBucket>> divideDataIntoBuckets(List<AgentModel> connectedAgentModels) {
 
         Is.greaterThanZero(connectedAgentModels.size(), "You must have at least one connected agent to start the test");
 
-        FactoryMap<String, FactoryMap<String, com.jbombardier.common.DataBucket>> dataBuckets = new FactoryMap<String, FactoryMap<String, com.jbombardier.common.DataBucket>>() {
-            @Override protected FactoryMap<String, com.jbombardier.common.DataBucket> createEmptyValue(String key) {
-                return new FactoryMap<String, com.jbombardier.common.DataBucket>() {
-                    @Override protected com.jbombardier.common.DataBucket createEmptyValue(String key) {
-                        return new com.jbombardier.common.DataBucket(key);
+        FactoryMap<String, FactoryMap<String, DataBucket>> dataBuckets = new FactoryMap<String, FactoryMap<String, DataBucket>>() {
+            @Override protected FactoryMap<String, DataBucket> createEmptyValue(String key) {
+                return new FactoryMap<String, DataBucket>() {
+                    @Override protected DataBucket createEmptyValue(String key) {
+                        return new DataBucket(key);
                     }
                 };
             }
@@ -188,7 +303,7 @@ public class SwingConsoleController {
 
             // Depending on the strategy, we populate each agents data buckets
             // in a slightly different way
-            com.jbombardier.common.DataStrategy strategy = data.getStrategy();
+            DataStrategy strategy = data.getStrategy();
             switch (strategy) {
                 case fixedThread: {
                     // We dont distribute anything for this strategy, each
@@ -196,8 +311,8 @@ public class SwingConsoleController {
                     // will dish them out.
                     for (AgentModel agent : connectedAgentModels) {
                         String agentName = agent.getName();
-                        FactoryMap<String, com.jbombardier.common.DataBucket> dataSourceBucketsForAgent = dataBuckets.get(agentName);
-                        com.jbombardier.common.DataBucket dataBucket = dataSourceBucketsForAgent.get(dataSourceName);
+                        FactoryMap<String, DataBucket> dataSourceBucketsForAgent = dataBuckets.get(agentName);
+                        DataBucket dataBucket = dataSourceBucketsForAgent.get(dataSourceName);
 
                         // Just set the strategy so the agent knows what to do
                         dataBucket.setStrategy(strategy);
@@ -214,9 +329,9 @@ public class SwingConsoleController {
                     int rows = data.getValues().length;
                     int agents = connectedAgentModels.size();
 
-                    com.jbombardier.common.DataBucket[] buckets = new com.jbombardier.common.DataBucket[agents];
+                    DataBucket[] buckets = new DataBucket[agents];
                     for (int i = 0; i < agents; i++) {
-                        buckets[i] = new com.jbombardier.common.DataBucket(dataSourceName);
+                        buckets[i] = new DataBucket(dataSourceName);
                         buckets[i].setColumns(data.getHeader());
                         buckets[i].setStrategy(strategy);
                     }
@@ -253,8 +368,8 @@ public class SwingConsoleController {
 
                     for (AgentModel agent : connectedAgentModels) {
                         String agentName = agent.getName();
-                        FactoryMap<String, com.jbombardier.common.DataBucket> dataSourceBucketsForAgent = dataBuckets.get(agentName);
-                        com.jbombardier.common.DataBucket dataBucket = dataSourceBucketsForAgent.get(dataSourceName);
+                        FactoryMap<String, DataBucket> dataSourceBucketsForAgent = dataBuckets.get(agentName);
+                        DataBucket dataBucket = dataSourceBucketsForAgent.get(dataSourceName);
 
                         // Add everything
                         dataBucket.setColumns(data.getHeader());
@@ -278,27 +393,14 @@ public class SwingConsoleController {
         return dataBuckets;
     }
 
-    private List<AgentModel> getConnectedAgents() {
-
-        List<AgentModel> connectedModels = new LinkedList<AgentModel>();
-        for (AgentModel agentModel : model.getAgentModels()) {
-            if (agentModel.isConnected()) {
-                connectedModels.add(agentModel);
-            }
-        }
-
-        return connectedModels;
-
-    }
-
-    public void handleAgentFailedInstruction(com.jbombardier.common.AgentFailedInstruction afi) {
-        stopTest(true);
+    public void handleAgentFailedInstruction(AgentFailedInstruction afi) {
+        endTestAbnormally();
         model.abandonTest(
                 "One of the agents reported an exception during setup; please check the console tab to find out what went wrong",
                 afi);
     }
 
-    public void handleAgentLogMessage(com.jbombardier.common.AgentLogMessage agentLogMessage) {
+    public void handleAgentLogMessage(AgentLogMessage agentLogMessage) {
         ConsoleEventModel model = new ConsoleEventModel();
         String message = agentLogMessage.getMessage();
 
@@ -321,10 +423,10 @@ public class SwingConsoleController {
         this.model.log(model);
     }
 
-    public com.jbombardier.common.AgentPropertyResponse handleAgentPropertyRequest(com.jbombardier.common.AgentPropertyRequest agentPropertyRequest) {
+    public AgentPropertyResponse handleAgentPropertyRequest(AgentPropertyRequest agentPropertyRequest) {
         // TODO : support the property strategies to out different values to
         // different agent/thread combos.
-        com.jbombardier.common.AgentPropertyResponse response;
+        AgentPropertyResponse response;
         String propertyValue;
         synchronized (properties) {
             propertyValue = properties.get(agentPropertyRequest.getPropertyName());
@@ -332,23 +434,28 @@ public class SwingConsoleController {
         // TODO : why are we repeating all the values in the reponse? The
         // request/response mapping code should ensure we dont have to do that
         // anymore!
-        response = new com.jbombardier.common.AgentPropertyResponse(agentPropertyRequest.getPropertyName(),
+        response = new AgentPropertyResponse(agentPropertyRequest.getPropertyName(),
                                              agentPropertyRequest.getThreadName(),
                                              propertyValue);
         return response;
     }
 
-    public void handleAgentStatusUpdate(com.jbombardier.common.AgentStats agentStats) {
+    public void handleAgentStatusUpdate(AgentStats agentStats) {
+
+        if(state != State.Warmup && state != State.TestRunning) {
+            throw new IllegalStateException("Unable to handle agent stats whilst the test isn't running - looks like something has gone wrong");
+        }
+
         agentStatusUpdatesStat.increment();
         model.onAgentStatusUpdate(agentStats);
         resultsController.handleAgentStatusUpdate(agentStats);
     }
 
-    public void handleThreadsChangedMessage(com.jbombardier.common.ThreadsChangedMessage message) {
+    public void handleThreadsChangedMessage(ThreadsChangedMessage message) {
         model.incrementActiveThreadCount(message.getAgent(), message.getThreads());
     }
 
-    public AgentPropertyEntryResponse handleAgentPropertyEntryRequest(com.jbombardier.common.AgentPropertyEntryRequest request) {
+    public AgentPropertyEntryResponse handleAgentPropertyEntryRequest(AgentPropertyEntryRequest request) {
         AgentPropertyEntryResponse response;
 
         String propertyName = request.getPropertyName();
@@ -381,7 +488,7 @@ public class SwingConsoleController {
 
                 logger.debug("Validing test class {}", classname);
                 try {
-                    @SuppressWarnings("unused") com.jbombardier.common.PerformanceTest performanceTest = (com.jbombardier.common.PerformanceTest) Class.forName(
+                    @SuppressWarnings("unused") PerformanceTest performanceTest = (PerformanceTest) Class.forName(
                             classname).newInstance();
                 } catch (ClassNotFoundException e) {
                     buffer.append("Class '")
@@ -415,7 +522,7 @@ public class SwingConsoleController {
     public void stopTelemetry() {
         for (final AgentModel agentModel : model.getAgentModels()) {
             KryoClient client = agentModel.getKryoClient();
-            client.sendRequest("agent", new com.jbombardier.common.StopTelemetryRequest(), new ResponseHandler<String>() {
+            client.sendRequest("agent", new StopTelemetryRequest(), new ResponseHandler<String>() {
                 public void onResponse(String response) {
                 }
             });
@@ -423,48 +530,9 @@ public class SwingConsoleController {
 
     }
 
-    public synchronized void stopTest(boolean reseltModel) {
-
-        if (model.isTestRunning()) {
-            model.getTestRunning().set(false);
-
-            // Decouple from agent updates
-            for (ReflectionDispatchMessageListener reflectionDispatchMessageListener : dispatchingListeners.keySet()) {
-                KryoClient client = dispatchingListeners.get(reflectionDispatchMessageListener);
-                client.removeMessageListener(reflectionDispatchMessageListener);
-            }
-
-            // Send the stop messages
-            for (final AgentModel agentModel : model.getAgentModels()) {
-                KryoClient client = agentModel.getKryoClient();
-                if (client != null) {
-                    client.sendRequest("agent", new com.jbombardier.common.StopTestRequest(), new ResponseHandler<com.jbombardier.common.StopTestResponse>() {
-                        public void onResponse(com.jbombardier.common.StopTestResponse response) {
-                            model.getTestRunning().set(false);
-                        }
-                    });
-                }
-            }
-
-            if (agentPingTimer != null) {
-                agentPingTimer.cancel();
-                agentPingTimer = null;
-            }
-
-            stopStatisticsCapture();
-            resultsController.closeStreamingFiles();
-            resultsController.stopStatsUpdater();
-
-            if (reseltModel) {
-                model.reset();
-            }
-            logger.info("Test has been stopped");
-        }
-    }
-
-    public boolean isSendCloseMessageOnWindowClose() {
-        return sendCloseMessageOnWindowClose;
-    }
+    //    public boolean isSendCloseMessageOnWindowClose() {
+    //        return sendCloseMessageOnWindowClose;
+    //    }
 
     public void killAgents() {
 
@@ -472,7 +540,18 @@ public class SwingConsoleController {
             KryoClient client = agentModel.getKryoClient();
             if (client.isConnected()) {
                 logger.info("Sending kill message to agent {}", client);
-                client.send("agent", new com.jbombardier.common.AgentKillInstruction(2));
+                client.send("agent", new AgentKillInstruction(2));
+            }
+        }
+
+    }
+
+    private void closeAgentConnections() {
+
+        for (final AgentModel agentModel : model.getAgentModels()) {
+            KryoClient client = agentModel.getKryoClient();
+            if (client.isConnected()) {
+                client.stop();
             }
         }
 
@@ -480,96 +559,16 @@ public class SwingConsoleController {
 
     public void killAgentsAndReset() {
         killAgents();
-        stopTest(true);
+        endTestAbnormally();
     }
 
-    /**
-     * Load everything, create agent connections etc
-     */
-    public void initialise(InteractiveConfiguration configuration, final ConsoleModel model) {
-        this.configuration = configuration;
-
-        resultsController = new ResultsController(new File(configuration.getReportsFolder()));
-
-        this.outputControllerStats = configuration.isOutputControllerStats();
-
-        memoryMonitorWorkerThread = MemorySnapshot.runMonitorToLogging(90, new LowMemoryNotificationHandler() {
-            @Override public void onLowMemory(float percentage, int consecutive) {
-                if (consecutive >= 2) {
-                    handleLowMemory();
-                }
-            }
-        });
-
-        initialiseStats();
-
-        logger.debug("Initialising controller");
-        setModel(model);
-        logger.info("Initialising agents...");
-        initialiseAgents(configuration, model);
-        logger.info("Initialising tests...");
-        initialiseTests(configuration, model);
-        logger.info("Initialising properties...");
-        initialiseProperties(configuration, model);
-        logger.info("Initialising statistics capture...");
-        initialiseStatisticsCapture(configuration, model);
-
-
-        model.setNoResultsTimeout((int) (configuration.getNoResultsTimeout() / 1000));
-        model.setTestName(configuration.getTestName());
-        model.setFailedTransactionCountFailureThreshold(configuration.getFailedTransactionCountFailureThreshold());
-        model.setMaximumConsoleEntries(configuration.getMaximumConsoleEntries());
-
-        autostartAgents = configuration.getAutostartAgents();
-        sendCloseMessageOnWindowClose = configuration.isSendKillOnConsoleClose();
-        resultsController.setMaximumResultsPerKey(configuration.getMaximumResultToStore());
-
-        // Attach a listener to pickup changes to the transaction rate modifier
-        // changer
-        model.addPropertyChangeListener("transactionRateModifier", new PropertyChangeListener() {
-            public void propertyChange(PropertyChangeEvent evt) {
-                updateTransactionRateModifier(model.getTransactionRateModifier());
-            }
-        });
-
-        // Fire up the embedded telemetry hub
-        //        if (configuration.getTelemetryHubPort() != -1) {
-        //            TelemetryHub hub = new TelemetryHub();
-        //            hub.start(configuration.getTelemetryHubPort());
-        //        }
-
-        // Connect a telemetry listener to our built in telemetry hub - we can
-        // ask the agents to connect to this once they connect
-        //        TelemetryListener listener = new TelemetryListener();
-        //        listener.start("localhost", configuration.getTelemetryHubPort(), new TelemetryInterface() {
-        //            @Override public void publishTelemetry(DataStructure dataStructure) {
-        //                model.update(dataStructure);
-        //            }
-        //        });
-
-        // If the configuration wants us to, we can connect out to another
-        // telemetry hub to pull in stats for other machines and processes as
-        // well
-        //        String externalTelemetry = configuration.getExternalTelemetryHub();
-        //        if (externalTelemetry != null) {
-        //            listener = new TelemetryListener();
-        //            listener.start(externalTelemetry, new TelemetryInterface() {
-        //                @Override public void publishTelemetry(DataStructure dataStructure) {
-        //                    model.update(dataStructure);
-        //                }
-        //            });
-        //        }
-
-        logger.info("Initialision complete.");
-
-    }
-
-    private void initialiseStatisticsCapture(InteractiveConfiguration configuration, ConsoleModel model) {
+    private void initialiseStatisticsCapture(JBombardierConfiguration configuration, JBombardierModel model) {
+        logger.debug("Initialising statistics capture...");
 
         List<StatisticsCapture> statisticsCapture = configuration.getStatisticsCapture();
         for (StatisticsCapture capture : statisticsCapture) {
             String className = capture.getClassName();
-            com.jbombardier.common.StatisticProvider capturePlugin = ReflectionUtils.newInstance(className);
+            StatisticProvider capturePlugin = ReflectionUtils.newInstance(className);
             Metadata properties = Metadata.fromProperties(capture.getProperties());
             capturePlugin.configure(properties);
 
@@ -595,7 +594,6 @@ public class SwingConsoleController {
                 pattern.path = capturePattern.getPath();
                 pattern.pattern = capturePattern.getPattern();
                 pattern.values = capturePattern.getValues();
-
 
 
                 loggingHubStatisticCapture.getCapturePatterns().add(pattern);
@@ -666,7 +664,9 @@ public class SwingConsoleController {
         classloaderRequestsStat.setIncremental(true);
     }
 
-    public void initialiseProperties(InteractiveConfiguration configuration, ConsoleModel model) {
+    public void initialiseProperties(JBombardierConfiguration configuration, JBombardierModel model) {
+        logger.debug("Initialising properties...");
+
         synchronized (properties) {
             List<Property> variables = configuration.getProperties();
             for (Property variable : variables) {
@@ -687,14 +687,14 @@ public class SwingConsoleController {
                 // AgentPropertyEntryRequests
                 // TODO : this might be considered legacy now!
                 String csvfile = csvProperty.getCsvfile();
-                com.jbombardier.common.CsvPropertiesProvider provider = new com.jbombardier.common.CsvPropertiesProvider(csvfile);
+                CsvPropertiesProvider provider = new CsvPropertiesProvider(csvfile);
                 csvPropertyProviders.put(csvProperty.getName(), provider);
 
-                logger.info("Loading {} data from {}", csvProperty.getName(), csvfile);
+                logger.debug("Loading {} data from {}", csvProperty.getName(), csvfile);
 
                 // Also process the config information into DataSources
                 DataSource dataSource = new DataSource(csvProperty.getName(),
-                                                       com.jbombardier.common.DataStrategy.valueOf(csvProperty.getStrategy()));
+                                                       DataStrategy.valueOf(csvProperty.getStrategy()));
 
                 DataSource existingDataSource = alreadyLoaded.get(csvfile);
                 if (existingDataSource != null) {
@@ -733,7 +733,9 @@ public class SwingConsoleController {
         }
     }
 
-    private void initialiseTests(InteractiveConfiguration configuration, ConsoleModel model) {
+    private void initialiseTests(JBombardierConfiguration configuration, JBombardierModel model) {
+        logger.debug("Initialising tests...");
+
         List<TestConfiguration> tests = configuration.getTests();
         for (TestConfiguration testConfiguration : tests) {
 
@@ -763,7 +765,9 @@ public class SwingConsoleController {
         assertTestClassesAreValid(model.getTestModels());
     }
 
-    private void initialiseAgents(final InteractiveConfiguration configuration, ConsoleModel model) {
+    private void initialiseAgents(final JBombardierConfiguration configuration, JBombardierModel model) {
+        logger.info("Starting agent connections...");
+
         List<Agent> agents = configuration.getAgents();
         for (Agent agent : agents) {
 
@@ -788,6 +792,8 @@ public class SwingConsoleController {
                 embeddedAgent.setBindPort(freePort);
                 embeddedAgent.setPingTimeout(agent.getPingTimeout());
                 embeddedAgent.start();
+                embeddedAgents.add(embeddedAgent);
+
                 agentModel.setAddress("localhost");
                 agentModel.setPort(freePort);
             } else {
@@ -815,7 +821,7 @@ public class SwingConsoleController {
                     agentModel.setConnected(true);
 
                     client.sendRequest("agent",
-                                       new com.jbombardier.common.SendTelemetryRequest(NetUtils.getLocalIP(),
+                                       new SendTelemetryRequest(NetUtils.getLocalIP(),
                                                                 configuration.getTelemetryHubPort()),
                                        new ResponseHandler<String>() {
                                            public void onResponse(String response) {
@@ -824,7 +830,7 @@ public class SwingConsoleController {
                                        });
 
                     attachReflectionDispatcher(client);
-                    checkForAutostart();
+                    //                    checkForAutostart();
                 }
             });
 
@@ -851,15 +857,18 @@ public class SwingConsoleController {
         return model.getAgentsByAgentName();
     }
 
-    protected synchronized void checkForAutostart() {
-        if (!model.isTestRunning()) {
-            if (autostartAgents > 0 && getConnectedAgents().size() >= autostartAgents) {
-                startTest();
-            }
-        }
-    }
+    // TODO : this is a gui thing. It should really be done via listeners in the gui. The headless mode already has it sorted.
+    // TODO : our new design philosohpy is that the controller is dumb - it needs to be driven by something else with a purpose in mind.
+    //    protected synchronized void checkForAutostart() {
+    //        if (!model.isTestRunning()) {
+    //            int autostartAgents = configuration.getAutostartAgents();
+    //            if (autostartAgents > 0 && model.getConnectionAgentCount() >= autostartAgents) {
+    //                publishTestInstructionsAndStartRunning();
+    //            }
+    //        }
+    //    }
 
-    public com.jbombardier.common.AgentClassResponse handleClassRequest(com.jbombardier.common.AgentClassRequest acr) {
+    public AgentClassResponse handleClassRequest(AgentClassRequest acr) {
         logger.debug("Agent class request : {}", acr);
         classloaderRequestsStat.increment();
 
@@ -870,7 +879,7 @@ public class SwingConsoleController {
             data = resolver.getResourceBytes(acr.getClassName());
         }
 
-        com.jbombardier.common.AgentClassResponse agentClassResponse = new com.jbombardier.common.AgentClassResponse();
+        AgentClassResponse agentClassResponse = new AgentClassResponse();
         agentClassResponse.setData(data);
 
         logger.debug("Sent {} bytes back to agent for class {}", data.length, acr.getClassName());
@@ -879,9 +888,9 @@ public class SwingConsoleController {
     }
 
     protected void updateTransactionRateModifier(double transactionRateModifier) {
-        com.jbombardier.common.TestVariableUpdateRequest request = new com.jbombardier.common.TestVariableUpdateRequest();
+        TestVariableUpdateRequest request = new TestVariableUpdateRequest();
         request.setTestName("");
-        request.setField(com.jbombardier.common.TestField.transactionRateModifier);
+        request.setField(TestField.transactionRateModifier);
         request.setValue(transactionRateModifier);
         for (final AgentModel agentModel : model.getAgentModels()) {
             KryoClient client = agentModel.getKryoClient();
@@ -893,9 +902,9 @@ public class SwingConsoleController {
         }
     }
 
-    public void updateTestVariable(final String testName, final com.jbombardier.common.TestField field, final Object newValue) {
+    public void updateTestVariable(final String testName, final TestField field, final Object newValue) {
 
-        com.jbombardier.common.TestVariableUpdateRequest request = new com.jbombardier.common.TestVariableUpdateRequest();
+        TestVariableUpdateRequest request = new TestVariableUpdateRequest();
         request.setTestName(testName);
         request.setField(field);
         request.setValue(newValue);
@@ -934,14 +943,14 @@ public class SwingConsoleController {
         }
     }
 
-    private void publishTestInstructionsToAgents(List<com.jbombardier.common.TestInstruction> instructions,
-                                                 FactoryMap<String, FactoryMap<String, com.jbombardier.common.DataBucket>> dataBucketsByAgentName) {
+    private void publishTestInstructionsToAgents(List<TestInstruction> instructions,
+                                                 FactoryMap<String, FactoryMap<String, DataBucket>> dataBucketsByAgentName) {
         int agentsInTest = 0;
         for (final AgentModel agentModel : model.getAgentModels()) {
             logger.info("Publishing data buckets to agent {}", agentModel);
             if (agentModel.isConnected()) {
 
-                FactoryMap<String, com.jbombardier.common.DataBucket> data = dataBucketsByAgentName.get(agentModel.getName());
+                FactoryMap<String, DataBucket> data = dataBucketsByAgentName.get(agentModel.getName());
                 logger.debug("This agent has a data bucket with {} keys and {} items", data.size(), countItems(data));
 
                 KryoClient client = agentModel.getKryoClient();
@@ -952,19 +961,25 @@ public class SwingConsoleController {
                 // size
                 for (String dataBucketName : keySet) {
 
-                    final com.jbombardier.common.DataBucket dataBucket = data.get(dataBucketName);
+                    final DataBucket dataBucket = data.get(dataBucketName);
 
                     logger.debug("Sending bucket {}", dataBucket);
 
                     final QuietLatch latch = new QuietLatch(1);
                     client.sendRequest("agent", dataBucket, new ResponseHandler<String>() {
                         public void onResponse(String response) {
-                            logger.info("Agent {} has received data bucket {}", agentModel, dataBucket);
                             latch.countDown();
                         }
                     });
 
-                    latch.await();
+                    boolean wasReceived = latch.await();
+                    if (!wasReceived) {
+                        logger.warn(
+                                "The data bucket wasn't received by agent {} within the wait period, the console can't be sure the agent is ready to start",
+                                agentModel);
+                    } else {
+                        logger.info("Agent {} has received data bucket {}", agentModel, dataBucket);
+                    }
                 }
             }
         }
@@ -974,7 +989,7 @@ public class SwingConsoleController {
             KryoClient client = agentModel.getKryoClient();
             if (agentModel.isConnected()) {
 
-                com.jbombardier.common.TestPackage testPackage = new com.jbombardier.common.TestPackage(agentModel.getName(), instructions);
+                TestPackage testPackage = new TestPackage(agentModel.getName(), instructions);
                 testPackage.setLoggingHubs(configuration.getLoggingHubs());
                 testPackage.setLoggingType(configuration.getLoggingTypes());
 
@@ -1009,13 +1024,13 @@ public class SwingConsoleController {
         client.addMessageListener(messageListener);
     }
 
-    private int countItems(FactoryMap<String, com.jbombardier.common.DataBucket> data) {
+    private int countItems(FactoryMap<String, DataBucket> data) {
 
         int count = 0;
         Set<String> keySet = data.keySet();
         for (String string : keySet) {
-            com.jbombardier.common.DataBucket dataBucket = data.get(string);
-            if (dataBucket.getStrategy() == com.jbombardier.common.DataStrategy.fixedThread) {
+            DataBucket dataBucket = data.get(string);
+            if (dataBucket.getStrategy() == DataStrategy.fixedThread) {
                 // This strategy doesn't send anything...
             } else {
                 count += dataBucket.getValues().size();
@@ -1025,9 +1040,9 @@ public class SwingConsoleController {
         return count;
     }
 
-    private void populateTestInstructionsList(List<com.jbombardier.common.TestInstruction> instructions, List<TestModel> tests) {
+    private void populateTestInstructionsList(List<TestInstruction> instructions, List<TestModel> tests) {
         for (TestModel test : tests) {
-            com.jbombardier.common.TestInstruction instruction = new com.jbombardier.common.TestInstruction();
+            TestInstruction instruction = new TestInstruction();
             instruction.setTestName(test.getName());
             instruction.setClassname(test.getClassname());
             instruction.setTargetThreads(test.getTargetThreads());
@@ -1088,10 +1103,8 @@ public class SwingConsoleController {
                 return null;
             }
 
-            @Override public boolean invalidSetMethod(Context context,
-                                                      String leftreference,
-                                                      String rightreference,
-                                                      Info info) {
+            @Override
+            public boolean invalidSetMethod(Context context, String leftreference, String rightreference, Info info) {
                 errors.appendLine("Invalid set method : leftReference {} rightReference {} info {}",
                                   leftreference,
                                   rightreference,
@@ -1100,11 +1113,8 @@ public class SwingConsoleController {
 
             }
 
-            @Override public Object invalidMethod(Context context,
-                                                  String reference,
-                                                  Object object,
-                                                  String method,
-                                                  Info info) {
+            @Override
+            public Object invalidMethod(Context context, String reference, Object object, String method, Info info) {
                 // This mean quiet references dont trigger errors - this is used
                 // for things like null checks
                 if (!reference.startsWith("$!")) {
@@ -1139,7 +1149,9 @@ public class SwingConsoleController {
         context.put("math", utils);
         context.put("utils", utils);
 
-        reportsPath.mkdirs();
+        final File reportsFolder = getReportsFolder();
+
+        reportsFolder.mkdirs();
 
         // Do the json report first
         final List<CapturedStatistic> capturedStatistics = new ArrayList<CapturedStatistic>();
@@ -1152,12 +1164,12 @@ public class SwingConsoleController {
         outputJSONResults(results, capturedStatistics);
 
         // Create each of the pages
-        File output = new File(reportsPath, "output.html");
+        File output = new File(reportsFolder, "output.html");
         process(ve, context, "/velocity/index.vm", output);
-        process(ve, context, "/velocity/csv.vm", new File(reportsPath, "output.csv"));
+        process(ve, context, "/velocity/csv.vm", new File(reportsFolder, "output.csv"));
 
         // New approach (not using velocity) for the captured statistics
-        File statisticsCaptureOutput = new File(reportsPath, "capture.html");
+        File statisticsCaptureOutput = new File(reportsFolder, "capture.html");
         createStatisticsCaptureFile(statisticsCaptureOutput, resultsController);
 
         ExecutorService pool = Executors.newFixedThreadPool(1);
@@ -1166,23 +1178,23 @@ public class SwingConsoleController {
         Collection<TransactionResultModel> values = results.values();
         for (final TransactionResultModel transactionResultModel : values) {
             context.put("test", transactionResultModel);
-            final File testoutput = new File(reportsPath, transactionResultModel.getKey() + ".html");
+            final File testoutput = new File(reportsFolder, transactionResultModel.getKey() + ".html");
 
             process(ve, context, "/velocity/testdetails.vm", testoutput);
 
             if (queueCharts) {
                 pool.execute(new Runnable() {
                     public void run() {
-                        saveFrequencyChart(transactionResultModel, resultsController, reportsPath);
+                        saveFrequencyChart(transactionResultModel, resultsController, reportsFolder);
                     }
                 });
             } else {
-                saveFrequencyChart(transactionResultModel, resultsController, reportsPath);
+                saveFrequencyChart(transactionResultModel, resultsController, reportsFolder);
             }
         }
 
         // Copy the css file over
-        File cssFile = new File(reportsPath, "report.css");
+        File cssFile = new File(reportsFolder, "report.css");
         FileUtils.copy(ResourceUtils.openStream("velocity/report.css"), cssFile);
 
         if (openInBrowser) {
@@ -1195,6 +1207,8 @@ public class SwingConsoleController {
 
         return errors.toString();
     }
+
+    private File getReportsFolder() {return new File(configuration.getReportsFolder());}
 
     private void createStatisticsCaptureFile(File statisticsCaptureOutput, ResultsController resultsController) {
         HTMLBuilder2 builder = new HTMLBuilder2();
@@ -1224,11 +1238,11 @@ public class SwingConsoleController {
         outputJSONResults(result);
     }
 
-    public void outputJSONResults(TestRunResult result ) {
+    public void outputJSONResults(TestRunResult result) {
 
         JSONHelper helper = new JSONHelper();
         String json = helper.toJSON(result);
-        File jsonResultFile = getJSONResultsFile(reportsPath, model.getTestName(), model.getTestStartTime());
+        File jsonResultFile = getJSONResultsFile(getReportsFolder(), model.getTestName(), model.getTestStartTime());
         FileUtils.write(json, jsonResultFile);
         logger.info("JSON results written to '{}'", jsonResultFile.getAbsolutePath());
 
@@ -1292,30 +1306,30 @@ public class SwingConsoleController {
         model.resetStats();
     }
 
-    public List<com.jbombardier.common.TestInstruction> getTestInstructionsList() {
-        List<com.jbombardier.common.TestInstruction> instructions = new ArrayList<com.jbombardier.common.TestInstruction>();
+    public List<TestInstruction> getTestInstructionsList() {
+        List<TestInstruction> instructions = new ArrayList<TestInstruction>();
         populateTestInstructionsList(instructions, model.getTestModels());
         return instructions;
     }
 
-    public void setReportsPath(File reportsPath) {
-        this.reportsPath = reportsPath;
-    }
+    //    public void setReportsPath(File reportsPath) {
+    //        this.reportsPath = reportsPath;
+    //    }
 
-    public int getAutostartAgents() {
-        return autostartAgents;
-    }
-
-    public void setAutostartAgents(int autostartAgents) {
-        this.autostartAgents = autostartAgents;
-    }
+    //    public int getAutostartAgents() {
+    //        return autostartAgents;
+    //    }
+    //
+    //    public void setAutostartAgents(int autostartAgents) {
+    //        this.autostartAgents = autostartAgents;
+    //    }
 
     public ResultsController getResultsController() {
         return resultsController;
     }
 
     public void startStats() {
-        if (outputControllerStats) {
+        if (configuration.isOutputControllerStats()) {
             statBundle.startPerSecond(logger);
         }
     }
@@ -1345,25 +1359,157 @@ public class SwingConsoleController {
         }
     }
 
-    public void stop() {
-        if (memoryMonitorWorkerThread != null) {
-            memoryMonitorWorkerThread.stop();
-            memoryMonitorWorkerThread = null;
-        }
-    }
-
     public void startStatisticsCapture() {
-        List<com.jbombardier.common.StatisticProvider> statisticsProviders = model.getStatisticsProviders();
-        for (com.jbombardier.common.StatisticProvider statisticsProvider : statisticsProviders) {
+        List<StatisticProvider> statisticsProviders = model.getStatisticsProviders();
+        for (StatisticProvider statisticsProvider : statisticsProviders) {
             statisticsProvider.start();
         }
     }
 
     public void stopStatisticsCapture() {
         resultsController.closeStreamingFiles();
-        List<com.jbombardier.common.StatisticProvider> statisticsProviders = model.getStatisticsProviders();
-        for (com.jbombardier.common.StatisticProvider statisticsProvider : statisticsProviders) {
+        List<StatisticProvider> statisticsProviders = model.getStatisticsProviders();
+        for (StatisticProvider statisticsProvider : statisticsProviders) {
             statisticsProvider.stop();
+        }
+    }
+
+    public void endWarmup() {
+
+    }
+
+    public void endWarmupAndStartMainTest() {
+
+    }
+
+    public synchronized void endTestNormally() {
+
+        if (state != State.TestRunning) {
+            throw new IllegalStateException(StringUtils.format(
+                    "The controller state is '{}' - you can't end a test normally from there",
+                    state));
+        }
+
+        regularStop();
+
+        logger.info("Test has been stopped normally");
+        state = State.Completed;
+    }
+
+    private void decoupleFromAgentUpdates() {
+        for (ReflectionDispatchMessageListener reflectionDispatchMessageListener : dispatchingListeners.keySet()) {
+            KryoClient client = dispatchingListeners.get(reflectionDispatchMessageListener);
+            client.removeMessageListener(reflectionDispatchMessageListener);
+            reflectionDispatchMessageListener.stop();
+        }
+    }
+
+    public synchronized void endTestAbnormally() {
+
+        if (state != State.TestRunning) {
+            throw new IllegalStateException(StringUtils.format(
+                    "The controller state is '{}' - you can't end a test from there",
+                    state));
+        }
+
+        regularStop();
+
+        model.reset();
+
+        logger.info("Test has been stopped abnormally");
+        state = State.Stopped;
+    }
+
+    private void regularStop() {
+        model.getTestRunning().set(false);
+
+        decoupleFromAgentUpdates();
+        sendAgentStopMessages();
+        killAgentPingTimer();
+
+        stopStatisticsCapture();
+        resultsController.closeStreamingFiles();
+        resultsController.stopStatsUpdater();
+
+        closeAgentConnections();
+        killEmbeddedAgents();
+        killMemoryMonitor();
+
+    }
+
+    private void killMemoryMonitor() {
+        if (memoryMonitorWorkerThread != null) {
+            memoryMonitorWorkerThread.stop();
+            memoryMonitorWorkerThread = null;
+        }
+    }
+
+    private void killEmbeddedAgents() {
+        for (Agent2 embeddedAgent : embeddedAgents) {
+            embeddedAgent.stop();
+        }
+    }
+
+    private void killAgentPingTimer() {
+        if (agentPingTimer != null) {
+            agentPingTimer.cancel();
+            agentPingTimer = null;
+        }
+    }
+
+    private void sendAgentStopMessages() {// Send the stop messages
+        for (final AgentModel agentModel : model.getAgentModels()) {
+            KryoClient client = agentModel.getKryoClient();
+            if (client != null) {
+                client.sendRequest("agent", new StopTestRequest(), new ResponseHandler<StopTestResponse>() {
+                    public void onResponse(StopTestResponse response) {
+                        model.getTestRunning().set(false);
+                    }
+                });
+            }
+        }
+    }
+
+    public void startWarmUp() {
+        state = State.Warmup;
+    }
+
+    public void startMainTest() {
+        resetStats();
+        state = State.TestRunning;
+
+        List<PhaseConfiguration> phases = configuration.getPhases();
+        if (phases.size() > 0) {
+            phaseIterator = phases.iterator();
+            currentPhase = phaseIterator.next();
+        } else {
+            phaseIterator = null;
+        }
+
+    }
+
+    public String getCurrentPhaseName() {
+        String phaseName;
+        if (currentPhase != null) {
+            phaseName = currentPhase.getPhaseName();
+        } else {
+            phaseName = null;
+        }
+
+        return phaseName;
+    }
+
+    public void phaseComplete() {
+
+        logger.info("Phase '{}' complete, progressing test...", getCurrentPhaseName());
+
+        if (phaseIterator.hasNext()) {
+            currentPhase = phaseIterator.next();
+            logger.info("Starting new phase '{}'", getCurrentPhaseName());
+
+        } else {
+            logger.info("All phases completed, ending test normally");
+            endTestNormally();
         }
     }
 }

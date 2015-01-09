@@ -23,23 +23,25 @@ import java.util.List;
 
 import javax.swing.UIManager;
 
-import com.jbombardier.console.SwingConsole;
-import com.jbombardier.console.ConsoleModel;
+import com.jbombardier.console.JBombardierSwingConsole;
+import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.model.TestModel;
 import com.jbombardier.console.panels.SwingConsoleMainPanel;
 import com.logginghub.utils.Pair;
 import com.logginghub.utils.swing.MainFrame;
 import com.jbombardier.common.TestFactory;
-import com.jbombardier.console.SwingConsoleController;
+import com.jbombardier.console.JBombardierController;
 
 public class EmbeddedPerformanceTest {
 
     private List<Pair<String, TestFactory>> testFactories = new ArrayList<Pair<String, TestFactory>>();
     
-    private ConsoleModel model;
+    private JBombardierModel model;
     private MainFrame frame;
-    private SwingConsoleController controller;
-//    private InteractiveConfiguration configuration;
+    private JBombardierController controller;
+    private JBombardierConfiguration configuration;
+    //    private InteractiveConfiguration configuration;
     
 
     public void addTestFactory(String name, TestFactory testFactory) {
@@ -57,8 +59,9 @@ public class EmbeddedPerformanceTest {
     
     public void start() {
 
-        model = new ConsoleModel();
-        controller = new SwingConsoleController();
+        model = new JBombardierModel();
+        configuration = new JBombardierConfiguration();
+        controller = new JBombardierController(model, configuration);
         
         for (Pair<String, TestFactory> pair : testFactories) {
             TestModel testModel = new TestModel();
@@ -82,9 +85,8 @@ public class EmbeddedPerformanceTest {
         frame = new MainFrame("jbombardier - Interactive Console") {
             public void windowClosing(WindowEvent e) {
                 controller.stopTelemetry();
-
-                if (controller.isSendCloseMessageOnWindowClose()) {
-                    controller.stopTest(true);
+                if (configuration.isSendKillOnConsoleClose()) {
+                    controller.endTestAbnormally();
                 }
             };
         };
@@ -112,14 +114,14 @@ public class EmbeddedPerformanceTest {
     }
 
     public static void runWithAutostart(String configPath, int autostartAgents) {
-        SwingConsole.main(new String[]{configPath, "" + autostartAgents});
+        JBombardierSwingConsole.main(new String[]{configPath, "" + autostartAgents});
     }
 
     public static void run(String configPath) {
-        SwingConsole.main(new String[]{configPath});
+        JBombardierSwingConsole.main(new String[]{configPath});
     }
 
-    public SwingConsoleController getController() {
+    public JBombardierController getController() {
         return controller;
     }
 

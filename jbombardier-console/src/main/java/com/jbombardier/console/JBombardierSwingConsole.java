@@ -23,7 +23,7 @@ import java.awt.event.WindowEvent;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
-import com.jbombardier.console.configuration.InteractiveConfiguration;
+import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.panels.SwingConsoleMainPanel;
 import com.logginghub.utils.MainUtils;
 import com.logginghub.utils.NetUtils;
@@ -32,14 +32,14 @@ import com.logginghub.utils.ReflectionUtils;
 import com.logginghub.utils.logging.SystemErrStream;
 import com.logginghub.utils.swing.VLFrame;
 
-public class SwingConsole {
+public class JBombardierSwingConsole {
 
     // private String configurationFile =
     // "/com/jbombardier/interactive/configuration/sample_configuration.xml";
-    private ConsoleModel model;
+    private JBombardierModel model;
     private VLFrame frame;
-    private SwingConsoleController controller;
-    private InteractiveConfiguration configuration;
+    private JBombardierController controller;
+    private JBombardierConfiguration configuration;
 
     public void initialise() {
 
@@ -59,9 +59,9 @@ public class SwingConsole {
             configuration.setTelemetryHubPort(findFreePort);
         }
 
-        model = new ConsoleModel();
-        controller = new SwingConsoleController();
-        controller.initialise(configuration, model);
+        model = new JBombardierModel();
+        controller = new JBombardierController(model, configuration);
+
     }
 
     private void start() {
@@ -82,8 +82,8 @@ public class SwingConsole {
         frame.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
                 controller.stopTelemetry();
-                if (controller.isSendCloseMessageOnWindowClose()) {
-                    controller.stopTest(true);
+                if (configuration.isSendKillOnConsoleClose()) {
+                    controller.endTestAbnormally();
                     controller.killAgents();
                 }
             };
@@ -104,14 +104,14 @@ public class SwingConsole {
     }
 
     public static void runWithAutostart(String configPath, int autostartAgents) {
-        SwingConsole.main(new String[]{configPath, "" + autostartAgents});
+        JBombardierSwingConsole.main(new String[]{configPath, "" + autostartAgents});
     }
 
     public static void run(String configPath) {
-        SwingConsole.main(new String[]{configPath});
+        JBombardierSwingConsole.main(new String[]{configPath});
     }
 
-    public SwingConsoleController getController() {
+    public JBombardierController getController() {
         return controller;
     }
 
@@ -126,10 +126,10 @@ public class SwingConsole {
         }
     }
 
-    public static SwingConsole run(String configurationFilePath, int autostartAgents) {
+    public static JBombardierSwingConsole run(String configurationFilePath, int autostartAgents) {
         SystemErrStream.gapThreshold = 1500;
 
-        SwingConsole swingConsole = new SwingConsole();
+        JBombardierSwingConsole swingConsole = new JBombardierSwingConsole();
 
         swingConsole.loadConfigurationFile(configurationFilePath);
         swingConsole.getConfiguration().setAutostartAgents(autostartAgents);
@@ -140,16 +140,16 @@ public class SwingConsole {
         return swingConsole;
     }
 
-    public InteractiveConfiguration getConfiguration() {
+    public JBombardierConfiguration getConfiguration() {
         return configuration;
     }
 
-    private void setConfiguration(InteractiveConfiguration configuration) {
+    private void setConfiguration(JBombardierConfiguration configuration) {
         this.configuration = configuration;
     }
 
-    public static SwingConsole run(InteractiveConfiguration configuration) {
-        SwingConsole swingConsole = new SwingConsole();
+    public static JBombardierSwingConsole run(JBombardierConfiguration configuration) {
+        JBombardierSwingConsole swingConsole = new JBombardierSwingConsole();
         swingConsole.setConfiguration(configuration);
         swingConsole.initialise();
         swingConsole.start();
@@ -157,7 +157,7 @@ public class SwingConsole {
     }
 
     public void loadConfigurationFile(String string) {
-        InteractiveConfiguration configuration = InteractiveConfiguration.loadConfiguration(string);
+        JBombardierConfiguration configuration = JBombardierConfiguration.loadConfiguration(string);
         setConfiguration(configuration);
     }
 

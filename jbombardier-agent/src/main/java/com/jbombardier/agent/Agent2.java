@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.logging.ConsoleHandler;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -70,7 +71,7 @@ import com.jbombardier.agent.ThreadController.ThreadControllerListener;
 
 public class Agent2 implements Asynchronous {
 
-    private ExecutorService executorService = Executors.newCachedThreadPool();
+    private ExecutorService executorService = Executors.newCachedThreadPool(new NamedThreadFactory("Agent2-worker-"));
     private final List<ThreadController> threadControllers = new ArrayList<ThreadController>();
     private Map<String, ThreadController> threadControllersByTestName = new HashMap<String, ThreadController>();
     private KryoHub hub;
@@ -103,20 +104,37 @@ public class Agent2 implements Asynchronous {
     private IntegerStat pingsStat;
     private boolean outputStats = !EnvironmentProperties.getBoolean("jbombardierAgent.disableStats");
     private String name;
+    private ReflectionDispatchMessageListener reflectionDispatchMessageListener;
 
     public void stop() {
         stopTest();
         if(hub != null) {
             hub.stop();
+            hub = null;
         }
 
         if(statsTimer != null) {
             statsTimer.cancel();
+            statsTimer = null;
         }
 
         if(statBundle != null) {
             statBundle.stop();
+            statBundle = null;
         }
+
+        if(localClient != null) {
+            localClient.disconnect();
+            localClient.stop();
+            localClient = null;
+        }
+
+        if(reflectionDispatchMessageListener != null) {
+            reflectionDispatchMessageListener.stop();
+            reflectionDispatchMessageListener = null;
+        }
+
+        executorService.shutdownNow();
     }
 
     public void setName(String name) {
@@ -185,6 +203,7 @@ public class Agent2 implements Asynchronous {
             hub = new KryoHub(classRegisterer);
         }
 
+
         hub.addGlobalMessageListener(new MessageListener() {
             public void onNewMessage(Message message) {
                 logger.debug("Message received : {}", message);
@@ -192,7 +211,8 @@ public class Agent2 implements Asynchronous {
 
         });
 
-        hub.connect("agent", new ReflectionDispatchMessageListener("agent", hub, this));
+        reflectionDispatchMessageListener = new ReflectionDispatchMessageListener("agent", hub, this);
+        hub.connect("agent", reflectionDispatchMessageListener);
         hub.start(bindPort);
 
         statBundle.addStats(hub.getConnectionsCountStat(), hub.getConnectionsStat(), hub.getDisconnectionsStat(), hub.getMessagesReceivedStat(), hub.getMessagesSentStat());

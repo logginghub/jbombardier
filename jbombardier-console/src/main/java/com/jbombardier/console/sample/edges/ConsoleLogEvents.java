@@ -18,7 +18,7 @@ package com.jbombardier.console.sample.edges;
 
 import com.jbombardier.common.PerformanceTestAdaptor;
 import com.jbombardier.common.TestContext;
-import com.jbombardier.console.configuration.ConfigurationBuilder;
+import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
 
 public class ConsoleLogEvents extends PerformanceTestAdaptor {
 
@@ -27,8 +27,8 @@ public class ConsoleLogEvents extends PerformanceTestAdaptor {
     }
 
     public static void main(String[] args) {
-        ConfigurationBuilder.builder().testName("ConsoleLogEvents")
-                 .addTest(ConfigurationBuilder.test(ConsoleLogEvents.class).name("Logging").targetRate(20).rateStep(10).recordAllValues(false))
+        JBombardierConfigurationBuilder.configurationBuilder().testName("ConsoleLogEvents")
+                 .addTest(JBombardierConfigurationBuilder.test(ConsoleLogEvents.class).name("Logging").targetRate(20).rateStep(10).recordAllValues(false))
                  .addEmbeddedAgent(10 * 1024 * 1024, 30000)
                  .maximumConsoleEntries(5000)
                  .autostart(1)

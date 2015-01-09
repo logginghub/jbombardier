@@ -17,7 +17,7 @@
 package com.jbombardier.integration.headless;
 
 import com.jbombardier.agent.Agent2;
-import com.jbombardier.console.configuration.ConfigurationBuilder;
+import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
 import com.jbombardier.console.sample.SleepTest;
 import com.jbombardier.repository.JBombardierRepositoryLauncher;
 import com.logginghub.utils.Out;
@@ -38,12 +38,12 @@ public class TestHeadlessBasics extends JBombardierTestBase {
         JBombardierRepositoryLauncher repository = dsl.createRepository();
         Out.out("Repo server port {}", repository.getConfiguration().getServerPort());
 
-        ConfigurationBuilder.builder()
+        JBombardierConfigurationBuilder.configurationBuilder()
                                 .addAgent("Agent1", "localhost", agent.getBindPort())
-                                .addTest(ConfigurationBuilder.TestBuilder.start(SleepTest.class)
+                                .addTest(JBombardierConfigurationBuilder.TestBuilder.start(SleepTest.class)
                                                                              .targetRate(1)
                                                                              .threads(1))
-                                .warmupTime("0 seconds")
+                                .warmUpTime("0 seconds")
                                 .testDuration("5 seconds")
                                 .resultRepository("localhost", repository.getConfiguration().getServerPort())
                                 .executeHeadlessNoExit();

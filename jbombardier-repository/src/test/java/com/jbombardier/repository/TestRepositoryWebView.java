@@ -39,7 +39,6 @@ public class TestRepositoryWebView {
 
     @Test public void testIndex() throws Exception {
 
-
         RepositoryTestModel rtm = new RepositoryTestModel();
         
         TestRunResult run1 = new TestRunResult("Test1", 10);

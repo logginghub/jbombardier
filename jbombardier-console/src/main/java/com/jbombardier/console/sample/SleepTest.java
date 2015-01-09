@@ -16,7 +16,7 @@
 
 package com.jbombardier.console.sample;
 
-import com.jbombardier.console.configuration.ConfigurationBuilder;
+import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
 import com.logginghub.logging.utils.LoggingUtils;
 import com.jbombardier.common.PerformanceTestAdaptor;
 import com.jbombardier.common.TestContext;
@@ -45,10 +45,10 @@ public class SleepTest extends PerformanceTestAdaptor {
 
     public static void main(String[] args) {
         LoggingUtils.setupRemoteVLLoggingFromSystemProperties();
-        ConfigurationBuilder.builder().testName("SleepBenchmark")
-                 .addTest(ConfigurationBuilder.test(SleepTest.class).name("sleep 10@100").properties("delay=10").targetRate(100).rateStep(100).threads(10).threadStep(10))
-                 .addTest(ConfigurationBuilder.test(SleepTest.class).name("sleep 25@40").properties("delay=25").targetRate(40).rateStep(40))
-                 .addTest(ConfigurationBuilder.test(SleepTest.class).name("sleep 100@10").properties("delay=100").targetRate(10).rateStep(10))
+        JBombardierConfigurationBuilder.configurationBuilder().testName("SleepBenchmark")
+                 .addTest(JBombardierConfigurationBuilder.test(SleepTest.class).name("sleep 10@100").properties("delay=10").targetRate(100).rateStep(100).threads(10).threadStep(10))
+                 .addTest(JBombardierConfigurationBuilder.test(SleepTest.class).name("sleep 25@40").properties("delay=25").targetRate(40).rateStep(40))
+                 .addTest(JBombardierConfigurationBuilder.test(SleepTest.class).name("sleep 100@10").properties("delay=100").targetRate(10).rateStep(10))
                  .addEmbeddedAgent()
 //                 .addAgent("Agent1", "localhost", VLPorts.getJBombardierAgent1Port())
 //                 .addAgent("Agent2", "localhost", VLPorts.getJBombardierAgent2Port())

@@ -16,13 +16,13 @@
 
 package com.jbombardier.console;
 
-import static com.jbombardier.console.configuration.ConfigurationBuilder.builder;
-import static com.jbombardier.console.configuration.ConfigurationBuilder.test;
-
-import com.jbombardier.console.headless.Headless;
-import com.jbombardier.console.configuration.InteractiveConfiguration;
-import com.jbombardier.console.configuration.ConfigurationBuilder;
+import com.jbombardier.console.configuration.JBombardierConfiguration;
+import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
+import com.jbombardier.console.headless.JBombardierHeadless;
 import com.jbombardier.console.sample.old.BrokenRunTest;
+
+import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.configurationBuilder;
+import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.test;
 
 public class MemoryTestBed {
 
@@ -30,35 +30,38 @@ public class MemoryTestBed {
 
         int targetRate = 100000;
 
-        ConfigurationBuilder builder = builder().testName("SleepBenchmark").maximumResultsToStore(1000000);
+        JBombardierConfigurationBuilder builder = configurationBuilder().testName("SleepBenchmark").maximumResultsToStore(1000000);
 
         int tests = 20;
         for (int i = 0; i < tests; i++) {
-//            builder.addTest(test(NoopTest.class).name("Noop-" + i).targetRate(targetRate).rateStep(1000000).threads(1));
-            builder.addTest(test(BrokenRunTest.class).name("Broken-" + i).targetRate(targetRate).rateStep(1000000).threads(1));
+            //            configurationBuilder.addTest(test(NoopTest.class).name("Noop-" + i).targetRate(targetRate).rateStep(1000000).threads(1));
+            builder.addTest(test(BrokenRunTest.class).name("Broken-" + i)
+                                                     .targetRate(targetRate)
+                                                     .rateStep(1000000)
+                                                     .threads(1));
         }
 
-        InteractiveConfiguration configuration = builder.addAgent("agent1", "server", 20001, 20 * 1024 * 1024).warmupTime(1000).testDuration(1000).autostart(1).toConfiguration();
+        JBombardierConfiguration configuration = builder.addAgent("agent1", "server", 20001, 20 * 1024 * 1024)
+                                                        .warmupTime(1000)
+                                                        .testDuration(600000)
+                                                        .autostart(1)
+                                                        .reportsFolder("target/reports")
+                                                        .toConfiguration();
 
-        Headless headless = new Headless();
-        headless.setWarmupTime(1000);
-        headless.setSampleTime(600000);
+        JBombardierHeadless headless = new JBombardierHeadless();
         headless.setAgentsRequired(1);
         headless.setTimeToWaitForAgents(2000);
-        headless.setReportFolder("target/reports");
 
         try {
-            SwingConsoleController run = headless.run(configuration);
+            JBombardierController run = headless.run(configuration);
             if (run.getModel().getFailureReason() != null) {
                 System.err.println("Test failed : " + run.getModel().getFailureReason());
                 System.exit(-1);
-            }
-            else {
+            } else {
                 System.out.println("Test completed, exiting JVM...");
                 System.exit(0);
             }
-        }
-        catch (RuntimeException e) {
+        } catch (RuntimeException e) {
             e.printStackTrace();
             System.exit(1);
         }

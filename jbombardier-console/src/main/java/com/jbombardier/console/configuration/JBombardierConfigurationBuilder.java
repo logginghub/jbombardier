@@ -18,28 +18,24 @@ package com.jbombardier.console.configuration;
 
 import com.jbombardier.common.PerformanceTest;
 import com.jbombardier.common.StatisticProvider;
-import com.jbombardier.console.headless.Headless;
-import com.jbombardier.console.SwingConsole;
-import com.jbombardier.console.SwingConsoleController;
+import com.jbombardier.console.JBombardierController;
+import com.jbombardier.console.JBombardierSwingConsole;
+import com.jbombardier.console.headless.JBombardierHeadless;
 import com.jbombardier.console.model.TransactionResultModel;
 import com.logginghub.utils.JAXBConfiguration;
-import com.logginghub.utils.TimeUtils;
 
 import java.util.List;
 
-public class ConfigurationBuilder {
+public class JBombardierConfigurationBuilder {
 
-    private InteractiveConfiguration configuration = new InteractiveConfiguration();
-    private long headlessWarmupTime = 1000;
-    private long headlessTestDuration = 5000;
-    private String headlessReportsFolder = "target/reports";
+    private JBombardierConfiguration configuration = new JBombardierConfiguration();
 
-    public static ConfigurationBuilder start() {
-        return builder();
+    public static JBombardierConfigurationBuilder start() {
+        return configurationBuilder();
     }
 
-    public static ConfigurationBuilder builder() {
-        return new ConfigurationBuilder();
+    public static JBombardierConfigurationBuilder configurationBuilder() {
+        return new JBombardierConfigurationBuilder();
     }
 
     public static TestBuilder test(Class<? extends PerformanceTest> testClass) {
@@ -50,11 +46,11 @@ public class ConfigurationBuilder {
         return new AgentBuilder();
     }
 
-    public InteractiveConfiguration getConfiguration() {
+    public JBombardierConfiguration getConfiguration() {
         return configuration;
     }
 
-    public InteractiveConfiguration toConfiguration() {
+    public JBombardierConfiguration toConfiguration() {
         return configuration;
     }
 
@@ -62,38 +58,48 @@ public class ConfigurationBuilder {
         return new AgentBuilder().name(Agent.embeddedName);
     }
 
-    public ConfigurationBuilder loggingHubs(String loggingHubs) {
+    public JBombardierConfigurationBuilder loggingHubs(String loggingHubs) {
         configuration.setLoggingHubs(loggingHubs);
         return this;
     }
 
-    public ConfigurationBuilder loggingTypes(String loggingTypes) {
+    public JBombardierConfigurationBuilder duration(String duration) {
+        configuration.setDuration(duration);
+        return this;
+    }
+
+    public JBombardierConfigurationBuilder warmUpTime(String duration) {
+        configuration.setWarmUpTime(duration);
+        return this;
+    }
+
+    public JBombardierConfigurationBuilder loggingTypes(String loggingTypes) {
         configuration.setLoggingTypes(loggingTypes);
         return this;
     }
 
-    public ConfigurationBuilder telemetryPort(int port) {
+    public JBombardierConfigurationBuilder telemetryPort(int port) {
         configuration.setTelemetryHubPort(port);
         return this;
     }
 
-    public ConfigurationBuilder failedTransactionCountFailureThreshold(int threshold) {
+    public JBombardierConfigurationBuilder failedTransactionCountFailureThreshold(int threshold) {
         configuration.setFailedTransactionCountFailureThreshold(threshold);
         return this;
     }
 
-    public ConfigurationBuilder externalTelemetryHub(String hub) {
+    public JBombardierConfigurationBuilder externalTelemetryHub(String hub) {
         configuration.setExternalTelemetryHub(hub);
         return this;
     }
 
-    public ConfigurationBuilder addAgent(AgentBuilder agentBuilder) {
+    public JBombardierConfigurationBuilder addAgent(AgentBuilder agentBuilder) {
         configuration.getAgents().add(agentBuilder.toAgent());
         configuration.setAutostartAgents(configuration.getAgents().size());
         return this;
     }
 
-    public ConfigurationBuilder addAgent(String name, String host, int port) {
+    public JBombardierConfigurationBuilder addAgent(String name, String host, int port) {
         Agent agent = new Agent();
         agent.setName(name);
         agent.setAddress(host);
@@ -104,7 +110,7 @@ public class ConfigurationBuilder {
     }
 
 
-    public ConfigurationBuilder addAgent(String name, String host, int port, int sizes) {
+    public JBombardierConfigurationBuilder addAgent(String name, String host, int port, int sizes) {
         Agent agent = new Agent();
         agent.setName(name);
         agent.setAddress(host);
@@ -116,22 +122,23 @@ public class ConfigurationBuilder {
         return this;
     }
 
-    public ConfigurationBuilder addTest(TestBuilder testBuilder) {
+    public JBombardierConfigurationBuilder addTest(TestBuilder testBuilder) {
         configuration.getTests().add(testBuilder.toTestConfiguration());
         return this;
     }
 
-    public ConfigurationBuilder addStatisticsProvider(Class<StatisticProvider> providerClass, String properties) {
+    public JBombardierConfigurationBuilder addStatisticsProvider(Class<StatisticProvider> providerClass,
+                                                                 String properties) {
         //        configuration.getStatisticProviders().add(providerClass);
         return this;
     }
 
-    public ConfigurationBuilder fromXml(String resourceOrFile) {
-        this.configuration = JAXBConfiguration.loadConfiguration(InteractiveConfiguration.class, resourceOrFile);
+    public JBombardierConfigurationBuilder fromXml(String resourceOrFile) {
+        this.configuration = JAXBConfiguration.loadConfiguration(JBombardierConfiguration.class, resourceOrFile);
         return this;
     }
 
-    public ConfigurationBuilder addEmbeddedAgent(int bufferSizes, int pingTimeout) {
+    public JBombardierConfigurationBuilder addEmbeddedAgent(int bufferSizes, int pingTimeout) {
         Agent agent = new Agent();
         agent.setName(Agent.embeddedName);
         agent.setObjectBufferSize(bufferSizes);
@@ -141,7 +148,7 @@ public class ConfigurationBuilder {
         return this;
     }
 
-    public ConfigurationBuilder addEmbeddedAgent(int bufferSizes) {
+    public JBombardierConfigurationBuilder addEmbeddedAgent(int bufferSizes) {
         Agent agent = new Agent();
         agent.setName(Agent.embeddedName);
         agent.setObjectBufferSize(bufferSizes);
@@ -150,7 +157,7 @@ public class ConfigurationBuilder {
         return this;
     }
 
-    public ConfigurationBuilder addEmbeddedAgent() {
+    public JBombardierConfigurationBuilder addEmbeddedAgent() {
         Agent agent = new Agent();
         agent.setName(Agent.embeddedName);
         configuration.getAgents().add(agent);
@@ -158,107 +165,125 @@ public class ConfigurationBuilder {
     }
 
     public void executeHeadless() {
-        // jshaw - I wish I knew why I'd done this - it seems a bit silly as we need that value later on
-        // Turn off auto-start if we are running headless
-        // configuration.setAutostartAgents(-1);
         executeHeadlessNoExit();
         System.exit(0);
     }
 
-    public SwingConsoleController executeHeadlessNoExit() {
+    public JBombardierController executeHeadlessNoExit() {
         if (configuration.getAgents().size() == 0) {
             addEmbeddedAgent();
         }
 
         configuration.validate();
 
-        Headless headless = new Headless();
+        JBombardierHeadless headless = new JBombardierHeadless();
         headless.setAgentsRequired(configuration.getAutostartAgents());
-        headless.setReportFolder(headlessReportsFolder);
-        headless.setSampleTime(headlessTestDuration);
-        headless.setWarmupTime(headlessWarmupTime);
         headless.setTimeToWaitForAgents(5000);
         return headless.run(configuration);
     }
 
-    public SwingConsoleController execute() {
+    public JBombardierController execute() {
         if (configuration.getAgents().size() == 0) {
             addEmbeddedAgent();
         }
 
         configuration.validate();
-        SwingConsole swingConsole = SwingConsole.run(configuration);
+        JBombardierSwingConsole swingConsole = JBombardierSwingConsole.run(configuration);
         return swingConsole.getController();
     }
 
-    public ConfigurationBuilder autostart(int agents) {
+    public JBombardierConfigurationBuilder autostart(int agents) {
         configuration.setAutostartAgents(agents);
         return this;
     }
 
-    public ConfigurationBuilder testName(String string) {
+    public JBombardierConfigurationBuilder testName(String string) {
         configuration.setTestName(string);
         return this;
     }
 
-    public ConfigurationBuilder warmupTime(long headlessWarmupTime) {
-        this.headlessWarmupTime = headlessWarmupTime;
+    public JBombardierConfigurationBuilder testDuration(String headlessTestDuration) {
+        configuration.setDuration(headlessTestDuration);
         return this;
     }
 
-    public ConfigurationBuilder testDuration(String headlessTestDuration) {
-        this.headlessTestDuration = TimeUtils.parseInterval(headlessTestDuration);
-        return this;
-    }
-
-    public ConfigurationBuilder testDuration(long headlessTestDuration) {
-        this.headlessTestDuration = headlessTestDuration;
-        return this;
-    }
-
-    public ConfigurationBuilder reportsFolder(String reportsFolder) {
-        this.headlessReportsFolder = reportsFolder;
+    public JBombardierConfigurationBuilder reportsFolder(String reportsFolder) {
         this.configuration.setReportsFolder(reportsFolder);
         return this;
     }
 
-    public ConfigurationBuilder resultRepository(String resultRepository) {
+    public JBombardierConfigurationBuilder resultRepository(String resultRepository) {
         configuration.setResultRepositoryHost(resultRepository);
         return this;
     }
 
-    public ConfigurationBuilder resultRepository(String resultRepository, int port) {
+    public JBombardierConfigurationBuilder resultRepository(String resultRepository, int port) {
         configuration.setResultRepositoryHost(resultRepository);
         configuration.setResultRepositoryPort(port);
         return this;
     }
 
-    public ConfigurationBuilder maximumConsoleEntries(int maximumConsoleEntries) {
+    public JBombardierConfigurationBuilder maximumConsoleEntries(int maximumConsoleEntries) {
         configuration.setMaximumConsoleEntries(maximumConsoleEntries);
         return this;
     }
 
-    public ConfigurationBuilder maximumResultsToStore(int maximumResultsToStore) {
+    public JBombardierConfigurationBuilder maximumResultsToStore(int maximumResultsToStore) {
         configuration.setMaximumResultToStore(maximumResultsToStore);
         return this;
 
     }
 
-    public ConfigurationBuilder warmupTime(String string) {
-        this.headlessTestDuration = TimeUtils.parseInterval(string);
-        return this;
-
-    }
-
-    public ConfigurationBuilder outputEmbeddedAgentStats(boolean b) {
+    public JBombardierConfigurationBuilder outputEmbeddedAgentStats(boolean b) {
         configuration.setOutputEmbeddedAgentStats(b);
         return this;
     }
 
-    public ConfigurationBuilder outputControllerStats(boolean b) {
+    public JBombardierConfigurationBuilder outputControllerStats(boolean b) {
         configuration.setOutputControllerStats(b);
         return this;
 
+    }
+
+    public PhaseBuilder phase(String s) {
+        PhaseBuilder phaseBuilder = new PhaseBuilder();
+        phaseBuilder.phaseConfiguration.setPhaseName(s);
+        return phaseBuilder;
+    }
+
+    public JBombardierConfigurationBuilder warmUpTime(long milliseconds) {
+        return warmUpTime(Long.toString(milliseconds));
+    }
+
+    public JBombardierConfigurationBuilder testDuration(long milliseconds) {
+        return testDuration(Long.toString(milliseconds));
+    }
+
+    public JBombardierConfigurationBuilder warmupTime(long milliseconds) {
+        return warmUpTime(Long.toString(milliseconds));
+    }
+
+    public final static class PhaseBuilder {
+        private PhaseConfiguration phaseConfiguration = new PhaseConfiguration();
+
+        public PhaseBuilder addTest(TestBuilder start) {
+            phaseConfiguration.getTests().add(start.toTestConfiguration());
+            return this;
+        }
+
+        public PhaseConfiguration toPhaseConfiguration() {
+            return phaseConfiguration;
+        }
+
+        public PhaseBuilder duration(String duration) {
+            phaseConfiguration.setDuration(duration);
+            return this;
+        }
+    }
+
+    public JBombardierConfigurationBuilder addPhase(PhaseBuilder builder) {
+        configuration.getPhases().add(builder.phaseConfiguration);
+        return this;
     }
 
     public static class AgentBuilder {

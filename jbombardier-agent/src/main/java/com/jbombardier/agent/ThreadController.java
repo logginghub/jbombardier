@@ -18,6 +18,7 @@ package com.jbombardier.agent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.jbombardier.common.BasicTestStats;
 import com.jbombardier.common.BasicTestStatsResultStrategy;
@@ -47,7 +48,7 @@ public class ThreadController extends WorkerThread {
     private volatile int targetThreads;
     private volatile int threadRampupStepSize;
     private List<RateControlledIteratingWorkerThread> threads = new ArrayList<RateControlledIteratingWorkerThread>();
-    private List<ThreadControllerListener> listeners = new ArrayList<ThreadController.ThreadControllerListener>();
+    private List<ThreadControllerListener> listeners = new CopyOnWriteArrayList<ThreadControllerListener>();
     private volatile long threadRampupStepTime;
     private volatile double targetRate;
     private volatile double rateStep;

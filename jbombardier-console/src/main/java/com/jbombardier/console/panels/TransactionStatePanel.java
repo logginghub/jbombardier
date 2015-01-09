@@ -32,7 +32,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 
-import com.jbombardier.console.ConsoleModel;
+import com.jbombardier.console.JBombardierModel;
 import com.jbombardier.console.charts.LineFormatController;
 import com.jbombardier.console.components.ReflectiveTable;
 import com.jbombardier.console.components.TableDataProvider;
@@ -45,7 +45,7 @@ import com.logginghub.utils.StreamListener;
 import com.logginghub.utils.TimeUtils;
 import com.logginghub.utils.observable.ObservableListListener;
 import com.logginghub.utils.observable.ObservablePropertyListener;
-import com.jbombardier.console.SwingConsoleController;
+import com.jbombardier.console.JBombardierController;
 import com.jbombardier.console.charts.XYTimeChartPanel;
 import com.jbombardier.console.model.TransactionResultModel;
 import com.jbombardier.console.model.TransactionResultModel.ChartEvent;
@@ -224,7 +224,7 @@ public class TransactionStatePanel extends JPanel {
         }
     }
 
-    public void initialise(ConsoleModel model) {
+    public void initialise(JBombardierModel model) {
 
         model.getTransactionResultModels().addListenerAndNotifyExisting(new ObservableListListener<TransactionResultModel>() {
             @Override public void onRemoved(TransactionResultModel t) {}
@@ -300,7 +300,7 @@ public class TransactionStatePanel extends JPanel {
             }
         });
 
-        SwingConsoleController.getEventStream().addListener(new StreamListener<String>() {
+        JBombardierController.getEventStream().addListener(new StreamListener<String>() {
             @Override public void onNewItem(final String t) {
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override public void run() {
@@ -311,7 +311,7 @@ public class TransactionStatePanel extends JPanel {
             }
         });
 
-        model.addListener(new ConsoleModel.InteractiveModelListenerAdaptor() {
+        model.addListener(new JBombardierModel.InteractiveModelListenerAdaptor() {
             public void onTestStarted() {
                 SwingUtilities.invokeLater(new Runnable() {
                     public void run() {

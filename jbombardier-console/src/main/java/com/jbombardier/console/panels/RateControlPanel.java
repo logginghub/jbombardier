@@ -29,7 +29,7 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import com.jbombardier.console.ConsoleModel;
+import com.jbombardier.console.JBombardierModel;
 import com.jbombardier.console.components.ReflectiveTable;
 import com.jbombardier.console.model.AgentModel;
 import com.jbombardier.console.model.TestModel;
@@ -37,14 +37,14 @@ import net.miginfocom.swing.MigLayout;
 
 import com.logginghub.utils.observable.ObservablePropertyListener;
 import com.jbombardier.common.TestField;
-import com.jbombardier.console.SwingConsoleController;
+import com.jbombardier.console.JBombardierController;
 import com.jbombardier.console.charts.XYTimeChartPanel;
 
 public class RateControlPanel extends JPanel {
 
     private ReflectiveTable<TestModel> table;
     private XYTimeChartPanel chartPanel;
-    private SwingConsoleController controller;
+    private JBombardierController controller;
     private JSpinner transactionRateMultiplier;
     private SpinnerNumberModel transactionRateModel;
 
@@ -91,10 +91,10 @@ public class RateControlPanel extends JPanel {
         scrollPane.setViewportView(table);
     }
 
-    public void initialise(final ConsoleModel model, final SwingConsoleController controller) {
+    public void initialise(final JBombardierModel model, final JBombardierController controller) {
 
         this.controller = controller;
-        model.addListener(new ConsoleModel.InteractiveModelListenerAdaptor() {
+        model.addListener(new JBombardierModel.InteractiveModelListenerAdaptor() {
             public void onNewAgent(final AgentModel model) {
                 addAgentModel(model);
             }

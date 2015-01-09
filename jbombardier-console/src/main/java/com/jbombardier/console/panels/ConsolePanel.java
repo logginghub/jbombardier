@@ -27,7 +27,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 
-import com.jbombardier.console.ConsoleModel;
+import com.jbombardier.console.JBombardierModel;
 import com.jbombardier.console.components.ReflectiveTable;
 import com.jbombardier.console.model.ConsoleEventModel;
 import net.miginfocom.swing.MigLayout;
@@ -79,11 +79,11 @@ public class ConsolePanel extends JPanel {
 
     }
 
-    public void initialise(final ConsoleModel model) {
+    public void initialise(final JBombardierModel model) {
         
         table.setMaximumEntries(model.getMaximumConsoleEntries());
 
-        model.addListener(new ConsoleModel.InteractiveModelListenerAdaptor() {
+        model.addListener(new JBombardierModel.InteractiveModelListenerAdaptor() {
             public void onConsoleEvent(ConsoleEventModel event) {
                 table.addItem(event);
 //                model.getEvents().clear();

@@ -20,9 +20,9 @@ import com.logginghub.messaging.Level3AsyncServer;
 import com.jbombardier.common.RepositoryInterface;
 import com.jbombardier.common.serialisableobject.CapturedStatistic;
 import com.jbombardier.console.RepositoryMessagingClient;
-import com.jbombardier.console.SwingConsoleController;
-import com.jbombardier.console.ConsoleModel;
-import com.jbombardier.console.configuration.InteractiveConfiguration;
+import com.jbombardier.console.JBombardierController;
+import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.model.TransactionResultModel;
 import com.jbombardier.console.model.result.TestRunResult;
 import com.jbombardier.repository.RepositoryWebView;
@@ -44,14 +44,16 @@ import java.util.Map;
  */
 public class TestRepositoryBasics extends JBombardierTestBase {
 
-    @Test(threadPoolSize = 5, invocationCount = 20) public void test_messaging_server_start_stop() {
+//    @Test(threadPoolSize = 5, invocationCount = 20)
+    @Test public void test_messaging_server_start_stop() {
         Level3AsyncServer server = new Level3AsyncServer("RepositoryMessaging3Server");
         server.setPort(NetUtils.findFreePort());
         server.start();
         server.stop();
     }
 
-    @Test(threadPoolSize = 5, invocationCount = 20) public void test_messaging_client_start_stop() {
+//    @Test(threadPoolSize = 5, invocationCount = 20)
+    @Test public void test_messaging_client_start_stop() {
 
         Level3AsyncServer server = new Level3AsyncServer("RepositoryMessaging3Server");
         server.setPort(NetUtils.findFreePort());
@@ -71,8 +73,8 @@ public class TestRepositoryBasics extends JBombardierTestBase {
         server.stop();
     }
 
-    @Test(threadPoolSize = 5, invocationCount = 20) public void test_jetty_start_stop() {
-
+    // @Test(threadPoolSize = 5, invocationCount = 20)
+    @Test public void test_jetty_start_stop() {
         RepositoryWebView view = new RepositoryWebView();
         view.setHttpPort(NetUtils.findFreePort());
         view.start();
@@ -92,14 +94,12 @@ public class TestRepositoryBasics extends JBombardierTestBase {
         JBombardierRepositoryLauncher repository = dsl.createRepository();
         repository.start();
 
-        SwingConsoleController controller = new SwingConsoleController();
-        ConsoleModel model = new ConsoleModel();
-        InteractiveConfiguration configuration = new InteractiveConfiguration();
+        JBombardierModel model = new JBombardierModel();
+        JBombardierConfiguration configuration = new JBombardierConfiguration();
+        JBombardierController controller = new JBombardierController(model, configuration);
 
         configuration.setResultRepositoryHost("localhost");
         configuration.setResultRepositoryPort(repository.getConfiguration().getServerPort());
-
-        controller.initialise(configuration, model);
 
         Map<String, TransactionResultModel> map = new HashMap<String, TransactionResultModel>();
         List<TransactionResultModel> list = new ArrayList<TransactionResultModel>();
@@ -118,7 +118,6 @@ public class TestRepositoryBasics extends JBombardierTestBase {
 
         controller.outputJSONResults(resultsStructure, capturedStatistics);
 
-        controller.stop();
         repository.stop();
     }
 
@@ -128,26 +127,24 @@ public class TestRepositoryBasics extends JBombardierTestBase {
         repository.getConfiguration().setHttpPort(8089);
         repository.start();
 
-        SwingConsoleController controller = new SwingConsoleController();
-        ConsoleModel model = new ConsoleModel();
-        InteractiveConfiguration configuration = new InteractiveConfiguration();
+        JBombardierModel model = new JBombardierModel();
 
+        JBombardierConfiguration configuration = new JBombardierConfiguration();
         configuration.setResultRepositoryHost("localhost");
         configuration.setResultRepositoryPort(repository.getConfiguration().getServerPort());
         configuration.setReportsFolder(FileUtils.createRandomTestFolderForClass(this.getClass()).getAbsolutePath());
 
-        controller.initialise(configuration, model);
+        JBombardierController controller = new JBombardierController(model, configuration);
 
         sendFirstResult(controller, model);
         sendSecondResult(controller, model);
 
         ThreadUtils.sleep(1000000);
 
-        controller.stop();
         repository.stop();
     }
 
-    private void sendFirstResult(SwingConsoleController controller, ConsoleModel model) {
+    private void sendFirstResult(JBombardierController controller, JBombardierModel model) {
         Map<String, TransactionResultModel> map = new HashMap<String, TransactionResultModel>();
 
         TransactionResultModel test1Results = new TransactionResultModel("Test1", "", false, 10, 1, 1, 1, 1, 1, 1, 1);
@@ -175,7 +172,7 @@ public class TestRepositoryBasics extends JBombardierTestBase {
         controller.outputJSONResults(result);
     }
 
-    private void sendSecondResult(SwingConsoleController controller, ConsoleModel model) {
+    private void sendSecondResult(JBombardierController controller, JBombardierModel model) {
         Map<String, TransactionResultModel> map = new HashMap<String, TransactionResultModel>();
 
         TransactionResultModel test1Results = new TransactionResultModel("Test1", "", false, 10, 1, 1, 1, 1, 1, 1, 1);

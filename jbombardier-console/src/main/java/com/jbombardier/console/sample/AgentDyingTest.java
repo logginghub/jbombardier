@@ -16,7 +16,7 @@
 
 package com.jbombardier.console.sample;
 
-import com.jbombardier.console.configuration.ConfigurationBuilder;
+import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
 
 /**
  * You need to do some stuff to test this!
@@ -29,10 +29,10 @@ public class AgentDyingTest {
 
     
     public static void main(String[] args) {
-        ConfigurationBuilder.builder().testName("SleepBenchmark-withfailure")
-                 .addTest(ConfigurationBuilder.test(SleepTest.class).name("sleep 10@100").properties("delay=10").targetRate(100).rateStep(100))
-                 .addTest(ConfigurationBuilder.test(SleepTest.class).name("sleep 25@40").properties("delay=25").targetRate(40).rateStep(40))
-                 .addTest(ConfigurationBuilder.test(SleepTest.class).name("sleep 100@10").properties("delay=100").targetRate(10).rateStep(10))
+        JBombardierConfigurationBuilder.configurationBuilder().testName("SleepBenchmark-withfailure")
+                 .addTest(JBombardierConfigurationBuilder.test(SleepTest.class).name("sleep 10@100").properties("delay=10").targetRate(100).rateStep(100))
+                 .addTest(JBombardierConfigurationBuilder.test(SleepTest.class).name("sleep 25@40").properties("delay=25").targetRate(40).rateStep(40))
+                 .addTest(JBombardierConfigurationBuilder.test(SleepTest.class).name("sleep 100@10").properties("delay=100").targetRate(10).rateStep(10))
                  .addAgent("Agent1", "localhost", 20001)
                  .addAgent("Agent2", "localhost", 20002)
                  .addAgent("Agent3", "localhost", 20003)

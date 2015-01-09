@@ -34,17 +34,17 @@ public class TestEmptyConfiguration {
 
         File tempFile = File.createTempFile("testEmptyConfiguration", ".xml");
         TextFileBuilder builder = new TextFileBuilder(new FileWriter(tempFile));        
-        builder.appendLine("<interactiveConfiguration>");
+        builder.appendLine("<jbombardierConfiguration>");
         builder.appendLine("<agents><agent name='embedded'/></agents>");
         builder.appendLine("<tests><test name='propertyReader' class='com.jbombardier.console.sample.old.PropertyReader' targetRate='10' rateStep='100' properties='property=empty'/></tests>");
         builder.appendLine("<data><csvProperty name='empty' csvfile='/com/jbombardier/console/configuration/empty_data.csv' strategy='fixedThread'/></data>");
-        builder.appendLine("</interactiveConfiguration>");
+        builder.appendLine("</jbombardierConfiguration>");
         builder.close();
         
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("The csv data file for property 'empty' provided was '/com/jbombardier/console/configuration/empty_data.csv', but this file was empty.");
 
-        SwingConsole.runWithAutostart(tempFile.getAbsolutePath(), 1);
+        JBombardierSwingConsole.runWithAutostart(tempFile.getAbsolutePath(), 1);
         
     }
 }

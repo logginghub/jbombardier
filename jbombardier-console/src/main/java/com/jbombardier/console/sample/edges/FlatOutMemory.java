@@ -16,14 +16,14 @@
 
 package com.jbombardier.console.sample.edges;
 
-import com.jbombardier.console.configuration.ConfigurationBuilder;
+import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
 import com.jbombardier.console.sample.old.NoopTest;
 
 public class FlatOutMemory {
     public static void main(String[] args) {
-        ConfigurationBuilder.builder().testName("FlatOutMemoryTest")
+        JBombardierConfigurationBuilder.configurationBuilder().testName("FlatOutMemoryTest")
         // .addTest(test(NoopTest.class).name("NoOp1").targetRate(700000).rateStep(700000))
-                 .addTest(ConfigurationBuilder.test(NoopTest.class).name("NoOp1").targetRate(-1).rateStep(700000).recordAllValues(true))
+                 .addTest(JBombardierConfigurationBuilder.test(NoopTest.class).name("NoOp1").targetRate(-1).rateStep(700000).recordAllValues(true))
                   .addEmbeddedAgent(10 * 1024 * 1024)
 //                 .addEmbeddedAgent()
                  .autostart(1)

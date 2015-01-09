@@ -24,11 +24,11 @@ import com.jbombardier.common.AgentStats.TestStats;
 import com.jbombardier.common.BasicTestStats;
 import com.jbombardier.common.TestFactory;
 import com.jbombardier.common.TestInstruction;
-import com.jbombardier.console.ConsoleModel;
+import com.jbombardier.console.JBombardierModel;
 
 public class EmbeddedRunner {
 
-    public void run(final String testName, TestFactory factory, final ConsoleModel model) {
+    public void run(final String testName, TestFactory factory, final JBombardierModel model) {
 
         TestInstruction testInstruction = new TestInstruction();
         testInstruction.setTargetThreads(1);

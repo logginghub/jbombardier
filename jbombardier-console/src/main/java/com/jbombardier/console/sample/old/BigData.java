@@ -16,12 +16,12 @@
 
 package com.jbombardier.console.sample.old;
 
-import com.jbombardier.console.SwingConsole;
+import com.jbombardier.console.JBombardierSwingConsole;
 
 public class BigData {
 
     public static void main(String[] args) {
-        SwingConsole.run("com/jbombardier/console/bigdata/configuration.xml");
+        JBombardierSwingConsole.run("com/jbombardier/console/bigdata/configuration.xml");
     }
     
 }

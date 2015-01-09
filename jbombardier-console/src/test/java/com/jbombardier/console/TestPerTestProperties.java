@@ -30,11 +30,11 @@ public class TestPerTestProperties {
 
     @Test public void testPropertiesAreSentWithInstructions(){
         
-        SwingConsole swingConsole = new SwingConsole();
+        JBombardierSwingConsole swingConsole = new JBombardierSwingConsole();
         swingConsole.loadConfigurationFile("/com/jbombardier/perTestProperties.xml");
         swingConsole.initialise();
         
-        SwingConsoleController controller = swingConsole.getController();
+        JBombardierController controller = swingConsole.getController();
         
         List<TestInstruction> testInstructionsList = controller.getTestInstructionsList();
         

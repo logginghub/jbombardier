@@ -21,7 +21,7 @@ import java.io.File;
 import com.logginghub.utils.FileUtils;
 import com.logginghub.utils.TimeUtils;
 import com.logginghub.utils.logging.Logger;
-import com.jbombardier.console.SwingConsoleController;
+import com.jbombardier.console.JBombardierController;
 import com.jbombardier.console.model.JSONHelper;
 import com.jbombardier.console.model.result.TestRunResult;
 import com.jbombardier.repository.model.RepositoryModel;
@@ -68,9 +68,9 @@ public class RepositoryController {
         
         timeFolder.mkdirs();
 
-        File jsonResultsFile = SwingConsoleController.getJSONResultsFile(timeFolder,
-                                                                         testRunResult.getConfigurationName(),
-                                                                         testRunResult.getStartTime());
+        File jsonResultsFile = JBombardierController.getJSONResultsFile(timeFolder,
+                                                                        testRunResult.getConfigurationName(),
+                                                                        testRunResult.getStartTime());
         return jsonResultsFile;
     }
 

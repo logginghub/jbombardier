@@ -21,7 +21,7 @@ import javax.swing.JScrollPane;
 
 import net.miginfocom.swing.MigLayout;
 
-import com.jbombardier.console.ConsoleModel;
+import com.jbombardier.console.JBombardierModel;
 import com.jbombardier.console.components.ReflectiveTable;
 import com.jbombardier.console.model.AgentModel;
 
@@ -42,8 +42,8 @@ public class AgentStatusTablePanel extends JPanel {
         scrollPane.setViewportView(table);
     }
 
-    public void initialise(ConsoleModel model) {
-        model.addListener(new ConsoleModel.InteractiveModelListenerAdaptor() {
+    public void initialise(JBombardierModel model) {
+        model.addListener(new JBombardierModel.InteractiveModelListenerAdaptor() {
             public void onNewAgent(AgentModel model) {
                 table.addItem(model);
             }

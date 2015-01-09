@@ -16,20 +16,24 @@
 
 package com.jbombardier.console.headless;
 
-import com.esotericsoftware.minlog.Log;
-import com.jbombardier.console.SwingConsoleController;
-import com.jbombardier.console.ConsoleModel;
-import com.jbombardier.console.configuration.InteractiveConfiguration;
+import com.jbombardier.console.JBombardierController;
+import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.model.AgentModel;
 import com.jbombardier.console.model.TransactionResultModel;
 import com.jbombardier.console.model.TransactionResultModel.TransactionTimeThresholdMode;
-import com.logginghub.utils.*;
+import com.logginghub.utils.FormattedRuntimeException;
+import com.logginghub.utils.QuietLatch;
+import com.logginghub.utils.StringUtils;
+import com.logginghub.utils.ThreadUtils;
+import com.logginghub.utils.TimeUtils;
+import com.logginghub.utils.Timeout;
+import com.logginghub.utils.TimerUtils;
 import com.logginghub.utils.logging.Logger;
 import com.logginghub.utils.logging.SystemErrStream;
 import com.logginghub.utils.observable.ObservableInteger;
 import com.logginghub.utils.observable.ObservableList;
 
-import java.io.File;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.List;
@@ -41,16 +45,17 @@ import java.util.concurrent.TimeUnit;
  *
  * @author James
  */
-public class Headless {
+public class JBombardierHeadless {
 
-    private static final Logger logger = Logger.getLoggerFor(Headless.class);
+    private static final Logger logger = Logger.getLoggerFor(JBombardierHeadless.class);
     // private int failureThresholdResultCountMinimum =
     // Integer.getInteger("failureThresholdResultCountMinimum", 10);
-    private long warmupTime = 10000;
-    private long sampleTime = 10000;
+    //    private long warmupTime = 10000;
+    //    private long sampleTime = 10000;
+
     private long timeToWaitForAgents = 10000;
     private int agentsRequired = 1;
-    private String reportFolder = "reports";
+    //    private String reportFolder = "reports";
     private Timer timer;
 
     private volatile boolean warmedUp = false;
@@ -71,13 +76,13 @@ public class Headless {
         this.agentsRequired = agentsRequired;
     }
 
-    public long getSampleTime() {
-        return sampleTime;
-    }
+    //    public long getSampleTime() {
+    //        return sampleTime;
+    //    }
 
-    public void setSampleTime(long sampleTime) {
-        this.sampleTime = sampleTime;
-    }
+    //    public void setSampleTime(long sampleTime) {
+    //        this.sampleTime = sampleTime;
+    //    }
 
     public long getTimeToWaitForAgents() {
         return timeToWaitForAgents;
@@ -87,51 +92,72 @@ public class Headless {
         this.timeToWaitForAgents = timeToWaitForAgents;
     }
 
-    public long getWarmupTime() {
-        return warmupTime;
-    }
+    //    public long getWarmupTime() {
+    //        return warmupTime;
+    //    }
 
-    public void setWarmupTime(long warmupTime) {
-        this.warmupTime = warmupTime;
-    }
+    //    public void setWarmUpTime(long warmupTime) {
+    //        this.warmupTime = warmupTime;
+    //    }
 
-    public SwingConsoleController run(String config) {
-        Log.set(Log.LEVEL_WARN);
-        InteractiveConfiguration configuration = InteractiveConfiguration.loadConfiguration(config);
-        return run(configuration);
-    }
+    //    public JBombardierController run(String config) {
+    //        Log.set(Log.LEVEL_WARN);
+    //        JBombardierConfiguration configuration = JBombardierConfiguration.loadConfiguration(config);
+    //        return run(configuration);
+    //    }
 
-    public SwingConsoleController run(InteractiveConfiguration configuration) {
-        ConsoleModel model = new ConsoleModel();
-        SwingConsoleController controller = new SwingConsoleController();
-        controller.setReportsPath(new File(reportFolder));
-        controller.initialise(configuration, model);
+    public JBombardierController run(JBombardierConfiguration configuration) {
+        JBombardierModel model = new JBombardierModel();
+        JBombardierController controller = new JBombardierController(model, configuration);
         controller.startStats();
+        controller.startAgentConnections();
         controller.waitForEmbeddedIfNeeded();
 
         // Attach the monitor to detect async failures
         attachFailureMonitor(controller);
-
-        // Turn off auto-start, we'll sort that out ourselves
-        controller.setAutostartAgents(Integer.MAX_VALUE);
 
         listener = new HeadlessModeListener();
         model.addListener(listener);
         waitForAgents(model);
 
         controller.startStatisticsCapture();
-        controller.startTest();
-        controller.getResultsController().stopStatsUpdater();
 
-        failureLatch.setTimeout(new Timeout(warmupTime, TimeUnit.MILLISECONDS));
-        if (!failureLatch.await()) {
+        long warmupTime = TimeUtils.parseInterval(configuration.getWarmupTime());
+        long testDuration = TimeUtils.parseInterval(configuration.getDuration());
 
-            logger.info("------------------- Warmup complete, real test run started ------------------------");
-            controller.resetStats();
-            controller.getResultsController().startStatsUpdater(controller.getModel());
+        if (warmupTime > 0) {
+            controller.startWarmUp();
+            controller.publishTestInstructionsAndStartRunning();
+            controller.getResultsController().stopStatsUpdater();
+
+            failureLatch.setTimeout(new Timeout(warmupTime, TimeUnit.MILLISECONDS));
+            if (!failureLatch.await()) {
+
+                logger.info("------------------- Warmup complete, real test run started ------------------------");
+                controller.startMainTest();
+                controller.getResultsController().startStatsUpdater(controller.getModel());
+                warmedUp = true;
+
+                long endTime = System.currentTimeMillis() + testDuration;
+                while (System.currentTimeMillis() < endTime) {
+                    ThreadUtils.sleep(1000);
+                    if (failureDetected) {
+                        break;
+                    }
+                }
+            }
+        } else {
+            logger.info("------------------- Skipping warm-up, real test run started ------------------------");
+            long endTime = System.currentTimeMillis() + testDuration;
+            logger.info("Running test for duration '{}' ({} milliseconds) - will end at '{}'", configuration.getDuration(), testDuration, Logger.toLocalDateString(endTime));
             warmedUp = true;
 
-            long endTime = System.currentTimeMillis() + sampleTime;
+            controller.publishTestInstructionsAndStartRunning();
+            controller.getResultsController().stopStatsUpdater();
+
+            controller.startMainTest();
+            controller.getResultsController().startStatsUpdater(controller.getModel());
+
             while (System.currentTimeMillis() < endTime) {
                 ThreadUtils.sleep(1000);
                 if (failureDetected) {
@@ -141,7 +167,10 @@ public class Headless {
         }
 
         timer.cancel();
-        controller.getResultsController().stopStatsUpdater();
+        controller.getResultsController().
+
+                stopStatsUpdater();
+
         controller.stopStats();
         logger.info("-------------------         Test execution complete         ------------------------");
 
@@ -153,23 +182,22 @@ public class Headless {
         controller.killAgents();
         controller.stopStatisticsCapture();
         controller.generateReport(false, false);
-        controller.stopTest(false);
+        controller.endTestNormally();
 
         return controller;
     }
 
-    private void attachFailureMonitor(final SwingConsoleController controller) {
+    private void attachFailureMonitor(final JBombardierController controller) {
         timer = TimerUtils.everySecond("Failing transaction monitor", new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 logger.debug("Failure timer check...");
                 checkForFailures(controller);
             }
         });
     }
 
-    private void checkForFailures(final SwingConsoleController controller) {
-        final ConsoleModel model = controller.getModel();
+    private void checkForFailures(final JBombardierController controller) {
+        final JBombardierModel model = controller.getModel();
 
         if (listener.getAbandoned() != null) {
             flagTestFailure("Test run has been abandoned : {}", listener.getAbandoned());
@@ -187,7 +215,7 @@ public class Headless {
         }
     }
 
-    private void checkWeAreStillReceivingResults(ConsoleModel model) {
+    private void checkWeAreStillReceivingResults(JBombardierModel model) {
         long totalResults = 0;
         final ObservableList<TransactionResultModel> transactionResultModels = model.getTransactionResultModels();
         for (TransactionResultModel trm : transactionResultModels) {
@@ -210,7 +238,7 @@ public class Headless {
         lastTotalResults = totalResults;
     }
 
-    private void checkForTransactionFailureCountThresholdFailures(ConsoleModel model) {
+    private void checkForTransactionFailureCountThresholdFailures(JBombardierModel model) {
         final ObservableList<TransactionResultModel> transactionResultModels = model.getTransactionResultModels();
 
         long totalFailures = 0;
@@ -237,7 +265,7 @@ public class Headless {
         }
     }
 
-    private void checkForTransactionTimeThresholdFailures(ConsoleModel model) {
+    private void checkForTransactionTimeThresholdFailures(JBombardierModel model) {
 
         final ObservableList<TransactionResultModel> transactionResultModels = model.getTransactionResultModels();
         for (TransactionResultModel trm : transactionResultModels) {
@@ -289,7 +317,7 @@ public class Headless {
         }
     }
 
-    private void dumpTestValues(ConsoleModel model) {
+    private void dumpTestValues(JBombardierModel model) {
         NumberFormat nf = NumberFormat.getInstance();
         final ObservableList<TransactionResultModel> transactionResultModels = model.getTransactionResultModels();
         logger.info(String.format(" %20s | %20s | %20s | %20s |", "Test", "Transactions", "TPS", "Mean"));
@@ -310,7 +338,7 @@ public class Headless {
         timer.cancel();
     }
 
-    private void waitForAgents(ConsoleModel model) {
+    private void waitForAgents(JBombardierModel model) {
         long startTime = System.currentTimeMillis();
 
         boolean gotAgents = false;
@@ -350,16 +378,23 @@ public class Headless {
         }
     }
 
-    public void setReportFolder(String reportFolder) {
-        this.reportFolder = reportFolder;
+    //    public void setReportFolder(String reportFolder) {
+    //        this.reportFolder = reportFolder;
+    //    }
+
+    public static void runStatic(String config, long warmup, long testTime, int agents) {
+        JBombardierHeadless headless = new JBombardierHeadless();
+        //        headless.setWarmUpTime(warmup);
+        //        headless.setSampleTime(testTime);
+        headless.setAgentsRequired(agents);
+
+        JBombardierConfiguration configuration = JBombardierConfiguration.loadConfiguration(config);
+        headless.run(configuration);
     }
 
-    public static void runStatic(String configuration, long warmup, long testTime, int agents) {
-        Headless headless = new Headless();
-        headless.setWarmupTime(warmup);
-        headless.setSampleTime(testTime);
-        headless.setAgentsRequired(agents);
-        headless.run(configuration);
+    public JBombardierController run(String absolutePath) {
+        JBombardierConfiguration configuration = JBombardierConfiguration.loadConfiguration(absolutePath);
+        return run(configuration);
     }
 
     public static void main(String[] args) {
@@ -367,15 +402,18 @@ public class Headless {
         System.out.println(Arrays.toString(args));
 
         if (args.length == 6) {
-            Headless headless = new Headless();
-            headless.setWarmupTime(Long.parseLong(args[1]));
-            headless.setSampleTime(Long.parseLong(args[2]));
+            JBombardierHeadless headless = new JBombardierHeadless();
+            //            headless.setWarmupTime(Long.parseLong(args[1]));
+            //            headless.setSampleTime(Long.parseLong(args[2]));
             headless.setAgentsRequired(Integer.parseInt(args[3]));
             headless.setTimeToWaitForAgents(Long.parseLong(args[4]));
-            headless.setReportFolder(args[5]);
+            //    headless.setReportFolder(args[5]);
+
+            String config = args[0];
+            JBombardierConfiguration configuration = JBombardierConfiguration.loadConfiguration(config);
 
             try {
-                SwingConsoleController run = headless.run(args[0]);
+                JBombardierController run = headless.run(configuration);
                 if (run.getModel().getFailureReason() != null) {
                     System.err.println("Test failed : " + run.getModel().getFailureReason());
                     System.exit(-1);

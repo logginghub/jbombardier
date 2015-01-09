@@ -20,7 +20,7 @@ import com.logginghub.utils.StringUtils;
 import com.logginghub.utils.data.DataStructure;
 import com.logginghub.utils.logging.Logger;
 import com.jbombardier.common.AgentFailedInstruction;
-import com.jbombardier.console.ConsoleModel.InteractiveModelListener;
+import com.jbombardier.console.JBombardierModel.InteractiveModelListener;
 import com.jbombardier.console.model.AgentModel;
 import com.jbombardier.console.model.ConsoleEventModel;
 import com.jbombardier.console.model.TestModel;

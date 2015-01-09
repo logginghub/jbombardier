@@ -33,16 +33,22 @@ import com.logginghub.utils.FileUtils;
 import com.logginghub.utils.ListBackedMap;
 import com.jbombardier.common.AgentStats;
 import com.jbombardier.common.AgentStats.TestStats;
-import com.jbombardier.console.configuration.InteractiveConfiguration;
+import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.model.TestModel;
 import com.jbombardier.console.model.TransactionResultModel;
 import com.jbombardier.console.sample.SleepTest;
 
 public class TestConsoleController {
 
-    @Test public void testGenerateReport() {
+    @Test public void test_generate_report() {
 
-        SwingConsoleController controller = new SwingConsoleController();
+        JBombardierModel model = new JBombardierModel();
+        JBombardierConfiguration configuration = new JBombardierConfiguration();
+
+        File reports = FileUtils.createRandomFolder("target/tests/testJBombardierConsoleController");
+        configuration.setReportsFolder(reports.getAbsolutePath());
+
+        JBombardierController controller = new JBombardierController(model, configuration);
 
         TestStats testStats = new TestStats();
         testStats.sampleDuration = 1000;
@@ -61,7 +67,6 @@ public class TestConsoleController {
         agentStats.setAgentName("Agent1");
         agentStats.addTestStats(testStats);
 
-        ConsoleModel model = new ConsoleModel();
         model.setTransactionRateModifier(1);
 
         TestModel testModel = new TestModel("test1", SleepTest.class.getName());
@@ -69,10 +74,6 @@ public class TestConsoleController {
         testModel.setTargetThreads(5);
 
         model.addTestModel(testModel);
-
-        controller.setModel(model);
-
-        InteractiveConfiguration configuration = new InteractiveConfiguration();
 
         // Create a fake agent
         List<AgentModel> agentModels = new ArrayList<AgentModel>();
@@ -83,13 +84,10 @@ public class TestConsoleController {
         controller.getAgentsByAgentName().put("Agent1", agentModel);
 
         controller.initialiseStats();
+        controller.startMainTest();
 
         // Simulate the generate results bit
-        File reports = FileUtils.createRandomFolder("target/tests/testJBombardierConsoleController");
-        controller.setReportsPath(reports);
 
-        // Initialise the controller internals
-        controller.initialise(configuration, model);
         // Simulate the agent sending in a status update
         controller.handleAgentStatusUpdate(agentStats);
 
