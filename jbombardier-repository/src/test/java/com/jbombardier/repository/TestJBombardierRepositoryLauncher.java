@@ -71,7 +71,6 @@ public class TestJBombardierRepositoryLauncher {
         assertThat(folder.list().length, is(1));
 
         launcher.stop();
-
     }
     
     @Test public void test_posted_file_still_there_after_restart() {

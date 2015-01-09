@@ -32,6 +32,7 @@ import com.logginghub.web.RequestContext;
 import com.logginghub.web.WebController;
 import org.apache.velocity.VelocityContext;
 
+import java.net.URLClassLoader;
 import java.text.NumberFormat;
 import java.util.*;
 
@@ -60,6 +61,7 @@ import java.util.*;
         ObservableList<RepositoryTestModel> testModels = model.getTestModels();
         context.put("tests", testModels);
         logger.info("Showing {} test models", testModels.size());
+
         return velocityHelper.help(context, "repository/velocity/index.vm");
     }
 

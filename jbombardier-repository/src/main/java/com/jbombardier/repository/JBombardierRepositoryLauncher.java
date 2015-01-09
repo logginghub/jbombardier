@@ -151,7 +151,7 @@ public class JBombardierRepositoryLauncher {
     public static void main(String[] args) {
         LoggingUtils.setupRemoteVLLoggingFromSystemProperties();
         RepositoryConfiguration configuration = new RepositoryConfiguration();
-        configuration.setDataFolder(MainUtils.getStringArgument(args, 0, "data/"));
-        runLauncher(configuration);
+        configuration.setDataFolder(MainUtils.getStringArgument(args, 0, "build/data/"));
+        runLauncher(configuration).start();
     }
 }
