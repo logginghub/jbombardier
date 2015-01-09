@@ -48,7 +48,6 @@ import com.jbombardier.common.ThreadsChangedMessage;
 import com.jbombardier.common.KryoHelper;
 import com.logginghub.logging.DefaultLogEvent;
 import com.logginghub.logging.LogEventBuilder;
-import com.logginghub.logging.LoggingPorts;
 import com.logginghub.logging.SingleLineTextFormatter;
 import com.logginghub.logging.exceptions.LoggingMessageSenderException;
 import com.logginghub.logging.handlers.SocketHandler;
@@ -72,7 +71,7 @@ import com.jbombardier.agent.ThreadController.ThreadControllerListener;
 public class Agent2 implements Asynchronous {
 
     private ExecutorService executorService = Executors.newCachedThreadPool();
-    private List<ThreadController> threadControllers = new ArrayList<ThreadController>();
+    private final List<ThreadController> threadControllers = new ArrayList<ThreadController>();
     private Map<String, ThreadController> threadControllersByTestName = new HashMap<String, ThreadController>();
     private KryoHub hub;
     private Timer statsTimer;
@@ -227,11 +226,12 @@ public class Agent2 implements Asynchronous {
         logger.info("jbombardierAgent started and bound on port {}", bindPort);
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public String handleStartTelemetryRequest(final SendTelemetryRequest str) {
-      
         return "Done";
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public void handlePing(PingMessage pingMessage) {
         updatePing();
     }
@@ -242,6 +242,7 @@ public class Agent2 implements Asynchronous {
         lastPingTime = System.currentTimeMillis();
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public String handleDataBucket(DataBucket dataBucket) {
         Is.notEmpty(dataBucket.getValues(), "Data bucket for source " + dataBucket.getDataSourceName() + " cannot be empty");
         dataBuckets.put(dataBucket.getDataSourceName(), dataBucket);
@@ -264,7 +265,6 @@ public class Agent2 implements Asynchronous {
         abortingTest = false;
 
         return "Test package received";
-
     }
 
     protected void startTest(TestPackage testPackage) {
@@ -389,7 +389,7 @@ public class Agent2 implements Asynchronous {
 
         if (logInternallyToHub) {
             loggingSocketClient = new SocketClient();
-            List<InetSocketAddress> connectionPoints = NetUtils.toInetSocketAddressList(testPackage.getLoggingHubs(), LoggingPorts.getSocketHubDefaultPort());
+            List<InetSocketAddress> connectionPoints = NetUtils.toInetSocketAddressList(testPackage.getLoggingHubs(), VLPorts.getSocketHubDefaultPort());
             loggingSocketClient.addConnectionPoints(connectionPoints);
             loggingSocketClient.setAutoSubscribe(false);
             socketClientManager = new SocketClientManager(loggingSocketClient);
@@ -413,7 +413,9 @@ public class Agent2 implements Asynchronous {
                     try {
                         loggingSocketClient.send(new LogEventMessage(logEvent));
                     }
-                    catch (LoggingMessageSenderException e) {}
+                    catch (LoggingMessageSenderException e) {
+                        System.err.println("Failed to send logging message to the hub : " + e.getMessage());
+                    }
                 }
             });
         }
@@ -444,7 +446,7 @@ public class Agent2 implements Asynchronous {
 
             SocketHandler socketHandler = new SocketHandler();
             socketHandler.setSourceApplication(getAgentName());
-            List<InetSocketAddress> connectionPoints = NetUtils.toInetSocketAddressList(testPackage.getLoggingHubs(), LoggingPorts.getSocketHubDefaultPort());
+            List<InetSocketAddress> connectionPoints = NetUtils.toInetSocketAddressList(testPackage.getLoggingHubs(), VLPorts.getSocketHubDefaultPort());
             for (InetSocketAddress inetSocketAddress : connectionPoints) {
                 socketHandler.addConnectionPoint(inetSocketAddress);
             }
@@ -547,16 +549,15 @@ public class Agent2 implements Asynchronous {
         }
     }
 
-    public StopTestResponse handleStopTestRequest(StopTestRequest request) {
+    @SuppressWarnings("UnusedDeclaration") public StopTestResponse handleStopTestRequest(StopTestRequest request) {
         stopTest();
         return new StopTestResponse();
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public String handleStopTelemetryRequest(StopTelemetryRequest request) {
         return "Done";
     }
-
-
 
     private void stopTest() {
         if (statsTimer != null) {
@@ -600,6 +601,7 @@ public class Agent2 implements Asynchronous {
         }
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public String handleTestVariableUpdateRequest(TestVariableUpdateRequest request) {
 
         if (request.getField() == TestField.transactionRateModifier) {
@@ -672,6 +674,7 @@ public class Agent2 implements Asynchronous {
         this.pingTimeout = pingTimeout;
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public long getPingTimeout() {
         return pingTimeout;
     }
@@ -679,7 +682,8 @@ public class Agent2 implements Asynchronous {
     public void setOutputStats(boolean outputStats) {
         this.outputStats = outputStats;
     }
-    
+
+    @SuppressWarnings("UnusedDeclaration")
     public boolean isOutputStats() {
         return outputStats;
     }

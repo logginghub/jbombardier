@@ -19,12 +19,9 @@ package com.jbombardier.common;
 import com.logginghub.utils.ResourceUtils;
 
 /**
- * @deprecated this class has a lot of methods that don't do anything, its no
- *             way a fair implementation of that interface
  * @author James
- * 
  */
-@Deprecated public class CsvPropertiesProvider implements PropertiesStrategy {
+public class CsvPropertiesProvider implements PropertiesStrategy {
 
     private String resourcePath;
     private String content;

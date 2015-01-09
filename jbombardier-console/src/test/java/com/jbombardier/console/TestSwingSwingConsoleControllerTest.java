@@ -35,6 +35,7 @@ import com.jbombardier.common.DataStrategy;
 import com.jbombardier.console.configuration.InteractiveConfiguration;
 import com.jbombardier.xml.CsvProperty;
 
+@SuppressWarnings("unchecked")
 public class TestSwingSwingConsoleControllerTest {
 
 
@@ -64,8 +65,6 @@ public class TestSwingSwingConsoleControllerTest {
         List<AgentModel> agents = CollectionUtils.newArrayList(a,b,c);
         
         FactoryMap<String, FactoryMap<String, DataBucket>> bucketsByAgentBySource = controller.divideDataIntoBuckets(agents);
-        
-        System.out.println(bucketsByAgentBySource);
         
         assertThat(bucketsByAgentBySource.size(), is(3));
         
@@ -125,8 +124,6 @@ public class TestSwingSwingConsoleControllerTest {
         
         FactoryMap<String, FactoryMap<String, DataBucket>> bucketsByAgentBySource = controller.divideDataIntoBuckets(agents);
         
-        System.out.println(bucketsByAgentBySource);
-        
         assertThat(bucketsByAgentBySource.size(), is(3));
         
         assertThat(bucketsByAgentBySource.keySet().contains("agentA"), is(true));
@@ -185,8 +182,6 @@ public class TestSwingSwingConsoleControllerTest {
         
         FactoryMap<String, FactoryMap<String, DataBucket>> bucketsByAgentBySource = controller.divideDataIntoBuckets(agents);
         
-        System.out.println(bucketsByAgentBySource);
-        
         assertThat(bucketsByAgentBySource.size(), is(3));
         
         assertThat(bucketsByAgentBySource.keySet().contains("agentA"), is(true));
@@ -244,8 +239,6 @@ public class TestSwingSwingConsoleControllerTest {
         List<AgentModel> agents = CollectionUtils.newArrayList(a,b,c);
         
         FactoryMap<String, FactoryMap<String, DataBucket>> bucketsByAgentBySource = controller.divideDataIntoBuckets(agents);
-        
-        System.out.println(bucketsByAgentBySource);
         
         assertThat(bucketsByAgentBySource.size(), is(3));
         

@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.matchers.JUnitMatchers.both;
 
 public class TestRunnerTest {
 
@@ -124,7 +123,7 @@ public class TestRunnerTest {
     /**
      * [95] jbombardier doesn't abandon the current transaction when an exception is fired
      */
-    @Test public void testExceptionClearsTransaction() {
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored") @Test public void testExceptionClearsTransaction() {
 
         final Bucket<Throwable> bucket = new Bucket<Throwable>();
 
@@ -162,10 +161,7 @@ public class TestRunnerTest {
         PerformanceTest test = new PerformanceTestAdaptor() {
             public void runIteration(TestContext pti) throws Exception {
                 pti.startTransaction("transaction");
-                if (true) {
-                    throw new Exception("This is supposed to throw");
-                }
-                pti.endTransaction("transaction");
+                throw new Exception("This is supposed to throw");
             }
         };
 

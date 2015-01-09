@@ -16,7 +16,10 @@
 
 package com.jbombardier.console;
 
+import com.jbombardier.common.AgentPropertyEntryResponse;
+import com.jbombardier.common.CsvPropertiesProvider;
 import com.jbombardier.common.KryoHelper;
+import com.jbombardier.common.PropertyEntry;
 import com.jbombardier.console.charts.FrequencyChart;
 import com.jbombardier.console.configuration.Agent;
 import com.jbombardier.console.configuration.HubCapture;
@@ -77,7 +80,7 @@ public class SwingConsoleController {
     // private InteractiveConfiguration configuration;
     private ConsoleModel model;
     private Map<String, String> properties = new ConcurrentHashMap<String, String>();
-    private Map<String, com.jbombardier.common.CsvPropertiesProvider> csvPropertyProviders = new HashMap<String, com.jbombardier.common.CsvPropertiesProvider>();
+    private Map<String, CsvPropertiesProvider> csvPropertyProviders = new HashMap<String, CsvPropertiesProvider>();
     private Map<ReflectionDispatchMessageListener, KryoClient> dispatchingListeners = new HashMap<ReflectionDispatchMessageListener, KryoClient>();
     private Map<String, DataSource> dataByName = new HashMap<String, DataSource>();
     private ResultsController resultsController;
@@ -345,20 +348,20 @@ public class SwingConsoleController {
         model.incrementActiveThreadCount(message.getAgent(), message.getThreads());
     }
 
-    public com.jbombardier.common.AgentPropertyEntryResponse handleAgentPropertyEntryRequest(com.jbombardier.common.AgentPropertyEntryRequest request) {
-        com.jbombardier.common.AgentPropertyEntryResponse response;
+    public AgentPropertyEntryResponse handleAgentPropertyEntryRequest(com.jbombardier.common.AgentPropertyEntryRequest request) {
+        AgentPropertyEntryResponse response;
 
         String propertyName = request.getPropertyName();
-        com.jbombardier.common.CsvPropertiesProvider csvPropertiesProvider = csvPropertyProviders.get(propertyName);
+        CsvPropertiesProvider csvPropertiesProvider = csvPropertyProviders.get(propertyName);
         if (csvPropertiesProvider != null) {
             // TODO : work out why we have to provide a string there in this
             // case.
-            com.jbombardier.common.PropertyEntry propertyEntry = csvPropertiesProvider.getPropertyEntry("dontmatteratthisbit");
-            response = new com.jbombardier.common.AgentPropertyEntryResponse(request.getPropertyName(),
+            PropertyEntry propertyEntry = csvPropertiesProvider.getPropertyEntry("dontmatteratthisbit");
+            response = new AgentPropertyEntryResponse(request.getPropertyName(),
                                                       request.getThreadName(),
                                                       propertyEntry);
         } else {
-            response = new com.jbombardier.common.AgentPropertyEntryResponse(request.getPropertyName(), request.getThreadName(), null);
+            response = new AgentPropertyEntryResponse(request.getPropertyName(), request.getThreadName(), null);
         }
 
         return response;

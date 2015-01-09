@@ -53,7 +53,7 @@ public class JBombardierTestBase {
             threadsBefore.add(threadsAfterArray[i]);
         }
 
-        HashSet<Thread> nonDaemonAfterThreads = new HashSet();
+        HashSet<Thread> nonDaemonAfterThreads = new HashSet<Thread>();
         for (int i = 0; i < threadsAfterArray.length; i++) {
             Thread threadAfter = threadsAfterArray[i];
             if (!threadAfter.isDaemon()) {

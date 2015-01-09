@@ -16,17 +16,17 @@
 
 package com.jbombardier.repository;
 
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Random;
-
-import com.logginghub.utils.FactoryMapDecorator;
-import com.logginghub.utils.RandomWithMomentum;
-import com.logginghub.utils.TimeUtils;
-import com.logginghub.utils.logging.Logger;
 import com.jbombardier.console.model.result.TestRunResult;
 import com.jbombardier.console.model.result.TestRunResultBuilder;
 import com.jbombardier.repository.model.RepositoryTestModel;
+import com.logginghub.utils.FactoryMapDecorator;
+import com.logginghub.utils.RandomWithAcceleration;
+import com.logginghub.utils.TimeUtils;
+import com.logginghub.utils.logging.Logger;
+
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Random;
 
 /**
  * Creates a load of test files to test the repo whilst we dont have any actual real data
@@ -36,12 +36,13 @@ public class FakeFileCreator {
     public static final String EXAMPLE_TEST1 = "ExampleTest";
 
     public static final String EXAMPLE_TEST2 = "ExampleTestWithLotsOfTests";
-    
+
     private static final Logger logger = Logger.getLoggerFor(FakeFileCreator.class);
 
     public void createFiles(RepositoryController controller) {
 
-        RepositoryTestModel repositoryTestModelForTest = controller.getModel().getRepositoryTestModelForTest(EXAMPLE_TEST1);
+        RepositoryTestModel repositoryTestModelForTest = controller.getModel()
+                                                                   .getRepositoryTestModelForTest(EXAMPLE_TEST1);
         if (!repositoryTestModelForTest.hasResults()) {
             logger.info("Building fake results for {}", EXAMPLE_TEST1);
             buildExampleTestResults(controller);
@@ -56,22 +57,25 @@ public class FakeFileCreator {
         Random random = new Random(0);
 
         Calendar calendar = TimeUtils.getUTCCalendarForTime("1/1/2013 00:00:00");
-        
-        FactoryMapDecorator<Integer, RandomWithMomentum> randomTransactionsPerSecondsByTest = new FactoryMapDecorator<Integer, RandomWithMomentum>(new HashMap<Integer, RandomWithMomentum>()) {
-            @Override protected RandomWithMomentum createNewValue(Integer key) {
-                return new RandomWithMomentum(key, 90, 110, 3, 6);
+
+        FactoryMapDecorator<Integer, RandomWithAcceleration> randomTransactionsPerSecondsByTest = new FactoryMapDecorator<Integer, RandomWithAcceleration>(
+                new HashMap<Integer, RandomWithAcceleration>()) {
+            @Override protected RandomWithAcceleration createNewValue(Integer key) {
+                return buildRandomWithAcceleration(key, 90, 110, 3, 6);
             }
         };
-        
-        FactoryMapDecorator<Integer, RandomWithMomentum> randomTotalTransactionsByTest = new FactoryMapDecorator<Integer, RandomWithMomentum>(new HashMap<Integer, RandomWithMomentum>()) {
-            @Override protected RandomWithMomentum createNewValue(Integer key) {
-                return new RandomWithMomentum(key, 5, 15, 3, 6);
+
+        FactoryMapDecorator<Integer, RandomWithAcceleration> randomTotalTransactionsByTest = new FactoryMapDecorator<Integer, RandomWithAcceleration>(
+                new HashMap<Integer, RandomWithAcceleration>()) {
+            @Override protected RandomWithAcceleration createNewValue(Integer key) {
+                return buildRandomWithAcceleration(key, 5, 15, 3, 6);
             }
         };
-        
-        FactoryMapDecorator<Integer, RandomWithMomentum> randomTransactionDurationsByTest = new FactoryMapDecorator<Integer, RandomWithMomentum>(new HashMap<Integer, RandomWithMomentum>()) {
-            @Override protected RandomWithMomentum createNewValue(Integer key) {
-                return new RandomWithMomentum(key, 25000, 100000, 5, 20);
+
+        FactoryMapDecorator<Integer, RandomWithAcceleration> randomTransactionDurationsByTest = new FactoryMapDecorator<Integer, RandomWithAcceleration>(
+                new HashMap<Integer, RandomWithAcceleration>()) {
+            @Override protected RandomWithAcceleration createNewValue(Integer key) {
+                return buildRandomWithAcceleration(key, 25000, 100000, 5, 20);
             }
         };
 
@@ -81,24 +85,26 @@ public class FakeFileCreator {
             int failureChance = random.nextInt(100);
             if (failureChance > 90) {
                 failureReason = "This run failed as one of the tests failed to start";
-            }
-            else if (failureChance > 80) {
+            } else if (failureChance > 80) {
                 failureReason = "This run failed as the failure tolerance was exceeded";
             }
 
-            TestRunResultBuilder builder = TestRunResultBuilder.start().name(EXAMPLE_TEST2).failureReason(failureReason).startTime(calendar.getTimeInMillis());
+            TestRunResultBuilder builder = TestRunResultBuilder.start()
+                                                               .name(EXAMPLE_TEST2)
+                                                               .failureReason(failureReason)
+                                                               .startTime(calendar.getTimeInMillis());
 
             int tests = 50;
 
             for (int i = 0; i < tests; i++) {
-                RandomWithMomentum randomTransactionCount = randomTransactionsPerSecondsByTest.get(i);
-                RandomWithMomentum randomTransactionDuration = randomTransactionDurationsByTest.get(i);
-                
+                RandomWithAcceleration randomTransactionCount = randomTransactionsPerSecondsByTest.get(i);
+                RandomWithAcceleration randomTransactionDuration = randomTransactionDurationsByTest.get(i);
+
                 double transactionTime = 1e3 * randomTransactionDuration.next();
-                
+
                 int succesful = (int) randomTransactionCount.next();
                 int total = (int) (succesful + randomTotalTransactionsByTest.get(i).next());
-                
+
                 builder.results(TestRunResultBuilder.result()
                                                     .testName("test_" + i)
                                                     .testTime(1000)
@@ -118,11 +124,22 @@ public class FakeFileCreator {
 
     }
 
+    private RandomWithAcceleration buildRandomWithAcceleration(long seed,
+                                                               double min,
+                                                               double max,
+                                                               int trendLengthMin,
+                                                               int trendLengthMax) {
+        RandomWithAcceleration randomWithAcceleration = new RandomWithAcceleration(new RandomWithAcceleration.RandomGenerator(
+                trendLengthMin,
+                trendLengthMax), new RandomWithAcceleration.RandomGenerator(min, max));
+        return randomWithAcceleration;
+    }
+
     private void buildExampleTestResults(RepositoryController controller) {
-        RandomWithMomentum randomATransactions = new RandomWithMomentum(0, 90, 110, 3, 6);
-        RandomWithMomentum randomADuration = new RandomWithMomentum(0, 25000, 100000, 5, 20);
-        RandomWithMomentum randomB = new RandomWithMomentum(0, 100, 200, 5, 20);
-        RandomWithMomentum randomC = new RandomWithMomentum(0, 5, 15, 5, 20);
+        RandomWithAcceleration randomATransactions = buildRandomWithAcceleration(0, 90, 110, 3, 6);
+        RandomWithAcceleration randomADuration = buildRandomWithAcceleration(0, 25000, 100000, 5, 20);
+        RandomWithAcceleration randomB = buildRandomWithAcceleration(0, 100, 200, 5, 20);
+        RandomWithAcceleration randomC = buildRandomWithAcceleration(0, 5, 15, 5, 20);
 
         Random random = new Random(0);
 
@@ -134,8 +151,7 @@ public class FakeFileCreator {
             int failureChance = random.nextInt(100);
             if (failureChance > 90) {
                 failureReason = "This run failed as one of the tests failed to start";
-            }
-            else if (failureChance > 80) {
+            } else if (failureChance > 80) {
                 failureReason = "This run failed as the failure tolerance was exceeded";
             }
 
@@ -148,21 +164,26 @@ public class FakeFileCreator {
                                                                                            .testTime(1000)
                                                                                            .transactionCount(100)
                                                                                            .sla(60)
-                                                                                           .successDuration(1e3 * randomADuration.next())
+                                                                                           .successDuration(1e3 * randomADuration
+                                                                                                   .next())
                                                                                            .successTotalDuration(1e3 * 60)
-                                                                                           .transactionsSuccess((long) randomATransactions.next()))
+                                                                                           .transactionsSuccess((long) randomATransactions
+                                                                                                   .next()))
                                                               .results(TestRunResultBuilder.result()
-                                                                                           .testName("connect_disconnect")
+                                                                                           .testName(
+                                                                                                   "connect_disconnect")
                                                                                            .testTime(1000)
                                                                                            .transactionCount(1000)
-                                                                                           .successDuration(1e6 * randomB.next())
+                                                                                           .successDuration(1e6 * randomB
+                                                                                                   .next())
                                                                                            .successTotalDuration(1e6 * 60)
                                                                                            .transactionsSuccess(100))
                                                               .results(TestRunResultBuilder.result()
                                                                                            .testName("read_log_events")
                                                                                            .testTime(1000)
                                                                                            .transactionCount(1000)
-                                                                                           .successDuration(1e6 * randomC.next())
+                                                                                           .successDuration(1e6 * randomC
+                                                                                                   .next())
                                                                                            .successTotalDuration(1e6 * 60)
                                                                                            .transactionsSuccess(100))
                                                               .toTestRunResult();
