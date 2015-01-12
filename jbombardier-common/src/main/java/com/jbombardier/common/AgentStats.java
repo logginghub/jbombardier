@@ -54,6 +54,16 @@ public class AgentStats {
             return this;
         }
 
+        public static AgentStatsBuilder build() {
+            return new AgentStatsBuilder();
+        }
+
+        public static TestStatsBuilder test(String testName) {
+            TestStatsBuilder stats = new TestStatsBuilder();
+            stats.testName(testName);
+            return stats;
+        }
+
         public AgentStats toStats() {
             return stats;
         }
@@ -107,13 +117,17 @@ public class AgentStats {
             return this;
         }
 
-        public TestStatsBuilder successResult(long result) {
-            stats.successResults.add(result);
+        public TestStatsBuilder successResult(long... result) {
+            for (long l : result) {
+                stats.successResults.add(l);
+            }
             return this;
         }
 
-        public TestStatsBuilder failResult(long result) {
-            stats.failResults.add(result);
+        public TestStatsBuilder failResult(long... result) {
+            for (long l : result) {
+                stats.failResults.add(l);
+            }
             return this;
         }
 

@@ -8,3 +8,5 @@
 .idea/
 .settings
 jbombardier-integrationtests/test-output/
+target/
+jbombardier-integrationtests/reports/
