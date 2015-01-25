@@ -245,7 +245,7 @@ public class JBombardierConfigurationBuilder {
 
     }
 
-    public PhaseBuilder phase(String s) {
+    public static PhaseBuilder phase(String s) {
         PhaseBuilder phaseBuilder = new PhaseBuilder();
         phaseBuilder.phaseConfiguration.setPhaseName(s);
         return phaseBuilder;
@@ -277,6 +277,11 @@ public class JBombardierConfigurationBuilder {
 
         public PhaseBuilder duration(String duration) {
             phaseConfiguration.setDuration(duration);
+            return this;
+        }
+
+        public PhaseBuilder warmup(String duration) {
+            phaseConfiguration.setWarmupDuration(duration);
             return this;
         }
     }
@@ -362,7 +367,7 @@ public class JBombardierConfigurationBuilder {
             return this;
         }
 
-        public TestBuilder failureThresholdMode(TransactionResultModel.TransactionTimeThresholdMode mode) {
+        public TestBuilder failureThresholdMode(TransactionResultModel.SuccessfulTransactionsDurationFailureType mode) {
             configuration.setFailureThresholdMode(mode);
             return this;
         }

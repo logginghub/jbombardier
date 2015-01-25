@@ -25,6 +25,8 @@ import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
 import com.jbombardier.console.model.AgentModel;
+import com.logginghub.utils.observable.ObservableItemContainer;
+import com.logginghub.utils.observable.ObservableListener;
 
 public class AgentStatusTable extends JTable {
 
@@ -47,16 +49,16 @@ public class AgentStatusTable extends JTable {
             AgentModel agentModel = agents.get(row);
             switch (column) {
                 case 0:
-                    value = agentModel.getName();
+                    value = agentModel.getName().get();
                     break;
                 case 1:
-                    value = agentModel.getAddress();
+                    value = agentModel.getAddress().get();
                     break;
                 case 2:
-                    value = agentModel.getPort();
+                    value = agentModel.getPort().get();
                     break;
                 case 3:
-                    value = agentModel.isConnected();
+                    value = agentModel.getConnected().get();
                     break;
                 default:
                     throw new RuntimeException("Illegal column value");
@@ -90,9 +92,9 @@ public class AgentStatusTable extends JTable {
             final int index = agents.size();
             agents.add(model);
             fireTableRowsInserted(index, index);
-            
-            model.addPropertyChangeListener(new PropertyChangeListener() {
-                public void propertyChange(PropertyChangeEvent evt) {
+
+            model.addListener(new ObservableListener() {
+                @Override public void onChanged(ObservableItemContainer observableItemContainer, Object o) {
                     fireTableRowsUpdated(index, index);
                 }
             });

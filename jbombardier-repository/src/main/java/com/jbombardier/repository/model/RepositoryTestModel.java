@@ -25,13 +25,13 @@ import com.logginghub.utils.CompareUtils;
 import com.logginghub.utils.observable.Observable;
 import com.logginghub.utils.observable.ObservableList;
 import com.logginghub.utils.observable.ObservableProperty;
-import com.jbombardier.console.model.result.TestRunResult;
-import com.jbombardier.console.model.result.TransactionResultSnapshot;
+import com.jbombardier.console.model.result.RunResult;
+import com.jbombardier.console.model.result.TransactionResult;
 
 public class RepositoryTestModel extends Observable {
 
     private ObservableProperty<String> name = new ObservableProperty<String>("");
-    private ObservableList<TestRunResult> results = new ObservableList<TestRunResult>(new ArrayList<TestRunResult>());
+    private ObservableList<RunResult> results = new ObservableList<RunResult>(new ArrayList<RunResult>());
 
     public ObservableProperty<String> getName() {
         return name;
@@ -41,14 +41,14 @@ public class RepositoryTestModel extends Observable {
         return "RepositoryTestModel{" + "name=" + name + ", results=" + results + '}';
     }
 
-    public List<TestRunResult> getLastXResults(int resultCount) {
+    public List<RunResult> getLastXResults(int resultCount) {
 
-        List<TestRunResult> xResults = new ArrayList<TestRunResult>();
+        List<RunResult> xResults = new ArrayList<RunResult>();
 
         synchronized (results) {
 
-            Collections.sort(results, new Comparator<TestRunResult>() {
-                @Override public int compare(TestRunResult o1, TestRunResult o2) {
+            Collections.sort(results, new Comparator<RunResult>() {
+                @Override public int compare(RunResult o1, RunResult o2) {
                     return CompareUtils.compare(o2.getStartTime(), o1.getStartTime());
                 }
             });
@@ -75,21 +75,23 @@ public class RepositoryTestModel extends Observable {
         }
     }
 
-    public void add(TestRunResult testRunResult) {
+    public void add(RunResult runResult) {
         synchronized (results) {
-            results.add(testRunResult);
+            results.add(runResult);
         }
     }
 
-    public List<TransactionResultSnapshot> getResultsForTest(String resultName) {
-        List<TestRunResult> lastXResults = getLastXResults(100);
-        List<TransactionResultSnapshot> results = new ArrayList<TransactionResultSnapshot>();
-        for (TestRunResult testRunResult : lastXResults) {
-            TransactionResultSnapshot transactionResultModel = testRunResult.getTestResults().get(resultName);
-            if (transactionResultModel != null) {
-                transactionResultModel.setTestTime(testRunResult.getStartTime());
-                results.add(transactionResultModel);
-            }
+    public List<TransactionResult> getResultsForTest(String resultName) {
+        List<RunResult> lastXResults = getLastXResults(100);
+        List<TransactionResult> results = new ArrayList<TransactionResult>();
+        for (RunResult runResult : lastXResults) {
+
+            // TODO : refactor fix me
+            //TransactionResult transactionResultModel = runResult.getTestResults().get(resultName);
+//            if (transactionResultModel != null) {
+//                transactionResultModel.setTestTime(runResult.getStartTime());
+//                results.add(transactionResultModel);
+//            }
         }
         return results;
     }

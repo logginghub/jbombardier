@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jbombardier.console.model.AgentModel;
+import com.jbombardier.console.model.PhaseModel;
 import org.junit.Test;
 
 import com.logginghub.utils.FileUtils;
@@ -67,13 +68,17 @@ public class TestConsoleController {
         agentStats.setAgentName("Agent1");
         agentStats.addTestStats(testStats);
 
-        model.setTransactionRateModifier(1);
+        model.getTransactionRateModifier().set(1);
 
         TestModel testModel = new TestModel("test1", SleepTest.class.getName());
-        testModel.setTargetRate(100);
-        testModel.setTargetThreads(5);
+        testModel.getTargetRate().set(100);
+        testModel.getTargetThreads().set(5);
 
-        model.addTestModel(testModel);
+        PhaseModel phaseModel = new PhaseModel();
+        phaseModel.getPhaseName().set("Phase 1");
+        phaseModel.getTestModels().add(testModel);
+
+        model.getPhaseModels().add(phaseModel);
 
         // Create a fake agent
         List<AgentModel> agentModels = new ArrayList<AgentModel>();
@@ -84,7 +89,7 @@ public class TestConsoleController {
         controller.getAgentsByAgentName().put("Agent1", agentModel);
 
         controller.initialiseStats();
-        controller.startMainTest();
+        controller.startTest();
 
         // Simulate the generate results bit
 
@@ -96,10 +101,9 @@ public class TestConsoleController {
 
         assertThat(results.get("test1"), is(not(nullValue())));
 
-        String errors = controller.generateReport(false, false);
-        assertThat(errors, is(""));
+        controller.generateReport(new File(configuration.getReportsFolder()));
 
-        File reportFile = new File(reports, "output.html");
+        File reportFile = new File(reports, "index.html");
         assertThat(reportFile.exists(), is(true));
         assertThat(new File(reports, "output.csv").exists(), is(true));
         assertThat(new File(reports, "report.css").exists(), is(true));

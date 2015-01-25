@@ -21,7 +21,6 @@ import com.jbombardier.console.JBombardierModel;
 import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.model.AgentModel;
 import com.jbombardier.console.model.TransactionResultModel;
-import com.jbombardier.console.model.TransactionResultModel.TransactionTimeThresholdMode;
 import com.logginghub.utils.FormattedRuntimeException;
 import com.logginghub.utils.QuietLatch;
 import com.logginghub.utils.StringUtils;
@@ -31,9 +30,9 @@ import com.logginghub.utils.Timeout;
 import com.logginghub.utils.TimerUtils;
 import com.logginghub.utils.logging.Logger;
 import com.logginghub.utils.logging.SystemErrStream;
-import com.logginghub.utils.observable.ObservableInteger;
 import com.logginghub.utils.observable.ObservableList;
 
+import java.io.File;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.List;
@@ -127,14 +126,14 @@ public class JBombardierHeadless {
 
         if (warmupTime > 0) {
             controller.startWarmUp();
-            controller.publishTestInstructionsAndStartRunning();
+            controller.publishTestInstructions();
             controller.getResultsController().stopStatsUpdater();
 
             failureLatch.setTimeout(new Timeout(warmupTime, TimeUnit.MILLISECONDS));
             if (!failureLatch.await()) {
 
                 logger.info("------------------- Warmup complete, real test run started ------------------------");
-                controller.startMainTest();
+                controller.startTest();
                 controller.getResultsController().startStatsUpdater(controller.getModel());
                 warmedUp = true;
 
@@ -152,10 +151,10 @@ public class JBombardierHeadless {
             logger.info("Running test for duration '{}' ({} milliseconds) - will end at '{}'", configuration.getDuration(), testDuration, Logger.toLocalDateString(endTime));
             warmedUp = true;
 
-            controller.publishTestInstructionsAndStartRunning();
+            controller.publishTestInstructions();
             controller.getResultsController().stopStatsUpdater();
 
-            controller.startMainTest();
+            controller.startTest();
             controller.getResultsController().startStatsUpdater(controller.getModel());
 
             while (System.currentTimeMillis() < endTime) {
@@ -181,7 +180,7 @@ public class JBombardierHeadless {
 
         controller.killAgents();
         controller.stopStatisticsCapture();
-        controller.generateReport(false, false);
+        controller.generateReport(new File(configuration.getReportsFolder()));
         controller.endTestNormally();
 
         return controller;
@@ -219,8 +218,7 @@ public class JBombardierHeadless {
         long totalResults = 0;
         final ObservableList<TransactionResultModel> transactionResultModels = model.getTransactionResultModels();
         for (TransactionResultModel trm : transactionResultModels) {
-            ObservableInteger resultCount = trm.getResultCount();
-            totalResults += resultCount.intValue();
+            totalResults += trm.getSuccessfulTransactionsCountPerSecond().get() + trm.getUnsuccessfulTransactionsCountPerSecond().get();
         }
 
         if (totalResults == lastTotalResults) {
@@ -243,14 +241,17 @@ public class JBombardierHeadless {
 
         long totalFailures = 0;
         for (TransactionResultModel trm : transactionResultModels) {
-            totalFailures += trm.getFailedTransactions();
-            if (trm.getTransactionFailureCountThreshold() != -1) {
-                if (trm.getFailedTransactions() >= trm.getTransactionFailureCountThreshold()) {
+            long unsuccessfulTotal = trm.getUnsuccessfulTransactionsTotal().get();
+            totalFailures += unsuccessfulTotal;
+
+            long failureThreshold = trm.getUnsuccessfulTransactionsTotalFailureThreshold().get();
+            if (failureThreshold != -1) {
+                if (unsuccessfulTotal >= failureThreshold) {
                     flagTestFailure(
                             "Test '{}' has exceeded its threshold for failed transactions - {} failures have been recorded out of the threshold of {} transactions",
-                            trm.getTestName(),
-                            trm.getFailedTransactions(),
-                            trm.getTransactionFailureCountThreshold());
+                            trm.getTestName().get(),
+                            unsuccessfulTotal,
+                            failureThreshold);
                 }
             }
         }
@@ -269,47 +270,52 @@ public class JBombardierHeadless {
 
         final ObservableList<TransactionResultModel> transactionResultModels = model.getTransactionResultModels();
         for (TransactionResultModel trm : transactionResultModels) {
-            if (trm.getFailureThreshold() != Double.NaN) {
+
+            double durationFailureThreshold = trm.getSuccessfulTransactionsDurationFailureThreshold().get();
+            if (!Double.isNaN(durationFailureThreshold)) {
 
                 double valueForComparison;
 
-                TransactionTimeThresholdMode mode = trm.getFailureThresholdMode();
+                TransactionResultModel.SuccessfulTransactionsDurationFailureType mode = trm.getSuccessfulTransactionsDurationFailureType().get();
                 switch (mode) {
                     case Mean:
-                        valueForComparison = trm.getSuccessElapsedMS();
+                        valueForComparison = trm.getSuccessfulTransactionDuration().get();
                         break;
                     case TP90:
-                        valueForComparison = trm.getTp90().doubleValue();
+                        valueForComparison = trm.getTp90().get();
                         break;
                     case Stddev:
-                        valueForComparison = trm.getStddev().doubleValue();
+                        valueForComparison = trm.getStddev().get();
                         break;
                     default: {
                         throw new FormattedRuntimeException("Unsupported threshold mode {}", mode);
                     }
                 }
 
-                if (valueForComparison > trm.getFailureThreshold()) {
+                if (valueForComparison > durationFailureThreshold) {
                     NumberFormat nf = NumberFormat.getInstance();
 
                     dumpTestValues(model);
 
-                    if (trm.getResultCount().intValue() > trm.getFailureThresholdResultCountMinimum()) {
+                    long resultCount = trm.getSuccessfulTransactionsTotal().get();
+                    long resultCountMinimum = trm.getSuccessfulTransactionsTotalFailureResultCountMinimum().get();
+
+                    if (resultCount >= resultCountMinimum) {
                         flagTestFailure(
                                 "The failure threshold for test '{}' ({}) result {} ms was higher than the failure threshold of {} ms",
                                 trm.getTestName(),
                                 mode,
                                 nf.format(valueForComparison),
-                                nf.format(trm.getFailureThreshold()));
+                                nf.format(durationFailureThreshold));
                     } else {
                         logger.info(
                                 "The failure threshold for test '{}' ({}) result {} ms was higher than the failure threshold of {} ms - we haven't received enough results ({} out of {}) to cause the test to fail yet though",
                                 trm.getTestName(),
                                 mode,
                                 nf.format(valueForComparison),
-                                nf.format(trm.getFailureThreshold()),
-                                trm.getResultCount().intValue(),
-                                trm.getFailureThresholdResultCountMinimum());
+                                nf.format(durationFailureThreshold),
+                                resultCount,
+                                resultCountMinimum);
                     }
                 }
             }
@@ -324,9 +330,9 @@ public class JBombardierHeadless {
         for (TransactionResultModel trm : transactionResultModels) {
             logger.info(String.format(" %20s | %20s | %20s | %20s |",
                                       trm.getTestName(),
-                                      nf.format(trm.getTotalTransactions()),
-                                      nf.format(trm.getSuccessPerSecondNew()),
-                                      nf.format(trm.getSuccessTimeMeanMillis())));
+                                      nf.format(trm.calculateTotalTransactions()),
+                                      nf.format(trm.getSuccessfulTransactionsCountPerSecond()),
+                                      nf.format(trm.getSuccessfulTransactionDuration())));
         }
     }
 
@@ -351,7 +357,7 @@ public class JBombardierHeadless {
 
             List<AgentModel> agentModels = model.getAgentModels();
             for (AgentModel agentModel : agentModels) {
-                if (agentModel.isConnected()) {
+                if (agentModel.getConnected().get()) {
                     agentCount++;
                     logger.info("Agent '{}' is connected", agentModel);
                 }

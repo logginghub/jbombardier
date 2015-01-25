@@ -66,6 +66,9 @@ public class KryoHelper {
         kryo.register(SendTelemetryRequest.class);
         kryo.register(StopTelemetryRequest.class);
         kryo.register(PingMessage.class);
+        kryo.register(PhaseInstruction.class);
+        kryo.register(PhaseStartInstruction.class);
+        kryo.register(PhaseStopInstruction.class);
     }
 }
 

@@ -16,85 +16,33 @@
 
 package com.jbombardier.console.components;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
+import com.logginghub.utils.observable.ObservableProperty;
+import com.logginghub.utils.observable.ObservablePropertyListener;
 
-import javax.swing.Action;
-import javax.swing.Icon;
-import javax.swing.JButton;
-import javax.swing.SwingUtilities;
-
-import com.logginghub.utils.AbstractBean;
+import javax.swing.*;
 
 /**
- * Extended JButton that changes it's enabled/disabled state in response to a bean
- * update for a boolean value.
- * 
+ * Extended JButton that changes it's enabled/disabled state in response to a bean update for a boolean value.
+ *
  * @author James
  */
 public class JDynamicStateButton extends JButton {
     private static final long serialVersionUID = 1L;
-    
-    private AbstractBean bean;
-    private String propertyName;
     private boolean enabledOnTrue = true;
 
-    public JDynamicStateButton(AbstractBean bean, String propertyName) {
-        super();
-        bind(bean, propertyName);
-    }
-
-    public JDynamicStateButton(Action a, AbstractBean bean, String propertyName) {
-        super(a);
-        this.bean = bean;
-        this.propertyName = propertyName;
-    }
-
-    public JDynamicStateButton(Icon icon, AbstractBean bean, String propertyName) {
-        super(icon);
-        this.bean = bean;
-        this.propertyName = propertyName;
-    }
-
-    public JDynamicStateButton(String text, Icon icon, AbstractBean bean, String propertyName, boolean initialValue) {
-        super(text, icon);
-        bind(bean, propertyName);
-        changeState(initialValue);
-    }
-
-    public JDynamicStateButton(String text, AbstractBean bean, String propertyName, boolean initialValue) {
+    public JDynamicStateButton(String text, ObservableProperty<Boolean> property) {
         super(text);
-        bind(bean, propertyName);
-        changeState(initialValue);
+        bind(property);
+        changeState(property.get());
     }
-    
+
     public JDynamicStateButton(String text) {
         super(text);
     }
-    
-    public AbstractBean getBean() {
-        return bean;
-    }
-    
-    public String getPropertyName() {
-        return propertyName;
-    }
 
-    public void setEnabledOnTrue(boolean enabledOnTrue) {
-        this.enabledOnTrue = enabledOnTrue;
-    }
-    
-    public boolean isEnabledOnTrue() {
-        return enabledOnTrue;
-    }
-
-    public void bind(AbstractBean bean, String propertyName) {
-        this.bean = bean;
-        this.propertyName = propertyName;
-        bean.addPropertyChangeListener(propertyName, new PropertyChangeListener() {
-            public void propertyChange(PropertyChangeEvent evt) {
-                boolean oldValue = (Boolean) evt.getOldValue();
-                boolean newValue = (Boolean) evt.getNewValue();
+    public void bind(ObservableProperty<Boolean> property) {
+        property.addListenerAndNotifyCurrent(new ObservablePropertyListener<Boolean>() {
+            @Override public void onPropertyChanged(Boolean oldValue, Boolean newValue) {
                 if (oldValue != newValue) {
                     changeState(newValue);
                 }
@@ -107,8 +55,7 @@ public class JDynamicStateButton extends JButton {
             public void run() {
                 if (enabledOnTrue == newValue) {
                     setEnabled(true);
-                }
-                else {
+                } else {
                     setEnabled(false);
                 }
             }

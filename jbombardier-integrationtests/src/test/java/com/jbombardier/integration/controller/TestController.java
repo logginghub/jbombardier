@@ -1,6 +1,6 @@
 package com.jbombardier.integration.controller;
 
-import com.jbombardier.TemporalController;
+import com.jbombardier.JBombardierTemporalController;
 import com.jbombardier.agent.Agent2;
 import com.jbombardier.console.JBombardierController;
 import com.jbombardier.console.JBombardierModel;
@@ -77,9 +77,9 @@ public class TestController extends JBombardierTestBase {
             }
         });
 
-        TemporalController temporalController = new TemporalController(controller, configuration);
+        JBombardierTemporalController temporalController = new JBombardierTemporalController(controller);
 
-        temporalController.startTest();
+        temporalController.start();
 
         assertThat(controller.getState(), is(JBombardierController.State.TestRunning));
 

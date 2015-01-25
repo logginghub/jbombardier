@@ -16,26 +16,20 @@
 
 package com.jbombardier.agent;
 
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.logging.ConsoleHandler;
-
 import com.esotericsoftware.kryo.Kryo;
+import com.jbombardier.agent.ThreadController.ThreadControllerListener;
 import com.jbombardier.common.AgentFailedInstruction;
 import com.jbombardier.common.AgentKillInstruction;
 import com.jbombardier.common.AgentLogMessage;
 import com.jbombardier.common.AgentStats;
 import com.jbombardier.common.BasicTestStats;
 import com.jbombardier.common.DataBucket;
+import com.jbombardier.common.KryoHelper;
 import com.jbombardier.common.LoggingStrategy;
 import com.jbombardier.common.PerformanceTest;
+import com.jbombardier.common.PhaseInstruction;
+import com.jbombardier.common.PhaseStartInstruction;
+import com.jbombardier.common.PhaseStopInstruction;
 import com.jbombardier.common.PingMessage;
 import com.jbombardier.common.SendTelemetryRequest;
 import com.jbombardier.common.StopTelemetryRequest;
@@ -46,7 +40,6 @@ import com.jbombardier.common.TestInstruction;
 import com.jbombardier.common.TestPackage;
 import com.jbombardier.common.TestVariableUpdateRequest;
 import com.jbombardier.common.ThreadsChangedMessage;
-import com.jbombardier.common.KryoHelper;
 import com.logginghub.logging.DefaultLogEvent;
 import com.logginghub.logging.LogEventBuilder;
 import com.logginghub.logging.SingleLineTextFormatter;
@@ -62,12 +55,32 @@ import com.logginghub.messaging2.api.Message;
 import com.logginghub.messaging2.api.MessageListener;
 import com.logginghub.messaging2.kryo.KryoHub;
 import com.logginghub.messaging2.local.LocalClient;
-import com.logginghub.utils.*;
+import com.logginghub.utils.Asynchronous;
+import com.logginghub.utils.EnvironmentProperties;
+import com.logginghub.utils.ExceptionHandler;
+import com.logginghub.utils.IntegerStat;
+import com.logginghub.utils.Is;
+import com.logginghub.utils.NamedThreadFactory;
+import com.logginghub.utils.NetUtils;
+import com.logginghub.utils.StacktraceUtils;
+import com.logginghub.utils.StatBundle;
+import com.logginghub.utils.StringUtils;
+import com.logginghub.utils.TimerUtils;
+import com.logginghub.utils.VLPorts;
 import com.logginghub.utils.logging.LogEvent;
 import com.logginghub.utils.logging.Logger;
 import com.logginghub.utils.logging.LoggerStream;
 import com.logginghub.utils.logging.SystemErrStream;
-import com.jbombardier.agent.ThreadController.ThreadControllerListener;
+
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.logging.ConsoleHandler;
 
 public class Agent2 implements Asynchronous {
 
@@ -105,37 +118,10 @@ public class Agent2 implements Asynchronous {
     private boolean outputStats = !EnvironmentProperties.getBoolean("jbombardierAgent.disableStats");
     private String name;
     private ReflectionDispatchMessageListener reflectionDispatchMessageListener;
+    private TestPackage currentTestPackage;
+    private Messaging2ClassLoader remoteClassLoader;
+    private boolean logInternallyToHub;
 
-    public void stop() {
-        stopTest();
-        if(hub != null) {
-            hub.stop();
-            hub = null;
-        }
-
-        if(statsTimer != null) {
-            statsTimer.cancel();
-            statsTimer = null;
-        }
-
-        if(statBundle != null) {
-            statBundle.stop();
-            statBundle = null;
-        }
-
-        if(localClient != null) {
-            localClient.disconnect();
-            localClient.stop();
-            localClient = null;
-        }
-
-        if(reflectionDispatchMessageListener != null) {
-            reflectionDispatchMessageListener.stop();
-            reflectionDispatchMessageListener = null;
-        }
-
-        executorService.shutdownNow();
-    }
 
     public void setName(String name) {
         this.name = name;
@@ -182,8 +168,7 @@ public class Agent2 implements Asynchronous {
                 while (true) {
                     try {
                         Thread.sleep(Integer.MAX_VALUE);
-                    }
-                    catch (InterruptedException ex) {}
+                    } catch (InterruptedException ex) {}
                 }
             }
         };
@@ -198,8 +183,7 @@ public class Agent2 implements Asynchronous {
 
         if (writeBufferSize != -1 && objectBufferSize != -1) {
             hub = new KryoHub(writeBufferSize, objectBufferSize, classRegisterer);
-        }
-        else {
+        } else {
             hub = new KryoHub(classRegisterer);
         }
 
@@ -215,7 +199,11 @@ public class Agent2 implements Asynchronous {
         hub.connect("agent", reflectionDispatchMessageListener);
         hub.start(bindPort);
 
-        statBundle.addStats(hub.getConnectionsCountStat(), hub.getConnectionsStat(), hub.getDisconnectionsStat(), hub.getMessagesReceivedStat(), hub.getMessagesSentStat());
+        statBundle.addStats(hub.getConnectionsCountStat(),
+                hub.getConnectionsStat(),
+                hub.getDisconnectionsStat(),
+                hub.getMessagesReceivedStat(),
+                hub.getMessagesSentStat());
 
         individualResultsStat = statBundle.createStat("individual results");
         resultPackageStat = statBundle.createStat("results updates sent");
@@ -231,10 +219,10 @@ public class Agent2 implements Asynchronous {
             statBundle.startPerSecond(logger);
         }
 
-        localClient = new LocalClient("agent-classloader");
+        localClient = new LocalClient("agent-remoteClassLoader");
         localClient.addConnectionPoint(hub);
 
-        // Wire up a message listener to the remote classloader to update the ping time - this way
+        // Wire up a message listener to the remote remoteClassLoader to update the ping time - this way
         // tests wont kill themselves if they spend a long time loading classes and resources
         localClient.addMessageListener(new MessageListener() {
             public void onNewMessage(Message message) {
@@ -246,13 +234,11 @@ public class Agent2 implements Asynchronous {
         logger.info("jbombardierAgent started and bound on port {}", bindPort);
     }
 
-    @SuppressWarnings("UnusedDeclaration")
-    public String handleStartTelemetryRequest(final SendTelemetryRequest str) {
+    @SuppressWarnings("UnusedDeclaration") public String handleStartTelemetryRequest(final SendTelemetryRequest str) {
         return "Done";
     }
 
-    @SuppressWarnings("UnusedDeclaration")
-    public void handlePing(PingMessage pingMessage) {
+    @SuppressWarnings("UnusedDeclaration") public void handlePing(PingMessage pingMessage) {
         updatePing();
     }
 
@@ -262,9 +248,9 @@ public class Agent2 implements Asynchronous {
         lastPingTime = System.currentTimeMillis();
     }
 
-    @SuppressWarnings("UnusedDeclaration")
-    public String handleDataBucket(DataBucket dataBucket) {
-        Is.notEmpty(dataBucket.getValues(), "Data bucket for source " + dataBucket.getDataSourceName() + " cannot be empty");
+    @SuppressWarnings("UnusedDeclaration") public String handleDataBucket(DataBucket dataBucket) {
+        Is.notEmpty(dataBucket.getValues(),
+                "Data bucket for source " + dataBucket.getDataSourceName() + " cannot be empty");
         dataBuckets.put(dataBucket.getDataSourceName(), dataBucket);
         return "Bucket stored";
     }
@@ -274,53 +260,104 @@ public class Agent2 implements Asynchronous {
         stopTest();
         updatePing();
 
-        executorService.execute(new Runnable() {
-            public void run() {
-                startTest(testPackage);
-            }
-        });
-
-        // Reset the failure tracking state variables
-        statsFailures = 0;
-        abortingTest = false;
-
-        return "Test package received";
-    }
-
-    protected void startTest(TestPackage testPackage) {
-        logger.info("Executing test package " + testPackage);
-
-        final String agentName = testPackage.getAgentName();
-
-        final boolean logInternallyToHub = setupHubLogging(testPackage);
+        this.currentTestPackage = testPackage;
 
         // TODO : we should probably find a way of asking the server if any
         // classes have changed since our last update, to save redownloading
         // lots of classes that haven't changed! We will always need a new class
         // loaded though to avoid the duplicate class definition issue, but at
         // least the instance could inherit the existing definitions from the
-        // preivous classloader and only have to load the changes?
-        Messaging2ClassLoader classloader = new Messaging2ClassLoader(localClient, "controller", this.getClass().getClassLoader());
+        // preivous remoteClassLoader and only have to load the changes?
+        this.remoteClassLoader = new Messaging2ClassLoader(localClient, "controller", this.getClass().getClassLoader());
 
-        List<TestInstruction> instructions = testPackage.getInstructions();
+        //        executorService.execute(new Runnable() {
+        //            public void run() {
+        //                startTest(testPackage);
+        //            }
+        //        });
+
+        // Reset the failure tracking state variables
+        statsFailures = 0;
+        abortingTest = false;
+
+        this.logInternallyToHub = setupHubLogging(testPackage);
+
+        logger.info("Test package processed - waiting for phase start instruction...");
+
+        return "Test package received";
+    }
+
+    private void stopCurrentPhase() {
+        stopTest();
+    }
+
+
+    public String handlePhaseStop(final PhaseStopInstruction phaseStopInstruction) {
+        stopCurrentPhase();
+        return "Success";
+    }
+
+    public String handlePhaseStart(final PhaseStartInstruction phaseStartInstruction) {
+
+        String phaseName = phaseStartInstruction.getPhaseName();
+        logger.info("Phase start instruction received for phase '{}'", phaseName);
+
+        stopCurrentPhase();
+
+        PhaseInstruction foundPhase = null;
+
+        Is.notNull(currentTestPackage, "The agent has been asked to start a phase without being sent a test package first - this will fail");
+
+        List<PhaseInstruction> phases = currentTestPackage.getPhases();
+        for (PhaseInstruction phase : phases) {
+            if (phase.getPhaseName().equals(phaseName)) {
+                foundPhase = phase;
+                break;
+            }
+        }
+
+        String response;
+        if (foundPhase != null) {
+            startPhase(foundPhase, this.remoteClassLoader);
+            response = "Starting phase";
+        } else {
+            response = "FAILED - no phase found";
+        }
+
+        return response;
+    }
+
+
+    private void startPhase(PhaseInstruction phaseInstruction, Messaging2ClassLoader classloader) {
+
+        logger.info("Starting phase '{}'", phaseInstruction.getPhaseName());
+
+        List<TestInstruction> instructions = phaseInstruction.getInstructions();
         stats = new BasicTestStats[instructions.size()];
         int statsIndex = 0;
         for (final TestInstruction testInstruction : instructions) {
             String classname = testInstruction.getClassname();
-
             String testName = testInstruction.getTestName();
+
+            logger.info("Starting test '{}' : '{}'", testName, classname);
+
             BasicTestStats basicTestStats = new BasicTestStats(testName);
             stats[statsIndex] = basicTestStats;
 
             try {
-                @SuppressWarnings("unchecked") Class<? extends PerformanceTest> testClass = classloader.findClass(classname);
+                @SuppressWarnings("unchecked") Class<? extends PerformanceTest> testClass = classloader.findClass(
+                        classname);
 
                 SimpleTestContextFactory testContextFactory = new SimpleTestContextFactory();
 
                 testContextFactory.setLoggingStrategy(new LoggingStrategy() {
                     public void log(String format, Object... params) {
                         String message = StringUtils.format(format, params);
-                        hub.send("controller", "agent", new AgentLogMessage(agentName + "." + Thread.currentThread().getName(), message));
+                        hub.send("controller",
+                                "agent",
+                                new AgentLogMessage(currentTestPackage.getAgentName() + "." + Thread.currentThread()
+                                                                                                    .getName(),
+                                        message));
 
                         if (logInternallyToHub) {
                             logToHub(loggingSocketClient, message);
@@ -330,7 +367,8 @@ public class Agent2 implements Asynchronous {
 
                 testContextFactory.setRecordAllValues(testInstruction.getRecordAllValues());
 
-                final Messaging2PropertiesProvider propertiesProvider = new Messaging2PropertiesProvider(localClient, "controller");
+                final Messaging2PropertiesProvider propertiesProvider = new Messaging2PropertiesProvider(localClient,
+                        "controller");
                 propertiesProvider.setupAgentCachedData(dataBuckets);
                 propertiesProvider.setStartingProperties(testInstruction.getProperties());
                 testContextFactory.setPropertiesProvider(propertiesProvider);
@@ -338,33 +376,50 @@ public class Agent2 implements Asynchronous {
                 String simpleName = testClass.getSimpleName();
                 final String fullName = testClass.getName();
                 logger.info("Starting thread controller to run " + simpleName);
-                ThreadController controller = new ThreadController(testName, testClass, testContextFactory, testInstruction);
+                ThreadController controller = new ThreadController(testName,
+                        testClass,
+                        testContextFactory,
+                        testInstruction);
 
                 controller.setExceptionHandler(new ExceptionHandler() {
                     public void handleException(String action, Throwable t) {
-                        hub.send("controller", "agent", new AgentFailedInstruction("Error in controller", Thread.currentThread().getName(), action, t));
+                        hub.send("controller", "agent", new AgentFailedInstruction("Error in controller",
+                                Thread.currentThread().getName(),
+                                action,
+                                t));
                     }
                 });
 
                 controller.addThreadControllerListener(new ThreadControllerListener() {
                     public void onThreadStarted(int threads) {
                         if (!abortingTest && hub != null) {
-                            hub.send("controller", "agent", new ThreadsChangedMessage(agentName, fullName, threads));
+                            hub.send("controller", "agent", new ThreadsChangedMessage(currentTestPackage.getAgentName(),
+                                    fullName,
+                                    threads));
                         }
                     }
 
                     public void onThreadKilled(int threads) {
                         if (!abortingTest && hub != null) {
-                            hub.send("controller", "agent", new ThreadsChangedMessage(agentName, fullName, -threads));
+                            hub.send("controller", "agent", new ThreadsChangedMessage(currentTestPackage.getAgentName(),
+                                    fullName,
+                                    -threads));
                         }
                     }
 
                     public void onException(String message, String threadName, Throwable throwable) {
                         logger.warning(throwable);
-                        hub.send("controller", "agent", new AgentLogMessage(agentName + "." + threadName, message, throwable));
+                        hub.send("controller",
+                                "agent",
+                                new AgentLogMessage(currentTestPackage.getAgentName() + "." + threadName,
+                                        message,
+                                        throwable));
                         // TODO : this is hateful
                         if (message.contains("Setup")) {
-                            hub.send("controller", "agent", new AgentFailedInstruction("Error in setup", threadName, message, throwable));
+                            hub.send("controller", "agent", new AgentFailedInstruction("Error in setup",
+                                    threadName,
+                                    message,
+                                    throwable));
                         }
                     }
                 });
@@ -377,9 +432,10 @@ public class Agent2 implements Asynchronous {
                 }
                 threadControllersByTestName.put(testName, controller);
                 controller.start();
-            }
-            catch (Exception e) {
-                hub.send("controller", "agent", new AgentLogMessage(agentName, "Failed to create test", e));
+            } catch (Exception e) {
+                hub.send("controller", "agent", new AgentLogMessage(currentTestPackage.getAgentName(),
+                        "Failed to create test",
+                        e));
 
                 // This should cause the controller to send out kill
                 // instructions to everyone shortly
@@ -394,7 +450,7 @@ public class Agent2 implements Asynchronous {
         if (statsTimer == null) {
             statsTimer = TimerUtils.everySecond("StatsTimer", new Runnable() {
                 public void run() {
-                    sendStatsUpdate(agentName);
+                    sendStatsUpdate(currentTestPackage.getAgentName());
                     checkPing();
                 }
             });
@@ -409,7 +465,8 @@ public class Agent2 implements Asynchronous {
 
         if (logInternallyToHub) {
             loggingSocketClient = new SocketClient();
-            List<InetSocketAddress> connectionPoints = NetUtils.toInetSocketAddressList(testPackage.getLoggingHubs(), VLPorts.getSocketHubDefaultPort());
+            List<InetSocketAddress> connectionPoints = NetUtils.toInetSocketAddressList(testPackage.getLoggingHubs(),
+                    VLPorts.getSocketHubDefaultPort());
             loggingSocketClient.addConnectionPoints(connectionPoints);
             loggingSocketClient.setAutoSubscribe(false);
             socketClientManager = new SocketClientManager(loggingSocketClient);
@@ -422,7 +479,7 @@ public class Agent2 implements Asynchronous {
                 public void onNewLogEvent(LogEvent event) {
                     DefaultLogEvent logEvent = LogEventBuilder.start()
                                                               .setMessage(event.getMessage())
-                                                              .setSourceApplication(getAgentName())
+                                                              .setSourceApplication(getInternalAgentName())
                                                               .setSourceClassName(event.getSourceClassName())
                                                               .setSourceMethodName(event.getSourceMethodName())
                                                               .setLevel(event.getLevel())
@@ -432,8 +489,7 @@ public class Agent2 implements Asynchronous {
                                                               .toLogEvent();
                     try {
                         loggingSocketClient.send(new LogEventMessage(logEvent));
-                    }
-                    catch (LoggingMessageSenderException e) {
+                    } catch (LoggingMessageSenderException e) {
                         System.err.println("Failed to send logging message to the hub : " + e.getMessage());
                     }
                 }
@@ -456,7 +512,7 @@ public class Agent2 implements Asynchronous {
             socketAppender.setHost(testPackage.getLoggingHubs());
             socketAppender.setPublishMachineTelemetry(false);
             socketAppender.setPublishProcessTelemetry(false);
-            socketAppender.setSourceApplication(getAgentName());
+            socketAppender.setSourceApplication(getInternalAgentName());
             socketAppender.setUseDispatchThread(true);
             rootLogger.addAppender(socketAppender);
         }
@@ -465,8 +521,9 @@ public class Agent2 implements Asynchronous {
         if (logFromJul) {
 
             SocketHandler socketHandler = new SocketHandler();
-            socketHandler.setSourceApplication(getAgentName());
-            List<InetSocketAddress> connectionPoints = NetUtils.toInetSocketAddressList(testPackage.getLoggingHubs(), VLPorts.getSocketHubDefaultPort());
+            socketHandler.setSourceApplication(getInternalAgentName());
+            List<InetSocketAddress> connectionPoints = NetUtils.toInetSocketAddressList(testPackage.getLoggingHubs(),
+                    VLPorts.getSocketHubDefaultPort());
             for (InetSocketAddress inetSocketAddress : connectionPoints) {
                 socketHandler.addConnectionPoint(inetSocketAddress);
             }
@@ -489,7 +546,7 @@ public class Agent2 implements Asynchronous {
         return logInternallyToHub;
     }
 
-    protected String getAgentName() {
+    protected String getInternalAgentName() {
         return "Agent (" + bindPort + ")";
 
     }
@@ -554,17 +611,20 @@ public class Agent2 implements Asynchronous {
             logger.fine("Sending stats to the controller...");
             hub.send("controller", "agent", agentStats);
             resultPackageStat.increment();
-        }
-        catch (RuntimeException se) {
+        } catch (RuntimeException se) {
             statsFailures++;
-            logger.info(se, "Failed to send stats to the agent ({} out of {} attempts): {}", statsFailures, failureLimit, se.getMessage());
+            logger.info(se,
+                    "Failed to send stats to the agent ({} out of {} attempts): {}",
+                    statsFailures,
+                    failureLimit,
+                    se.getMessage());
         }
 
         if (statsFailures > failureLimit) {
             abortingTest = true;
             logger.warn("We've had " +
-                        failureLimit +
-                        " failures when trying to send stats updates to the controller, it doesn't look like its there anymore so the agent is giving up running the tests");
+                    failureLimit +
+                    " failures when trying to send stats updates to the controller, it doesn't look like its there anymore so the agent is giving up running the tests");
             stopTest();
         }
     }
@@ -574,10 +634,36 @@ public class Agent2 implements Asynchronous {
         return new StopTestResponse();
     }
 
-    @SuppressWarnings("UnusedDeclaration")
-    public String handleStopTelemetryRequest(StopTelemetryRequest request) {
+    @SuppressWarnings("UnusedDeclaration") public String handleStopTelemetryRequest(StopTelemetryRequest request) {
         return "Done";
     }
+
+    public void stop() {
+        stopTest();
+        if (hub != null) {
+            hub.stop();
+            hub = null;
+        }
+
+        if (statBundle != null) {
+            statBundle.stop();
+            statBundle = null;
+        }
+
+        if (localClient != null) {
+            localClient.disconnect();
+            localClient.stop();
+            localClient = null;
+        }
+
+        if (reflectionDispatchMessageListener != null) {
+            reflectionDispatchMessageListener.stop();
+            reflectionDispatchMessageListener = null;
+        }
+
+        executorService.shutdownNow();
+    }
+
 
     private void stopTest() {
         if (statsTimer != null) {
@@ -614,8 +700,7 @@ public class Agent2 implements Asynchronous {
         if (systemExitOnKill) {
             logger.info("Agent kill request received, calling System.exit() with exit code " + agentKillInstruction.getCode());
             System.exit(agentKillInstruction.getCode());
-        }
-        else {
+        } else {
             logger.info("Agent kill request received, but systemExitOnKill has been disabled, ignoring.");
             stopTest();
         }
@@ -630,8 +715,7 @@ public class Agent2 implements Asynchronous {
                     threadController.setTransactionRateModifier((Double) request.getNewValue());
                 }
             }
-        }
-        else {
+        } else {
             String testName = request.getTestName();
             ThreadController threadController = threadControllersByTestName.get(testName);
             Object newValue = request.getNewValue();
@@ -671,15 +755,14 @@ public class Agent2 implements Asynchronous {
     private void logToHub(final SocketClient finalClient, String message) {
         DefaultLogEvent logEvent = LogEventBuilder.start()
                                                   .setMessage(message)
-                                                  .setSourceApplication(getAgentName())
+                                                  .setSourceApplication(getInternalAgentName())
                                                   .setSourceClassName(StacktraceUtils.getCallingClassName(4))
                                                   .setSourceMethodName(StacktraceUtils.getCallingMethodName(4))
                                                   .setThreadName(Thread.currentThread().getName())
                                                   .toLogEvent();
         try {
             finalClient.send(new LogEventMessage(logEvent));
-        }
-        catch (LoggingMessageSenderException e) {}
+        } catch (LoggingMessageSenderException e) {}
     }
 
     public void setWriteBufferSize(int writeBufferSize) {
@@ -694,17 +777,15 @@ public class Agent2 implements Asynchronous {
         this.pingTimeout = pingTimeout;
     }
 
-    @SuppressWarnings("UnusedDeclaration")
-    public long getPingTimeout() {
+    @SuppressWarnings("UnusedDeclaration") public long getPingTimeout() {
         return pingTimeout;
     }
-    
+
     public void setOutputStats(boolean outputStats) {
         this.outputStats = outputStats;
     }
 
-    @SuppressWarnings("UnusedDeclaration")
-    public boolean isOutputStats() {
+    @SuppressWarnings("UnusedDeclaration") public boolean isOutputStats() {
         return outputStats;
     }
 }

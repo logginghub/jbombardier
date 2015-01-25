@@ -14,27 +14,8 @@
  * limitations under the License.
  */
 
-package com.jbombardier.console.model.instrumentation;
+package com.jbombardier.common;
 
-public class JavaProcess extends Process {
-
-    private int threads;
-    private long maximumlMemory;
-
-    public int getThreads() {
-        return threads;
-    }
-
-    public void setThreads(int threads) {
-        firePropertyChange("threads", this.threads, this.threads = threads);
-    }
-
-    public long getMaximumlMemory() {
-        return maximumlMemory;
-    }
-
-    public void setMaximumlMemory(long maximumlMemory) {
-        firePropertyChange("maximumlMemory", this.maximumlMemory, this.maximumlMemory = maximumlMemory);
-    }
+public class PhaseStopInstruction {
 
 }

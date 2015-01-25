@@ -20,15 +20,16 @@ import java.util.List;
 
 public class TestPackage {
 
-    private List<TestInstruction> instructions;
+    private List<PhaseInstruction> phases;
+
     private String agentName;
     
     private String loggingType;
     private String loggingHubs;
 
-    public TestPackage(String agentName, List<TestInstruction> instructions) {
+    public TestPackage(String agentName, List<PhaseInstruction> phases) {
         this.agentName = agentName;
-        this.instructions = instructions;
+        this.phases = phases;
     }
     
     public TestPackage() {
@@ -55,16 +56,25 @@ public class TestPackage {
         return agentName;
     }
 
-    public void setInstructions(List<TestInstruction> instructions) {
-        this.instructions = instructions;
+    public List<PhaseInstruction> getPhases() {
+        return phases;
     }
 
-    public List<TestInstruction> getInstructions() {
-        return instructions;
+    public void setAgentName(String agentName) {
+        this.agentName = agentName;
+    }
+
+    public void setPhases(List<PhaseInstruction> phases) {
+        this.phases = phases;
     }
 
     @Override public String toString() {
-        return "TestPackage [agentName=" + agentName + ", instructions=" + instructions + "]";
+        final StringBuilder sb = new StringBuilder("TestPackage{");
+        sb.append("phases=").append(phases);
+        sb.append(", agentName='").append(agentName).append('\'');
+        sb.append(", loggingType='").append(loggingType).append('\'');
+        sb.append(", loggingHubs='").append(loggingHubs).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
-
 }

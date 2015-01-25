@@ -66,7 +66,7 @@ public class AgentStatusButtonsPanel extends JPanel {
     }
     
     private void addAgentButton(AgentModel model) {
-        JDynamicStateButton button = new JDynamicStateButton(model.getName(), model, "connected", model.isConnected());
+        JDynamicStateButton button = new JDynamicStateButton(model.getName().get(), model.getConnected());
         add(button, "cell 0 0");
     }
 }

@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.logginghub.utils.Xml;
-import com.jbombardier.console.model.result.TestRunResult;
+import com.jbombardier.console.model.result.RunResult;
 
 public class TestRepositoryWebView {
 
@@ -41,9 +41,14 @@ public class TestRepositoryWebView {
 
         RepositoryTestModel rtm = new RepositoryTestModel();
         
-        TestRunResult run1 = new TestRunResult("Test1", 10);
-        TestRunResult run2 = new TestRunResult("Test1", 20);
-        
+        RunResult run1 = new RunResult();
+        run1.setConfigurationName("Test1");
+        run1.setStartTime(10);
+
+        RunResult run2 = new RunResult();
+        run2.setConfigurationName("Test1");
+        run2.setStartTime(20);
+
         rtm.getName().set("Test1");
         rtm.add(run1);
         rtm.add(run2);

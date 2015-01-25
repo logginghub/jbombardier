@@ -16,29 +16,23 @@
 
 package com.jbombardier.console.panels;
 
-import java.util.List;
+import com.jbombardier.common.TestField;
+import com.jbombardier.console.JBombardierController;
+import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.console.charts.XYTimeChartPanel;
+import com.jbombardier.console.components.ReflectiveTable;
+import com.jbombardier.console.model.AgentModel;
+import com.jbombardier.console.model.PhaseModel;
+import com.jbombardier.console.model.TestModel;
+import com.logginghub.utils.observable.ObservableListListener;
+import com.logginghub.utils.observable.ObservablePropertyListener;
+import net.miginfocom.swing.MigLayout;
 
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
-import javax.swing.JSplitPane;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-
-import com.jbombardier.console.JBombardierModel;
-import com.jbombardier.console.components.ReflectiveTable;
-import com.jbombardier.console.model.AgentModel;
-import com.jbombardier.console.model.TestModel;
-import net.miginfocom.swing.MigLayout;
-
-import com.logginghub.utils.observable.ObservablePropertyListener;
-import com.jbombardier.common.TestField;
-import com.jbombardier.console.JBombardierController;
-import com.jbombardier.console.charts.XYTimeChartPanel;
+import java.util.List;
 
 public class RateControlPanel extends JPanel {
 
@@ -61,7 +55,12 @@ public class RateControlPanel extends JPanel {
 
         JPanel threadStatePanel = new JPanel();
         splitPane.setLeftComponent(threadStatePanel);
-        threadStatePanel.setBorder(new TitledBorder(null, "Thread State", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+        threadStatePanel.setBorder(new TitledBorder(null,
+                "Thread State",
+                TitledBorder.LEADING,
+                TitledBorder.TOP,
+                null,
+                null));
         threadStatePanel.setLayout(new MigLayout("", "[grow,fill]", "[grow,fill]"));
 
         chartPanel = new XYTimeChartPanel();
@@ -71,22 +70,33 @@ public class RateControlPanel extends JPanel {
 
         JPanel threadControlPanel = new JPanel();
         splitPane.setRightComponent(threadControlPanel);
-        threadControlPanel.setBorder(new TitledBorder(null, "Thread Control", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+        threadControlPanel.setBorder(new TitledBorder(null,
+                "Thread Control",
+                TitledBorder.LEADING,
+                TitledBorder.TOP,
+                null,
+                null));
         threadControlPanel.setLayout(new MigLayout("", "[grow,fill]", "[][grow,fill]"));
-        
+
         JLabel lblNewLabel = new JLabel("Transaction rate multiplier");
         threadControlPanel.add(lblNewLabel, "flowx,cell 0 0");
-        
+
         transactionRateMultiplier = new JSpinner();
         transactionRateModel = new SpinnerNumberModel(1.0, 0.0, 1000000.0, 0.1);
-        transactionRateMultiplier.setModel(transactionRateModel);        
+        transactionRateMultiplier.setModel(transactionRateModel);
         threadControlPanel.add(transactionRateMultiplier, "cell 0 0");
 
         JScrollPane scrollPane = new JScrollPane();
         threadControlPanel.add(scrollPane, "cell 0 1,grow");
 
         table = new ReflectiveTable<TestModel>(TestModel.class);
-        table.dontShowColumns("Properties", "RecordAllValues", "Classname", "TransactionSLAs", "FailureThreshold", "FailureThresholdMode", "FailedTransactionCountThreshold");
+        table.dontShowColumns("Properties",
+                "RecordAllValues",
+                "Classname",
+                "TransactionSLAs",
+                "FailureThreshold",
+                "FailureThresholdMode",
+                "FailedTransactionCountThreshold");
         table.setEditable(true);
         scrollPane.setViewportView(table);
     }
@@ -111,7 +121,7 @@ public class RateControlPanel extends JPanel {
                 });
             }
         });
-                
+
         table.addChangeHandler(new ReflectiveTable.ChangeHandler<TestModel>() {
             public void onChange(TestModel entry, String field, Object newValue) {
                 TestField fieldEnum = TestField.valueOf(dropCap(field));
@@ -123,28 +133,47 @@ public class RateControlPanel extends JPanel {
         for (AgentModel agentModel : agentModels) {
             addAgentModel(agentModel);
         }
-        
-        List<TestModel> testModels = model.getTestModels();
-        for (TestModel testModel : testModels) {
-            table.addItem(testModel);
-        }
-        
+
+        model.getCurrentPhase().addListenerAndNotifyCurrent(new ObservablePropertyListener<PhaseModel>() {
+            @Override public void onPropertyChanged(PhaseModel phaseModel, PhaseModel t1) {
+                if (t1 != null) {
+                    table.clear();
+                    t1.getTestModels().addListenerAndNotifyExisting(new ObservableListListener<TestModel>() {
+                        @Override public void onAdded(TestModel testModel) {
+                            table.addItem(testModel);
+                        }
+
+                        @Override public void onRemoved(TestModel testModel) {
+                        }
+
+                        @Override public void onCleared() {
+                        }
+                    });
+                }
+            }
+        });
+
+//        List<TestModel> testModels = model.getTestModels();
+//        for (TestModel testModel : testModels) {
+//
+//        }
+
         // Wire up the transaction rate changer
-        transactionRateModel.setValue(model.getTransactionRateModifier());
+        transactionRateModel.setValue(model.getTransactionRateModifier().get());
         transactionRateModel.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
-                double doubleValue = transactionRateModel.getNumber().doubleValue(); 
-                model.setTransactionRateModifier(doubleValue);
+                double doubleValue = transactionRateModel.getNumber().doubleValue();
+                model.getTransactionRateModifier().set(doubleValue);
             }
         });
     }
 
     private void addAgentModel(final AgentModel model) {
-        model.getThreadCount().addListenerAndNotifyCurrent(new ObservablePropertyListener<Integer>() {           
+        model.getThreadCount().addListenerAndNotifyCurrent(new ObservablePropertyListener<Integer>() {
             @Override public void onPropertyChanged(Integer oldValue, Integer newValue) {
                 SwingUtilities.invokeLater(new Runnable() {
                     public void run() {
-                        chartPanel.addValue(model.getName(), System.currentTimeMillis(), model.getThreadCount().get());
+                        chartPanel.addValue(model.getName().get(), System.currentTimeMillis(), model.getThreadCount().get());
                         chartPanel.removeOldDataPoints();
                     }
                 });
@@ -152,7 +181,7 @@ public class RateControlPanel extends JPanel {
         });
     }
 
-    
+
     protected String dropCap(String field) {
         return Character.toLowerCase(field.charAt(0)) + field.substring(1);
 

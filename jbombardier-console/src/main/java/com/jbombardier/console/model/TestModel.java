@@ -16,20 +16,24 @@
 
 package com.jbombardier.console.model;
 
+import com.logginghub.utils.observable.Observable;
+import com.logginghub.utils.observable.ObservableDouble;
+import com.logginghub.utils.observable.ObservableInteger;
+import com.logginghub.utils.observable.ObservableLong;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import com.logginghub.utils.AbstractBean;
-import com.jbombardier.console.model.TransactionResultModel.TransactionTimeThresholdMode;
+public class TestModel extends Observable {
 
-public class TestModel extends AbstractBean {
+    private ObservableInteger targetThreads = createIntProperty("targetThreads", 1);
+    private ObservableInteger threadStep = createIntProperty("threadStep", 1);
+    private ObservableLong threadStepTime = createLongProperty("threadStepTime", 1000);
+    private ObservableDouble targetRate = createDoubleProperty("targetRate", 1);
 
+    // TODO : none of the rest of the parameters are observable... they probably should be?
     private String name;
     private String classname;
-    private int targetThreads = 1;
-    private int threadStep = 1;
-    private long threadStepTime = 1000;
-    private float targetRate = 1;
     private float rateStep = 1;
     private long rateStepTime = 1000;
     private boolean recordAllValues;
@@ -37,7 +41,7 @@ public class TestModel extends AbstractBean {
     private Map<String, Double> transactionSLAs = new HashMap<String, Double>();
 
     private double failureThreshold = Double.NaN;
-    private TransactionResultModel.TransactionTimeThresholdMode failureThresholdMode = TransactionTimeThresholdMode.Mean;
+    private TransactionResultModel.SuccessfulTransactionsDurationFailureType failureThresholdMode = TransactionResultModel.SuccessfulTransactionsDurationFailureType.Mean;
     private int failedTransactionCountThreshold = -1;
     private int failureThresholdResultCountMinimum = 10;
     private int movingAveragePoints = 10;
@@ -48,7 +52,7 @@ public class TestModel extends AbstractBean {
         this.name = name;
         this.classname = classname;
     }
-    
+
     public void setMovingAveragePoints(int movingAveragePoints) {
         this.movingAveragePoints = movingAveragePoints;
     }
@@ -68,7 +72,7 @@ public class TestModel extends AbstractBean {
     public void setFailureThresholdResultCountMinimum(int failureThresholdResultCountMinimum) {
         this.failureThresholdResultCountMinimum = failureThresholdResultCountMinimum;
     }
-    
+
     public void setFailedTransactionCountThreshold(int failedTransactionCountThreshold) {
         this.failedTransactionCountThreshold = failedTransactionCountThreshold;
     }
@@ -81,36 +85,20 @@ public class TestModel extends AbstractBean {
         this.classname = classname;
     }
 
-    public int getTargetThreads() {
-        return targetThreads;
-    }
-
-    public void setTargetThreads(int targetThreads) {
-        firePropertyChange("targetThreads", this.targetThreads, this.targetThreads = targetThreads);
-    }
-
-    public int getThreadStep() {
-        return threadStep;
-    }
-
-    public void setThreadStep(int threadStep) {
-        firePropertyChange("threadStep", this.threadStep, this.threadStep = threadStep);
-    }
-
-    public long getThreadStepTime() {
-        return threadStepTime;
-    }
-
-    public void setThreadStepTime(long threadStepTime) {
-        firePropertyChange("threadStepTime", this.threadStepTime, this.threadStepTime = threadStepTime);
-    }
-
-    public float getTargetRate() {
+    public ObservableDouble getTargetRate() {
         return targetRate;
     }
 
-    public void setTargetRate(float targetRate) {
-        firePropertyChange("targetRate", this.targetRate, this.targetRate = targetRate);
+    public ObservableInteger getTargetThreads() {
+        return targetThreads;
+    }
+
+    public ObservableInteger getThreadStep() {
+        return threadStep;
+    }
+
+    public ObservableLong getThreadStepTime() {
+        return threadStepTime;
     }
 
     public float getRateStep() {
@@ -161,20 +149,20 @@ public class TestModel extends AbstractBean {
         this.failureThreshold = failureThreshold;
     }
 
-    public void setFailureThresholdMode(TransactionResultModel.TransactionTimeThresholdMode failureThresholdMode) {
+    public void setFailureThresholdMode(TransactionResultModel.SuccessfulTransactionsDurationFailureType failureThresholdMode) {
         this.failureThresholdMode = failureThresholdMode;
     }
-    
-    public TransactionResultModel.TransactionTimeThresholdMode getFailureThresholdMode() {
+
+    public TransactionResultModel.SuccessfulTransactionsDurationFailureType getFailureThresholdMode() {
         return failureThresholdMode;
     }
-    
+
     @Override public String toString() {
         return "TestModel [name=" + name + ", classname=" + classname + ", targetThreads=" + targetThreads + ", targetRate=" + targetRate + "]";
     }
 
     public int getFailureThresholdResultCountMinimum() {
-        return failureThresholdResultCountMinimum;         
+        return failureThresholdResultCountMinimum;
     }
 
     public int getMovingAveragePoints() {

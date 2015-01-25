@@ -60,8 +60,9 @@ import static org.hamcrest.Matchers.nullValue;
 
         assertThat(controller.getState(), is(JBombardierController.State.Warmup));
 
-        controller.endWarmup();
-        controller.startMainTest();
+        // TODO : refactor fix me
+//        controller.endWarmup();
+        controller.startTest();
 
         assertThat(controller.getState(), is(JBombardierController.State.TestRunning));
 
@@ -105,8 +106,9 @@ import static org.hamcrest.Matchers.nullValue;
 
         assertThat(controller.getState(), is(JBombardierController.State.Warmup));
 
-        controller.endWarmup();
-        controller.startMainTest();
+        // TODO : refactor fix me
+//        controller.endWarmup();
+        controller.startTest();
 
         assertThat(controller.getState(), is(JBombardierController.State.TestRunning));
         assertThat(controller.getCurrentPhaseName(), is("Phase 1"));
@@ -136,13 +138,13 @@ import static org.hamcrest.Matchers.nullValue;
         AgentModel b = new AgentModel();
         AgentModel c = new AgentModel();
 
-        a.setName("agentA");
-        b.setName("agentB");
-        c.setName("agentC");
+        a.getName().set("agentA");
+        b.getName().set("agentB");
+        c.getName().set("agentC");
 
-        a.setConnected(true);
-        b.setConnected(true);
-        c.setConnected(true);
+        a.getConnected().set(true);
+        b.getConnected().set(true);
+        c.getConnected().set(true);
 
         List<AgentModel> agents = CollectionUtils.newArrayList(a, b, c);
 
@@ -197,13 +199,13 @@ import static org.hamcrest.Matchers.nullValue;
         AgentModel b = new AgentModel();
         AgentModel c = new AgentModel();
 
-        a.setName("agentA");
-        b.setName("agentB");
-        c.setName("agentC");
+        a.getName().set("agentA");
+        b.getName().set("agentB");
+        c.getName().set("agentC");
 
-        a.setConnected(true);
-        b.setConnected(true);
-        c.setConnected(true);
+        a.getConnected().set(true);
+        b.getConnected().set(true);
+        c.getConnected().set(true);
 
         List<AgentModel> agents = CollectionUtils.newArrayList(a, b, c);
 
@@ -259,13 +261,13 @@ import static org.hamcrest.Matchers.nullValue;
         AgentModel b = new AgentModel();
         AgentModel c = new AgentModel();
 
-        a.setName("agentA");
-        b.setName("agentB");
-        c.setName("agentC");
+        a.getName().set("agentA");
+        b.getName().set("agentB");
+        c.getName().set("agentC");
 
-        a.setConnected(true);
-        b.setConnected(true);
-        c.setConnected(true);
+        a.getConnected().set(true);
+        b.getConnected().set(true);
+        c.getConnected().set(true);
 
         List<AgentModel> agents = CollectionUtils.newArrayList(a, b, c);
 
@@ -318,13 +320,13 @@ import static org.hamcrest.Matchers.nullValue;
         AgentModel b = new AgentModel();
         AgentModel c = new AgentModel();
 
-        a.setName("agentA");
-        b.setName("agentB");
-        c.setName("agentC");
+        a.getName().set("agentA");
+        b.getName().set("agentB");
+        c.getName().set("agentC");
 
-        a.setConnected(true);
-        b.setConnected(true);
-        c.setConnected(true);
+        a.getConnected().set(true);
+        b.getConnected().set(true);
+        c.getConnected().set(true);
 
         List<AgentModel> agents = CollectionUtils.newArrayList(a, b, c);
 
@@ -381,13 +383,13 @@ import static org.hamcrest.Matchers.nullValue;
         AgentModel b = new AgentModel();
         AgentModel c = new AgentModel();
 
-        a.setName("agentA");
-        b.setName("agentB");
-        c.setName("agentC");
+        a.getName().set("agentA");
+        b.getName().set("agentB");
+        c.getName().set("agentC");
 
-        a.setConnected(true);
-        b.setConnected(true);
-        c.setConnected(true);
+        a.getConnected().set(true);
+        b.getConnected().set(true);
+        c.getConnected().set(true);
 
         KryoClient aKryoMock = Mockito.mock(KryoClient.class);
         KryoClient bKryoMock = Mockito.mock(KryoClient.class);
@@ -420,7 +422,7 @@ import static org.hamcrest.Matchers.nullValue;
 
         model.getAgentModels().addAll(agents);
 
-        controller.publishTestInstructionsAndStartRunning();
+        controller.publishTestInstructions();
 
         Mockito.verify(aKryoMock, Mockito.times(2))
                .sendRequest(Mockito.anyString(), Mockito.anyObject(), Mockito.any(ResponseHandler.class));
@@ -457,13 +459,13 @@ import static org.hamcrest.Matchers.nullValue;
         AgentModel b = new AgentModel();
         AgentModel c = new AgentModel();
 
-        a.setName("agentA");
-        b.setName("agentB");
-        c.setName("agentC");
+        a.getName().set("agentA");
+        b.getName().set("agentB");
+        c.getName().set("agentC");
 
-        a.setConnected(true);
-        b.setConnected(true);
-        c.setConnected(true);
+        a.getConnected().set(true);
+        b.getConnected().set(true);
+        c.getConnected().set(true);
 
         List<AgentModel> agents = CollectionUtils.newArrayList(a, b, c);
 

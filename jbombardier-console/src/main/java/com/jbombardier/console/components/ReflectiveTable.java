@@ -40,7 +40,6 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 
-import com.logginghub.utils.AbstractBean;
 import com.logginghub.utils.observable.Observable;
 import com.logginghub.utils.observable.ObservableDouble;
 import com.logginghub.utils.observable.ObservableItemContainer;
@@ -307,15 +306,7 @@ public class ReflectiveTable<T> extends JTable {
 
             fireTableRowsInserted(index, index);
 
-            if (item instanceof AbstractBean) {
-                AbstractBean abstractBean = (AbstractBean) item;
-                abstractBean.addPropertyChangeListener(new PropertyChangeListener() {
-                    public void propertyChange(PropertyChangeEvent evt) {
-                        updateFromItem(item);
-                    }
-                });
-            }
-            else if (item instanceof Observable) {
+            if (item instanceof Observable) {
                 Observable observable = (Observable) item;
                 observable.addListener(new ObservableListener() {
                     @Override public void onChanged(ObservableItemContainer observable, Object childPropertyThatChanged) {

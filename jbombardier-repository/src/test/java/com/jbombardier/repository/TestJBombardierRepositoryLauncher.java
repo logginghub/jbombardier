@@ -27,7 +27,7 @@ import com.logginghub.utils.FileUtils;
 import com.logginghub.utils.NetUtils;
 import com.logginghub.utils.Xml;
 import com.jbombardier.console.model.JSONHelper;
-import com.jbombardier.console.model.result.TestRunResult;
+import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.console.model.result.TestRunResultBuilder;
 
 public class TestJBombardierRepositoryLauncher {
@@ -52,7 +52,7 @@ public class TestJBombardierRepositoryLauncher {
         RepositoryMessagingClient client = new RepositoryMessagingClient();
         client.connect("localhost", serverPort);
 
-        TestRunResult testRunResult = TestRunResultBuilder.start()
+        RunResult runResult = TestRunResultBuilder.start()
                                                           .name("MyTest")
                                                           .results(TestRunResultBuilder.result()
                                                                                        .testName("Test1")
@@ -63,7 +63,7 @@ public class TestJBombardierRepositoryLauncher {
                                                                                        .transactionsSuccess(100))
                                                           .toTestRunResult();
 
-        String json = helper.toJSON(testRunResult);
+        String json = helper.toJSON(runResult);
 
         client.postResult(json);
 
@@ -91,7 +91,7 @@ public class TestJBombardierRepositoryLauncher {
         RepositoryMessagingClient client = new RepositoryMessagingClient();
         client.connect("localhost", serverPort);
 
-        TestRunResult testRunResult = TestRunResultBuilder.start()
+        RunResult runResult = TestRunResultBuilder.start()
                                                           .name("MyTest")
                                                           .results(TestRunResultBuilder.result()
                                                                                        .testName("Test1")
@@ -102,7 +102,7 @@ public class TestJBombardierRepositoryLauncher {
                                                                                        .transactionsSuccess(100))
                                                           .toTestRunResult();
 
-        String json = helper.toJSON(testRunResult);
+        String json = helper.toJSON(runResult);
 
         client.postResult(json);
 

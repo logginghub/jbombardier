@@ -19,8 +19,11 @@ package com.jbombardier.console;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import com.jbombardier.common.PhaseInstruction;
+import com.jbombardier.console.model.PhaseModel;
 import org.junit.Test;
 
 import com.jbombardier.common.TestInstruction;
@@ -35,12 +38,18 @@ public class TestPerTestProperties {
         swingConsole.initialise();
         
         JBombardierController controller = swingConsole.getController();
+
+        List<PhaseInstruction> phaseInstructions = new ArrayList<PhaseInstruction>();
+        controller.populateInstructionsList(phaseInstructions);
+
+        assertThat(phaseInstructions.size(), is(1));
+        PhaseInstruction phaseInstruction = phaseInstructions.get(0);
+
+        List<TestInstruction> testInstructionsList = phaseInstruction.getInstructions();
+
+        assertThat(testInstructionsList.size(), is(3));
         
-        List<TestInstruction> testInstructionsList = controller.getTestInstructionsList();
-        
-        assertThat(testInstructionsList.size() , is(3));
-        
-        TestInstruction testInstruction1 = testInstructionsList.get(0);        
+        TestInstruction testInstruction1 = testInstructionsList.get(0);
         TestInstruction testInstruction2 = testInstructionsList.get(1);
         TestInstruction testInstruction3 = testInstructionsList.get(2);
         

@@ -32,6 +32,9 @@ import com.jbombardier.common.DataBucket;
 import com.jbombardier.common.DataStrategy;
 import com.jbombardier.common.KryoHelper;
 import com.jbombardier.common.PerformanceTest;
+import com.jbombardier.common.PhaseInstruction;
+import com.jbombardier.common.PhaseStartInstruction;
+import com.jbombardier.common.PhaseStopInstruction;
 import com.jbombardier.common.PingMessage;
 import com.jbombardier.common.PropertyEntry;
 import com.jbombardier.common.SendTelemetryRequest;
@@ -60,11 +63,15 @@ import com.jbombardier.console.model.AgentModel;
 import com.jbombardier.console.model.ConsoleEventModel;
 import com.jbombardier.console.model.DataSource;
 import com.jbombardier.console.model.JSONHelper;
+import com.jbombardier.console.model.PhaseModel;
 import com.jbombardier.console.model.TestModel;
 import com.jbombardier.console.model.TransactionResultModel;
-import com.jbombardier.console.model.result.TestRunResult;
+import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.console.statisticcapture.JMXStatisticCapture;
 import com.jbombardier.console.statisticcapture.LoggingHubStatisticCapture;
+import com.jbombardier.reports.ReportGenerator;
+import com.jbombardier.result.JBombardierResultsController;
+import com.jbombardier.result.JBombardierRunResult;
 import com.jbombardier.xml.CsvProperty;
 import com.logginghub.messaging2.ReflectionDispatchMessageListener;
 import com.logginghub.messaging2.api.ConnectionListener;
@@ -96,6 +103,8 @@ import com.logginghub.utils.TimeUtils;
 import com.logginghub.utils.TimerUtils;
 import com.logginghub.utils.WorkerThread;
 import com.logginghub.utils.logging.Logger;
+import com.logginghub.utils.observable.ObservableList;
+import com.logginghub.utils.observable.ObservablePropertyListener;
 import com.logginghub.utils.remote.ClasspathResolver;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
@@ -106,8 +115,6 @@ import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.util.introspection.Info;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -117,15 +124,16 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class JBombardierController {
 
@@ -157,6 +165,8 @@ public class JBombardierController {
     //    private boolean outputControllerStats = !EnvironmentProperties.getBoolean(
     //            "jbombardierConsoleController.disableStats");
 
+    private JBombardierRunResult newResultModel;
+    private JBombardierResultsController newResultsController;
 
     public enum State {
         Configured, AgentConnectionsRunning, Warmup, TestRunning, Stopped, Completed
@@ -164,10 +174,8 @@ public class JBombardierController {
 
     private State state;
     private List<Agent2> embeddedAgents = new ArrayList<Agent2>();
-    private PhaseConfiguration currentPhase;
-    private Iterator<PhaseConfiguration> phaseIterator;
 
-    public JBombardierController(JBombardierModel model, JBombardierConfiguration configuration) {
+    public JBombardierController(final JBombardierModel model, JBombardierConfiguration configuration) {
         this.model = model;
         this.configuration = configuration;
 
@@ -176,24 +184,27 @@ public class JBombardierController {
         model.setFailedTransactionCountFailureThreshold(configuration.getFailedTransactionCountFailureThreshold());
         model.setMaximumConsoleEntries(configuration.getMaximumConsoleEntries());
 
+        newResultModel = new JBombardierRunResult(configuration);
+        newResultsController = new JBombardierResultsController(newResultModel);
+
         resultsController = new ResultsController(new File(configuration.getReportsFolder()));
         resultsController.setMaximumResultsPerKey(configuration.getMaximumResultToStore());
 
         initialiseStats();
 
-        // Attach a listener to pickup changes to the transaction rate modifier
-        // changer
-        model.addPropertyChangeListener("transactionRateModifier", new PropertyChangeListener() {
-            public void propertyChange(PropertyChangeEvent evt) {
-                updateTransactionRateModifier(JBombardierController.this.model.getTransactionRateModifier());
+        // Attach a listener to pickup changes to the transaction rate modifier changer
+        model.getTransactionRateModifier().addListenerAndNotifyCurrent(new ObservablePropertyListener<Double>() {
+            @Override public void onPropertyChanged(Double aDouble, Double t1) {
+                updateTransactionRateModifier(model.getTransactionRateModifier().get());
             }
         });
 
         initialiseStatisticsCapture(configuration, model);
-        initialiseTests(configuration, model);
+        initialiseModelFromConfiguration(configuration, model);
         initialiseProperties(configuration, model);
 
         state = State.Configured;
+
     }
 
     public State getState() {
@@ -215,7 +226,7 @@ public class JBombardierController {
         state = State.AgentConnectionsRunning;
     }
 
-    public synchronized void publishTestInstructionsAndStartRunning() {
+    public synchronized void publishTestInstructions() {
 
         if (model.isTestRunning()) {
             throw new IllegalStateException("Test has already been started");
@@ -225,27 +236,20 @@ public class JBombardierController {
         logger.debug("Starting test...");
         state = State.TestRunning;
 
-        resultsController.resetStats();
-        try {
-            resultsController.openStreamingFiles();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to open streaming files", e);
-        }
 
         startStatisticsCapture();
 
         List<AgentModel> connectedAgentModels = model.getConnectedAgents();
         logger.debug("We have {} connected agents", connectedAgentModels.size());
 
-        List<TestInstruction> instructions = new ArrayList<TestInstruction>();
-        List<TestModel> tests = model.getTestModels();
-
         FactoryMap<String, FactoryMap<String, DataBucket>> dataBucketsByAgentName = divideDataIntoBuckets(
                 connectedAgentModels);
 
-        populateTestInstructionsList(instructions, tests);
+        List<PhaseInstruction> instructions = new ArrayList<PhaseInstruction>();
+        populateInstructionsList(instructions);
+
         publishTestInstructionsToAgents(instructions, dataBucketsByAgentName);
-        logger.info("Test has started...");
+        logger.info("Test instruction have been sent...");
 
         model.setTestStartTime(System.currentTimeMillis());
 
@@ -261,7 +265,7 @@ public class JBombardierController {
     protected void sendPings() {
         logger.debug("Sending pings to all agents...");
         for (final AgentModel agentModel : model.getAgentModels()) {
-            if (agentModel.isConnected()) {
+            if (agentModel.getConnected().get()) {
                 KryoClient client = agentModel.getKryoClient();
                 client.send("agent", new PingMessage());
             }
@@ -310,7 +314,7 @@ public class JBombardierController {
                     // agent/thread has to make a unique request and the server
                     // will dish them out.
                     for (AgentModel agent : connectedAgentModels) {
-                        String agentName = agent.getName();
+                        String agentName = agent.getName().get();
                         FactoryMap<String, DataBucket> dataSourceBucketsForAgent = dataBuckets.get(agentName);
                         DataBucket dataBucket = dataSourceBucketsForAgent.get(dataSourceName);
 
@@ -358,7 +362,7 @@ public class JBombardierController {
                     // Allocate a bucket to each agents
                     int i = 0;
                     for (AgentModel agent : connectedAgentModels) {
-                        String agentName = agent.getName();
+                        String agentName = agent.getName().get();
                         dataBuckets.get(agentName).put(dataSourceName, buckets[i]);
                         i++;
                     }
@@ -367,7 +371,7 @@ public class JBombardierController {
                 case pooledGlobal:
 
                     for (AgentModel agent : connectedAgentModels) {
-                        String agentName = agent.getName();
+                        String agentName = agent.getName().get();
                         FactoryMap<String, DataBucket> dataSourceBucketsForAgent = dataBuckets.get(agentName);
                         DataBucket dataBucket = dataSourceBucketsForAgent.get(dataSourceName);
 
@@ -435,18 +439,20 @@ public class JBombardierController {
         // request/response mapping code should ensure we dont have to do that
         // anymore!
         response = new AgentPropertyResponse(agentPropertyRequest.getPropertyName(),
-                                             agentPropertyRequest.getThreadName(),
-                                             propertyValue);
+                agentPropertyRequest.getThreadName(),
+                propertyValue);
         return response;
     }
 
     public void handleAgentStatusUpdate(AgentStats agentStats) {
 
-        if(state != State.Warmup && state != State.TestRunning) {
-            throw new IllegalStateException("Unable to handle agent stats whilst the test isn't running - looks like something has gone wrong");
+        if (state != State.Warmup && state != State.TestRunning) {
+            throw new IllegalStateException(
+                    "Unable to handle agent stats whilst the test isn't running - looks like something has gone wrong");
         }
 
         agentStatusUpdatesStat.increment();
+
         model.onAgentStatusUpdate(agentStats);
         resultsController.handleAgentStatusUpdate(agentStats);
     }
@@ -465,8 +471,8 @@ public class JBombardierController {
             // case.
             PropertyEntry propertyEntry = csvPropertiesProvider.getPropertyEntry("dontmatteratthisbit");
             response = new AgentPropertyEntryResponse(request.getPropertyName(),
-                                                      request.getThreadName(),
-                                                      propertyEntry);
+                    request.getThreadName(),
+                    propertyEntry);
         } else {
             response = new AgentPropertyEntryResponse(request.getPropertyName(), request.getThreadName(), null);
         }
@@ -474,41 +480,39 @@ public class JBombardierController {
         return response;
     }
 
-    private void assertTestClassesAreValid(List<TestModel> tests) {
+    private void assertTestClassesAreValid(List<PhaseModel> phases) {
 
         Set<String> alreadyChecked = new HashSet<String>();
 
         StringBuilder buffer = new StringBuilder();
-        for (TestModel testModel : tests) {
-            String classname = testModel.getClassname();
+        for (PhaseModel phaseModel : phases) {
+            for (TestModel testModel : phaseModel.getTestModels()) {
+                String classname = testModel.getClassname();
 
-            if (alreadyChecked.contains(classname)) {
-                // Skip it
-            } else {
+                if (alreadyChecked.contains(classname)) {
+                    // Skip it
+                } else {
 
-                logger.debug("Validing test class {}", classname);
-                try {
-                    @SuppressWarnings("unused") PerformanceTest performanceTest = (PerformanceTest) Class.forName(
-                            classname).newInstance();
-                } catch (ClassNotFoundException e) {
-                    buffer.append("Class '")
-                          .append(classname)
-                          .append("' could not be found, please check your configuration!\n");
-                } catch (InstantiationException e) {
-                    buffer.append("Class '")
-                          .append(classname)
-                          .append("' could not be instantiated, please ensure it has a default constructor. Any arguments should be setup using the properties methods on the TestContext class before the test starts.\n");
-                } catch (IllegalAccessException e) {
-                    buffer.append("Class '")
-                          .append(classname)
-                          .append("' could not be instantiated, please check to make sure the default constructor is public.\n");
-                } catch (ClassCastException e) {
-                    buffer.append("Class '")
-                          .append(classname)
-                          .append("' does't implement the PerformanceTest interface. All tests must implement this interface, please check your test code.\n");
+                    logger.debug("Validing test class {}", classname);
+                    try {
+                        @SuppressWarnings("unused") PerformanceTest performanceTest = (PerformanceTest) Class.forName(
+                                classname).newInstance();
+                    } catch (ClassNotFoundException e) {
+                        buffer.append("Class '").append(classname).append(
+                                "' could not be found, please check your configuration!\n");
+                    } catch (InstantiationException e) {
+                        buffer.append("Class '").append(classname).append(
+                                "' could not be instantiated, please ensure it has a default constructor. Any arguments should be setup using the properties methods on the TestContext class before the test starts.\n");
+                    } catch (IllegalAccessException e) {
+                        buffer.append("Class '").append(classname).append(
+                                "' could not be instantiated, please check to make sure the default constructor is public.\n");
+                    } catch (ClassCastException e) {
+                        buffer.append("Class '").append(classname).append(
+                                "' does't implement the PerformanceTest interface. All tests must implement this interface, please check your test code.\n");
+                    }
+
+                    alreadyChecked.add(classname);
                 }
-
-                alreadyChecked.add(classname);
             }
         }
 
@@ -694,7 +698,7 @@ public class JBombardierController {
 
                 // Also process the config information into DataSources
                 DataSource dataSource = new DataSource(csvProperty.getName(),
-                                                       DataStrategy.valueOf(csvProperty.getStrategy()));
+                        DataStrategy.valueOf(csvProperty.getStrategy()));
 
                 DataSource existingDataSource = alreadyLoaded.get(csvfile);
                 if (existingDataSource != null) {
@@ -733,36 +737,85 @@ public class JBombardierController {
         }
     }
 
-    private void initialiseTests(JBombardierConfiguration configuration, JBombardierModel model) {
-        logger.debug("Initialising tests...");
+    private void initialiseModelFromConfiguration(JBombardierConfiguration configuration, JBombardierModel model) {
+        logger.debug("Initialising initialiseModelFromConfiguration...");
 
-        List<TestConfiguration> tests = configuration.getTests();
-        for (TestConfiguration testConfiguration : tests) {
+        List<PhaseConfiguration> phases = configuration.getPhases();
+        if (phases.isEmpty()) {
 
-            TestModel testModel = new TestModel();
-            testModel.setClassname(testConfiguration.getClassname());
-            testModel.setRateStep(testConfiguration.getRateStep());
-            testModel.setName(testConfiguration.getName());
-            testModel.setRateStepTime(testConfiguration.getRateStepTime());
-            testModel.setTargetRate(testConfiguration.getTargetRate());
-            testModel.setTargetThreads(testConfiguration.getTargetThreads());
-            testModel.setThreadStep(testConfiguration.getThreadStep());
-            testModel.setThreadStepTime(testConfiguration.getThreadStepTime());
-            testModel.setRecordAllValues(testConfiguration.getRecordAllValues());
-            testModel.setProperties(testConfiguration.buildPropertyMap());
-            testModel.setTransactionSLAs(testConfiguration.buildSLAMap());
-            testModel.setFailureThreshold(testConfiguration.getFailureThreshold());
-            testModel.setFailureThresholdMode(testConfiguration.getFailureThresholdMode());
-            testModel.setFailedTransactionCountThreshold(testConfiguration.getFailedTransactionCountFailureThreshold());
-            testModel.setFailureThresholdResultCountMinimum(testConfiguration.getFailureThresholdResultCountMinimum());
-            testModel.setMovingAveragePoints(testConfiguration.getMovingAveragePoints());
+            // Legacy mode - create a default phase
+            PhaseModel phaseModel = new PhaseModel();
+            phaseModel.getPhaseName().set("Default");
 
-            model.addTestModel(testModel);
+            if (StringUtils.isNotNullOrEmpty(configuration.getDuration())) {
+                phaseModel.getPhaseDuration().set(TimeUtils.parseInterval(configuration.getDuration()));
+            }
+
+            if (StringUtils.isNotNullOrEmpty(configuration.getWarmupTime())) {
+                phaseModel.getWarmupDuration().set(TimeUtils.parseInterval(configuration.getWarmupTime()));
+            }
+
+            List<TestConfiguration> tests = configuration.getTests();
+            for (TestConfiguration test : tests) {
+                TestModel testModel = createTestModel(test);
+                phaseModel.getTestModels().add(testModel);
+            }
+
+            model.getPhaseModels().add(phaseModel);
+
+        } else {
+            for (PhaseConfiguration phase : phases) {
+                PhaseModel phaseModel = new PhaseModel();
+                phaseModel.getPhaseName().set(phase.getPhaseName());
+
+                Is.notNullOrEmpty(phase.getDuration(), StringUtils.format("Phase duration must be set for phase '{}'",
+                        phase.getPhaseName()));
+
+                phaseModel.getPhaseDuration().set(TimeUtils.parseInterval(phase.getDuration()));
+
+                if (StringUtils.isNotNullOrEmpty(phase.getWarmupDuration())) {
+                    phaseModel.getWarmupDuration().set(TimeUtils.parseInterval(phase.getWarmupDuration()));
+                }
+
+                List<TestConfiguration> tests = phase.getTests();
+                for (TestConfiguration testConfiguration : tests) {
+                    TestModel testModel = createTestModel(testConfiguration);
+                    phaseModel.getTestModels().add(testModel);
+                }
+
+                model.getPhaseModels().add(phaseModel);
+            }
         }
+        model.getTransactionRateModifier().set(configuration.getTransactionRateModifier());
 
-        model.setTransactionRateModifier(configuration.getTransactionRateModifier());
+        validateModel(model);
+    }
 
-        assertTestClassesAreValid(model.getTestModels());
+    private TestModel createTestModel(TestConfiguration testConfiguration) {
+        TestModel testModel = new TestModel();
+        testModel.setClassname(testConfiguration.getClassname());
+        testModel.setRateStep(testConfiguration.getRateStep());
+        testModel.setName(testConfiguration.getName());
+        testModel.setRateStepTime(testConfiguration.getRateStepTime());
+        testModel.getTargetRate().set(testConfiguration.getTargetRate());
+        testModel.getTargetThreads().set(testConfiguration.getTargetThreads());
+        testModel.getThreadStep().set(testConfiguration.getThreadStep());
+        testModel.getThreadStepTime().set(testConfiguration.getThreadStepTime());
+        testModel.setRecordAllValues(testConfiguration.getRecordAllValues());
+        testModel.setProperties(testConfiguration.buildPropertyMap());
+        testModel.setTransactionSLAs(testConfiguration.buildSLAMap());
+        testModel.setFailureThreshold(testConfiguration.getFailureThreshold());
+        testModel.setFailureThresholdMode(testConfiguration.getFailureThresholdMode());
+        testModel.setFailedTransactionCountThreshold(testConfiguration.getFailedTransactionCountFailureThreshold());
+        testModel.setFailureThresholdResultCountMinimum(testConfiguration.getFailureThresholdResultCountMinimum());
+        testModel.setMovingAveragePoints(testConfiguration.getMovingAveragePoints());
+        return testModel;
+    }
+
+    private void validateModel(JBombardierModel model) {
+        Is.greaterThanZero(model.getPhaseModels().size(),
+                "The test model has no phases; please make sure you have at least one phase or one test in your configuration.");
+        assertTestClassesAreValid(model.getPhaseModels());
     }
 
     private void initialiseAgents(final JBombardierConfiguration configuration, JBombardierModel model) {
@@ -779,8 +832,8 @@ public class JBombardierController {
 
             final AgentModel agentModel = new AgentModel();
 
-            agentModel.setConnected(false);
-            agentModel.setName(agent.getName());
+            agentModel.getConnected().set(false);
+            agentModel.getName().set(agent.getName());
 
             if (agent.getName().equals(Agent.embeddedName)) {
                 Agent2 embeddedAgent = new Agent2();
@@ -794,14 +847,14 @@ public class JBombardierController {
                 embeddedAgent.start();
                 embeddedAgents.add(embeddedAgent);
 
-                agentModel.setAddress("localhost");
-                agentModel.setPort(freePort);
+                agentModel.getAddress().set("localhost");
+                agentModel.getPort().set(freePort);
             } else {
-                agentModel.setAddress(agent.getAddress());
-                agentModel.setPort(agent.getPort());
+                agentModel.getAddress().set(agent.getAddress());
+                agentModel.getPort().set(agent.getPort());
             }
 
-            client.addConnectionPoint(new InetSocketAddress(agentModel.getAddress(), agentModel.getPort()));
+            client.addConnectionPoint(new InetSocketAddress(agentModel.getAddress().get(), agentModel.getPort().get()));
             agentModel.setKryoClient(client);
 
             model.addAgentModel(agentModel);
@@ -811,23 +864,21 @@ public class JBombardierController {
                     logger.info("Agent has disconnected {}", agentModel);
                     disconnectionsStat.increment();
                     connectionsStat.decrement();
-                    agentModel.setConnected(false);
+                    agentModel.getConnected().set(false);
                 }
 
                 public void onConnected() {
                     connectionsStat.increment();
                     newConnectionsStat.increment();
                     logger.info("Agent has connected {}", agentModel);
-                    agentModel.setConnected(true);
+                    agentModel.getConnected().set(true);
 
-                    client.sendRequest("agent",
-                                       new SendTelemetryRequest(NetUtils.getLocalIP(),
-                                                                configuration.getTelemetryHubPort()),
-                                       new ResponseHandler<String>() {
-                                           public void onResponse(String response) {
+                    client.sendRequest("agent", new SendTelemetryRequest(NetUtils.getLocalIP(),
+                            configuration.getTelemetryHubPort()), new ResponseHandler<String>() {
+                        public void onResponse(String response) {
 
-                                           }
-                                       });
+                        }
+                    });
 
                     attachReflectionDispatcher(client);
                     //                    checkForAutostart();
@@ -863,7 +914,7 @@ public class JBombardierController {
     //        if (!model.isTestRunning()) {
     //            int autostartAgents = configuration.getAutostartAgents();
     //            if (autostartAgents > 0 && model.getConnectionAgentCount() >= autostartAgents) {
-    //                publishTestInstructionsAndStartRunning();
+    //                publishTestInstructions();
     //            }
     //        }
     //    }
@@ -900,6 +951,25 @@ public class JBombardierController {
                 }
             });
         }
+
+        // Update the target rates for the current transactions
+        ObservableList<PhaseModel> phaseModels = model.getPhaseModels();
+        for (PhaseModel phaseModel : phaseModels) {
+            ObservableList<TestModel> testModels = phaseModel.getTestModels();
+            for (TestModel testModel : testModels) {
+
+                // TODO : refactor fix me - need TRMs by phase and then by test
+                //                List<String> names = model.getTestNames();
+                //                for (String name : names) {
+                //                    TestModel testModel = model.getTestModelForTest(name);
+                //                    model.getTransactionResultModelForTest(name)
+                //                         .getTargetSuccessfulTransactionsPerSecond()
+                //                         .set(testModel.getTargetRate() * transactionRateModifier);
+                //                }
+            }
+        }
+
+
     }
 
     public void updateTestVariable(final String testName, final TestField field, final Object newValue) {
@@ -912,7 +982,8 @@ public class JBombardierController {
             KryoClient client = agentModel.getKryoClient();
             client.sendRequest("agent", request, new ResponseHandler<String>() {
                 public void onResponse(String response) {
-                    List<TestModel> testModels = model.getTestModels();
+                    List<TestModel> testModels = model.getCurrentPhase().get().getTestModels();
+
                     for (TestModel testModel : testModels) {
                         if (testModel.getName().equals(testName)) {
                             switch (field) {
@@ -923,16 +994,16 @@ public class JBombardierController {
                                     testModel.setRateStepTime((Long) newValue);
                                     break;
                                 case targetRate:
-                                    testModel.setTargetRate((Float) newValue);
+                                    testModel.getTargetRate().set((Float) newValue);
                                     break;
                                 case targetThreads:
-                                    testModel.setTargetThreads((Integer) newValue);
+                                    testModel.getTargetThreads().set((Integer) newValue);
                                     break;
                                 case threadStep:
-                                    testModel.setThreadStep((Integer) newValue);
+                                    testModel.getThreadStep().set((Integer) newValue);
                                     break;
                                 case threadStepTime:
-                                    testModel.setThreadStepTime((Long) newValue);
+                                    testModel.getThreadStepTime().set((Long) newValue);
                                     break;
                             }
                         }
@@ -943,14 +1014,14 @@ public class JBombardierController {
         }
     }
 
-    private void publishTestInstructionsToAgents(List<TestInstruction> instructions,
+    private void publishTestInstructionsToAgents(List<PhaseInstruction> instructions,
                                                  FactoryMap<String, FactoryMap<String, DataBucket>> dataBucketsByAgentName) {
         int agentsInTest = 0;
         for (final AgentModel agentModel : model.getAgentModels()) {
             logger.info("Publishing data buckets to agent {}", agentModel);
-            if (agentModel.isConnected()) {
+            if (agentModel.getConnected().get()) {
 
-                FactoryMap<String, DataBucket> data = dataBucketsByAgentName.get(agentModel.getName());
+                FactoryMap<String, DataBucket> data = dataBucketsByAgentName.get(agentModel.getName().get());
                 logger.debug("This agent has a data bucket with {} keys and {} items", data.size(), countItems(data));
 
                 KryoClient client = agentModel.getKryoClient();
@@ -984,19 +1055,22 @@ public class JBombardierController {
             }
         }
 
+        final CountDownLatch instructionsReceivedLatch = new CountDownLatch(model.getAgentModels().size());
+
         for (final AgentModel agentModel : model.getAgentModels()) {
             logger.debug("Publishing test instruction to agent {}", agentModel);
             KryoClient client = agentModel.getKryoClient();
-            if (agentModel.isConnected()) {
+            if (agentModel.getConnected().get()) {
 
-                TestPackage testPackage = new TestPackage(agentModel.getName(), instructions);
+                TestPackage testPackage = new TestPackage(agentModel.getName().get(), instructions);
                 testPackage.setLoggingHubs(configuration.getLoggingHubs());
                 testPackage.setLoggingType(configuration.getLoggingTypes());
 
                 client.sendRequest("agent", testPackage, new ResponseHandler<String>() {
                     public void onResponse(String response) {
                         logger.debug("Agent response received from agent {}, test package received", agentModel);
-                        agentModel.setPackageReceived(true);
+                        agentModel.getPackageReceived().set(true);
+                        instructionsReceivedLatch.countDown();
                     }
                 });
 
@@ -1008,6 +1082,19 @@ public class JBombardierController {
             }
         }
 
+        try {
+            if (!instructionsReceivedLatch.await(30, TimeUnit.SECONDS)) {
+                throw new IllegalStateException(String.format(
+                        "One or more agent have not responded to the test package message after the timeout interval - aborting test"));
+            } else {
+                logger.info("All agents have confirmed receipt of test instructions");
+            }
+        } catch (InterruptedException e) {
+            logger.warn(
+                    "Thread interupted waiting for confirmation that all agents have received their instructions. We have no way of knowing the agent state from this point.");
+        }
+
+
         expectedAgentsStat.setValue(agentsInTest);
         model.setAgentsInTest(agentsInTest);
         // model.getTestRunning().set(true);
@@ -1018,8 +1105,8 @@ public class JBombardierController {
         // controller if we get anything sent to us
 
         ReflectionDispatchMessageListener messageListener = new ReflectionDispatchMessageListener("controller",
-                                                                                                  client,
-                                                                                                  this);
+                client,
+                this);
         dispatchingListeners.put(messageListener, client);
         client.addMessageListener(messageListener);
     }
@@ -1040,24 +1127,34 @@ public class JBombardierController {
         return count;
     }
 
-    private void populateTestInstructionsList(List<TestInstruction> instructions, List<TestModel> tests) {
-        for (TestModel test : tests) {
-            TestInstruction instruction = new TestInstruction();
-            instruction.setTestName(test.getName());
-            instruction.setClassname(test.getClassname());
-            instruction.setTargetThreads(test.getTargetThreads());
-            instruction.setThreadRampupStep(test.getThreadStep());
-            instruction.setThreadRampupTime(test.getThreadStepTime());
-            instruction.setTargetRate(test.getTargetRate());
-            instruction.setRateStep(test.getRateStep());
-            instruction.setRateStepTime(test.getRateStepTime());
-            instruction.setRecordAllValues(test.getRecordAllValues());
-            instruction.setTransactionRateModifier(model.getTransactionRateModifier());
-            // Remember to add the default properties first, then the test
-            // specific ones afterwards
-            instruction.getProperties().putAll(properties);
-            instruction.getProperties().putAll(test.getProperties());
-            instructions.add(instruction);
+    public void populateInstructionsList(List<PhaseInstruction> instructions) {
+        List<PhaseModel> phases = model.getPhaseModels();
+        for (PhaseModel phase : phases) {
+
+            PhaseInstruction phaseInstruction = new PhaseInstruction();
+            phaseInstruction.setPhaseName(phase.getPhaseName().get());
+
+            for (TestModel test : phase.getTestModels()) {
+                TestInstruction instruction = new TestInstruction();
+                instruction.setTestName(test.getName());
+                instruction.setClassname(test.getClassname());
+                instruction.setTargetThreads(test.getTargetThreads().get());
+                instruction.setThreadRampupStep(test.getThreadStep().get());
+                instruction.setThreadRampupTime(test.getThreadStepTime().get());
+                instruction.setTargetRate(test.getTargetRate().get());
+                instruction.setRateStep(test.getRateStep());
+                instruction.setRateStepTime(test.getRateStepTime());
+                instruction.setRecordAllValues(test.getRecordAllValues());
+                instruction.setTransactionRateModifier(model.getTransactionRateModifier().get());
+                // Remember to add the default properties first, then the test
+                // specific ones afterwards
+                instruction.getProperties().putAll(properties);
+                instruction.getProperties().putAll(test.getProperties());
+
+                phaseInstruction.getInstructions().add(instruction);
+            }
+
+            instructions.add(phaseInstruction);
         }
     }
 
@@ -1070,10 +1167,22 @@ public class JBombardierController {
     }
 
     public void generateReport(boolean openInBrowser) {
-        generateReport(openInBrowser, true);
+
+        final File reportsFolder = getReportsFolder();
+        reportsFolder.mkdirs();
+
+        generateReport(reportsFolder);
+        if(openInBrowser) {
+            BrowserUtils.browseTo(new File(reportsFolder, "index.html").toURI());
+        }
     }
 
-    public String generateReport(boolean openInBrowser, boolean queueCharts) {
+    public void generateReport(File reportsFolder) {
+        RunResult snapshot = resultsController.createSnapshot(model);
+        ReportGenerator.generateReport(reportsFolder, snapshot);
+    }
+
+    public String generateReportOld(boolean openInBrowser, boolean queueCharts) {
 
         resultsController.flush();
 
@@ -1095,10 +1204,10 @@ public class JBombardierController {
                 // for things like null checks
                 if (!reference.startsWith("$!")) {
                     errors.appendLine("Invalid get method : reference {} object {} property {} info {}",
-                                      reference,
-                                      object,
-                                      property,
-                                      info);
+                            reference,
+                            object,
+                            property,
+                            info);
                 }
                 return null;
             }
@@ -1106,9 +1215,9 @@ public class JBombardierController {
             @Override
             public boolean invalidSetMethod(Context context, String leftreference, String rightreference, Info info) {
                 errors.appendLine("Invalid set method : leftReference {} rightReference {} info {}",
-                                  leftreference,
-                                  rightreference,
-                                  info);
+                        leftreference,
+                        rightreference,
+                        info);
                 return false;
 
             }
@@ -1119,16 +1228,14 @@ public class JBombardierController {
                 // for things like null checks
                 if (!reference.startsWith("$!")) {
                     errors.appendLine("Invalid method : reference '{}' object '{}' method '{}' info [{}]",
-                                      reference,
-                                      object,
-                                      method,
-                                      info);
+                            reference,
+                            object,
+                            method,
+                            info);
                 }
                 return null;
             }
         });
-
-        List<TestModel> testModels = this.model.getTestModels();
 
         ListBackedMap<String, TransactionResultModel> results = model.getTotalTransactionModelsByTestName();
         resultsController.generateStats();
@@ -1142,7 +1249,7 @@ public class JBombardierController {
 
         context.put("model", model);
         context.put("agents", model.getAgentModels());
-        context.put("tests", testModels);
+        context.put("phases", model.getPhaseModels());
         context.put("resultsController", resultsController);
         context.put("results", results);
         context.put("number", utils);
@@ -1230,15 +1337,19 @@ public class JBombardierController {
 
     public void outputJSONResults(ListBackedMap<String, TransactionResultModel> results,
                                   List<CapturedStatistic> capturedStatistics) {
-        TestRunResult result = new TestRunResult(model.getTestName(), model.getTestStartTime());
-        result.setTestResultsFromModel(results.getMap());
+        RunResult result = new RunResult();
+        result.setConfigurationName(model.getTestName());
+        result.setStartTime(model.getTestStartTime());
+
+        // TODO : refactor fix me
+//        result.setTestResultsFromModel(results.getMap());
         result.setFailureReason(model.getFailureReason());
-        result.setCapturedStatistics(capturedStatistics);
+//        result.setCapturedStatistics(capturedStatistics);
 
         outputJSONResults(result);
     }
 
-    public void outputJSONResults(TestRunResult result) {
+    public void outputJSONResults(RunResult result) {
 
         JSONHelper helper = new JSONHelper();
         String json = helper.toJSON(result);
@@ -1251,15 +1362,15 @@ public class JBombardierController {
 
             try {
                 logger.info("Attempting to connect to the results repository on {}:{}",
-                            configuration.getResultRepositoryHost(),
-                            configuration.getResultRepositoryPort());
+                        configuration.getResultRepositoryHost(),
+                        configuration.getResultRepositoryPort());
                 client.connect(configuration.getResultRepositoryHost(), configuration.getResultRepositoryPort());
                 client.postResult(json);
                 logger.info("Sent results to remote repository at {}", configuration.getResultRepositoryHost());
             } catch (Exception e) {
                 logger.warning(e,
-                               "Failed to send results to remote repository at {}",
-                               configuration.getResultRepositoryHost());
+                        "Failed to send results to remote repository at {}",
+                        configuration.getResultRepositoryHost());
             } finally {
                 client.close();
             }
@@ -1269,7 +1380,7 @@ public class JBombardierController {
 
     public static File getJSONResultsFile(File path, String testName, long testTime) {
         File jsonResultFile = new File(path,
-                                       testName + "." + TimeUtils.toFileSafeOrderedNoMillis(testTime) + ".results.json");
+                testName + "." + TimeUtils.toFileSafeOrderedNoMillis(testTime) + ".results.json");
         return jsonResultFile;
     }
 
@@ -1282,7 +1393,7 @@ public class JBombardierController {
 
         SinglePassStatisticsLongPrecisionCircular singlePassStatisticsLongPrecision = resultsController.getSuccessStatsByTest()
                                                                                                        .get(transactionResultModel
-                                                                                                                    .getKey());
+                                                                                                               .getKey());
         SinglePassStatisticsLongPrecisionCircular copy = singlePassStatisticsLongPrecision.copy();
         chart.generateChart(transactionResultModel, copy, file);
 
@@ -1302,15 +1413,16 @@ public class JBombardierController {
     }
 
     public void resetStats() {
+        logger.info("Reseting stats...");
         resultsController.resetStats();
         model.resetStats();
     }
 
-    public List<TestInstruction> getTestInstructionsList() {
-        List<TestInstruction> instructions = new ArrayList<TestInstruction>();
-        populateTestInstructionsList(instructions, model.getTestModels());
-        return instructions;
-    }
+    //    public List<TestInstruction> getTestInstructionsList() {
+    //        List<TestInstruction> instructions = new ArrayList<TestInstruction>();
+    //        populateTestInstructionsList(instructions, model.getTestModels());
+    //        return instructions;
+    //    }
 
     //    public void setReportsPath(File reportsPath) {
     //        this.reportsPath = reportsPath;
@@ -1352,7 +1464,7 @@ public class JBombardierController {
             if (agentModel.getName().equals(Agent.embeddedName)) {
                 ThreadUtils.repeatUntilTrue(new Callable<Boolean>() {
                     @Override public Boolean call() throws Exception {
-                        return agentModel.isConnected();
+                        return agentModel.getConnected().get();
                     }
                 });
             }
@@ -1374,14 +1486,6 @@ public class JBombardierController {
         }
     }
 
-    public void endWarmup() {
-
-    }
-
-    public void endWarmupAndStartMainTest() {
-
-    }
-
     public synchronized void endTestNormally() {
 
         if (state != State.TestRunning) {
@@ -1394,6 +1498,8 @@ public class JBombardierController {
 
         logger.info("Test has been stopped normally");
         state = State.Completed;
+
+        model.getCurrentPhase().set(null);
     }
 
     private void decoupleFromAgentUpdates() {
@@ -1414,7 +1520,7 @@ public class JBombardierController {
 
         regularStop();
 
-        model.reset();
+        //        model.reset();
 
         logger.info("Test has been stopped abnormally");
         state = State.Stopped;
@@ -1470,41 +1576,98 @@ public class JBombardierController {
         }
     }
 
+    private void sendPhaseStartInstruction(String phase) {
+
+        final CountDownLatch receivedLatch = new CountDownLatch(model.getAgentModels().size());
+
+        for (final AgentModel agentModel : model.getAgentModels()) {
+            KryoClient client = agentModel.getKryoClient();
+            if (client != null) {
+                client.sendRequest("agent", new PhaseStartInstruction(phase), new ResponseHandler<String>() {
+                    public void onResponse(String response) {
+                        logger.info("Agent response to phase start instruction : " + response);
+                        receivedLatch.countDown();
+                    }
+                });
+            }
+        }
+
+        try {
+            if (!receivedLatch.await(5, TimeUnit.SECONDS)) {
+                throw new IllegalStateException(String.format(
+                        "One or more agent have not responded to the PhaseStartInstruction  after the timeout interval - aborting test"));
+            } else {
+                logger.info("All agents have confirmed receipt of PhaseStartInstruction");
+            }
+        } catch (InterruptedException e) {
+            logger.warn(
+                    "Thread interrupted waiting for confirmation that all agents have received their PhaseStartInstruction. We have no way of knowing the agent state from this point.");
+        }
+
+    }
+
+    private void sendPhaseStopInstruction() {
+
+        final CountDownLatch receivedLatch = new CountDownLatch(model.getAgentModels().size());
+
+        for (final AgentModel agentModel : model.getAgentModels()) {
+            KryoClient client = agentModel.getKryoClient();
+            if (client != null) {
+                client.sendRequest("agent", new PhaseStopInstruction(), new ResponseHandler<String>() {
+                    public void onResponse(String response) {
+                        logger.info("Agent response to phase stop instruction : " + response);
+                        receivedLatch.countDown();
+                    }
+                });
+            }
+        }
+
+        try {
+            if (!receivedLatch.await(5, TimeUnit.SECONDS)) {
+                throw new IllegalStateException(String.format(
+                        "One or more agent have not responded to the PhaseStopInstruction  after the timeout interval - aborting test"));
+            } else {
+                logger.info("All agents have confirmed receipt of PhaseStopInstruction");
+            }
+        } catch (InterruptedException e) {
+            logger.warn(
+                    "Thread interrupted waiting for confirmation that all agents have received their PhaseStopInstruction. We have no way of knowing the agent state from this point.");
+        }
+
+    }
+
     public void startWarmUp() {
         state = State.Warmup;
     }
 
-    public void startMainTest() {
-        resetStats();
-        state = State.TestRunning;
-
-        List<PhaseConfiguration> phases = configuration.getPhases();
-        if (phases.size() > 0) {
-            phaseIterator = phases.iterator();
-            currentPhase = phaseIterator.next();
-        } else {
-            phaseIterator = null;
-        }
-
-    }
-
-    public String getCurrentPhaseName() {
-        String phaseName;
-        if (currentPhase != null) {
-            phaseName = currentPhase.getPhaseName();
-        } else {
-            phaseName = null;
-        }
-
-        return phaseName;
-    }
+    //    public String getCurrentPhaseName() {
+    //        String phaseName;
+    //        if (currentPhase != null) {
+    //            phaseName = currentPhase.getPhaseName();
+    //        } else {
+    //            phaseName = null;
+    //        }
+    //
+    //        return phaseName;
+    //    }
 
     public void phaseComplete() {
 
         logger.info("Phase '{}' complete, progressing test...", getCurrentPhaseName());
 
-        if (phaseIterator.hasNext()) {
-            currentPhase = phaseIterator.next();
+        // TODO : not sure this should be moving to the next phase or just finishing the current phase
+
+        PhaseModel currentPhase = model.getCurrentPhase().get();
+        if (currentPhase == null) {
+            throw new IllegalStateException(StringUtils.format("Unable to complete phase, no phase has been started"));
+        }
+
+        int currentPhaseIndex = model.getPhaseModels().indexOf(currentPhase);
+
+        if (currentPhaseIndex < model.getPhaseModels().size()) {
+            currentPhase = model.getPhaseModels().get(currentPhaseIndex + 1);
+            model.getCurrentPhase().set(currentPhase);
+
             logger.info("Starting new phase '{}'", getCurrentPhaseName());
 
         } else {
@@ -1512,4 +1675,163 @@ public class JBombardierController {
             endTestNormally();
         }
     }
+
+    public String getCurrentPhaseName() {
+        PhaseModel phaseModel = model.getCurrentPhase().get();
+        if (phaseModel != null) {
+            return phaseModel.getPhaseName().get();
+        } else {
+            return null;
+        }
+    }
+
+    public JBombardierConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    public void forcePreviousPhase() {
+        logger.info("Forcing previous phase...");
+        forcePhaseEnd();
+        if (hasPreviousPhase()) {
+            startPreviousPhase();
+        }
+    }
+
+    private void forcePhaseEnd() {
+        logger.info("Forcing current phase end...");
+        sendPhaseStopInstruction();
+        resetStats();
+    }
+
+    public void stopPhase() {
+        logger.info("Ending current phase...");
+        sendPhaseStopInstruction();
+    }
+
+    public void forceNextPhase() {
+        logger.info("Forcing next phase...");
+        forcePhaseEnd();
+        if (hasNextPhase()) {
+            startNextPhase();
+        }
+    }
+
+    private void startPreviousPhase() {
+
+        PhaseModel previous;
+
+        PhaseModel currentPhase = model.getCurrentPhase().get();
+        if (currentPhase == null) {
+            throw new IllegalStateException("No test running, can't go back to previous phase");
+        } else {
+            int index = model.getPhaseModels().indexOf(currentPhase);
+
+            int previousIndex = index - 1;
+            if (previousIndex < 0) {
+                throw new IllegalStateException("You are already at the first phase - cannot go back");
+            } else {
+                previous = model.getPhaseModels().get(previousIndex);
+            }
+        }
+
+        startPhase(previous);
+    }
+
+    public PhaseModel getNextPhase() {
+        PhaseModel nextPhase;
+
+        PhaseModel currentPhase = model.getCurrentPhase().get();
+        if (currentPhase == null) {
+            nextPhase = model.getPhaseModels().get(0);
+        } else {
+            int index = model.getPhaseModels().indexOf(currentPhase);
+
+            int next = index + 1;
+            if (next == model.getPhaseModels().size()) {
+                throw new IllegalStateException("You are already at the last phase!");
+            } else {
+                nextPhase = model.getPhaseModels().get(next);
+            }
+        }
+
+        return nextPhase;
+    }
+
+    public void startNextPhase() {
+        PhaseModel nextPhase = getNextPhase();
+        startPhase(nextPhase);
+    }
+
+    private void startPhase(PhaseModel nextPhase) {
+        nextPhase.getPhaseRemainingTime().set(nextPhase.getPhaseDuration().get());
+        model.getCurrentPhase().set(nextPhase);
+        logger.info("Starting phase '{}'", getCurrentPhaseName());
+
+        sendPhaseStartInstruction(getCurrentPhaseName());
+    }
+
+    public boolean hasPreviousPhase() {
+        boolean hasPreviousPhase;
+
+        PhaseModel currentPhase = model.getCurrentPhase().get();
+        if (currentPhase == null) {
+            hasPreviousPhase = false;
+        } else {
+            int index = model.getPhaseModels().indexOf(currentPhase);
+
+            int previous = index - 1;
+            if (previous >= 0) {
+                hasPreviousPhase = true;
+            } else {
+                hasPreviousPhase = false;
+            }
+        }
+
+        return hasPreviousPhase;
+    }
+
+    public boolean hasNextPhase() {
+
+        boolean hasNextPhase;
+
+        PhaseModel currentPhase = model.getCurrentPhase().get();
+        if (currentPhase == null) {
+            hasNextPhase = true;
+        } else {
+            int index = model.getPhaseModels().indexOf(currentPhase);
+
+            int next = index + 1;
+            if (next == model.getPhaseModels().size()) {
+                hasNextPhase = false;
+            } else {
+                hasNextPhase = true;
+            }
+        }
+
+        return hasNextPhase;
+    }
+
+    public void startTest() {
+        logger.info("Starting test...");
+        state = State.TestRunning;
+
+        resetState();
+        initialiseResultsStreaming();
+        publishTestInstructions();
+        startNextPhase();
+    }
+
+    private void resetState() {
+        resultsController.resetStats();
+    }
+
+    private void initialiseResultsStreaming() {
+        try {
+            resultsController.openStreamingFiles();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to open streaming files", e);
+        }
+    }
+
+
 }

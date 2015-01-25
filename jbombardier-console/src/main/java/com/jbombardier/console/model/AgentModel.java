@@ -19,22 +19,24 @@ package com.jbombardier.console.model;
 import java.util.List;
 
 import com.logginghub.messaging2.kryo.KryoClient;
-import com.logginghub.utils.AbstractBean;
+import com.logginghub.utils.observable.Observable;
 import com.logginghub.utils.observable.ObservableInteger;
 import com.jbombardier.common.AgentStats;
 import com.jbombardier.common.AgentStats.TestStats;
+import com.logginghub.utils.observable.ObservableProperty;
 
-public class AgentModel extends AbstractBean {
+public class AgentModel extends Observable {
 
-    private String name;
-    private String address;
-    private int port;
-    private boolean connected = false;
-    private boolean packageReceived = false;
-    
+    private ObservableProperty<String> name = createStringProperty("name", null);
+    private ObservableProperty<String> address = createStringProperty("address", null);
+    private ObservableInteger port = createIntProperty("port", 0);
+
+    private ObservableProperty<Boolean> connected = createBooleanProperty("connected", false);
+    private ObservableProperty<Boolean> packageReceived = createBooleanProperty("packageReceived", false);
+
     private KryoClient client;
     
-    private ObservableInteger threadCount = new ObservableInteger(0);
+    private ObservableInteger threadCount = createIntProperty("threadCount", 0);
     
 //    private int threadCount;
     
@@ -46,9 +48,9 @@ public class AgentModel extends AbstractBean {
     
     public AgentModel(String name, String address, int port) {
         super();
-        this.name = name;
-        this.address = address;
-        this.port = port;
+        this.name.set(name);
+        this.address.set(address);
+        this.port.set(port);
     }
 
 //    private List<AgentModelListener> listeners = new CopyOnWriteArrayList<AgentModel.AgentModelListener>();
@@ -61,54 +63,25 @@ public class AgentModel extends AbstractBean {
 //        listeners.remove(listener);
 //    }
 
-    public void setName(String name) {
-        String old = this.name;
-        this.name = name;
-        firePropertyChange(name, old, name);
-    }
 
-    public String getName() {
-        return name;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        String old = this.address;
-        this.address = address;
-        firePropertyChange("address", old, address);
-    }
-
-    public int getPort() {
+    public ObservableInteger getPort() {
         return port;
     }
 
-    public void setPort(int port) {
-        int old = this.port;
-        this.port = port;
-        firePropertyChange("port", old, port);
-    }
-
-    public boolean isPackageReceived() {
-        return packageReceived;
-    }
-    
-    public boolean isConnected() {
+    public ObservableProperty<Boolean> getConnected() {
         return connected;
     }
 
-    public void setConnected(boolean connected) {
-        boolean old = this.connected;
-        this.connected = connected;
-        firePropertyChange("connected", old, connected);
+    public ObservableProperty<Boolean> getPackageReceived() {
+        return packageReceived;
     }
-    
-    public void setPackageReceived(boolean packageReceived) {
-        boolean old = this.packageReceived;
-        this.packageReceived = packageReceived;
-        firePropertyChange("packageReceived", old, packageReceived);
+
+    public ObservableProperty<String> getAddress() {
+        return address;
+    }
+
+    public ObservableProperty<String> getName() {
+        return name;
     }
 
     public void setKryoClient(KryoClient client) {
@@ -139,15 +112,10 @@ public class AgentModel extends AbstractBean {
         }
         
         setThreadCount(threads);
-        
-//        for (AgentModelListener agentModelListener : listeners) {
-//            agentModelListener.statsUpdated();
-//        }
-        
     }
 
     @Override public String toString() {
-        return "AgentModel [name=" + name + ", address=" + address + ", port=" + port + ", connected=" + connected + "]";
+        return "AgentModel [name=" + name.get() + ", address=" + address.get() + ", port=" + port.get() + ", connected=" + connected.get() + "]";
     }
     
     

@@ -23,12 +23,12 @@ import java.awt.event.WindowEvent;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
+import com.jbombardier.JBombardierTemporalController;
 import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.panels.SwingConsoleMainPanel;
 import com.logginghub.utils.MainUtils;
 import com.logginghub.utils.NetUtils;
 import com.logginghub.utils.Out;
-import com.logginghub.utils.ReflectionUtils;
 import com.logginghub.utils.logging.SystemErrStream;
 import com.logginghub.utils.swing.VLFrame;
 
@@ -40,6 +40,7 @@ public class JBombardierSwingConsole {
     private VLFrame frame;
     private JBombardierController controller;
     private JBombardierConfiguration configuration;
+    private JBombardierTemporalController temporalController;
 
     public void initialise() {
 
@@ -61,6 +62,7 @@ public class JBombardierSwingConsole {
 
         model = new JBombardierModel();
         controller = new JBombardierController(model, configuration);
+        temporalController = new JBombardierTemporalController(controller);
 
     }
 
@@ -68,16 +70,27 @@ public class JBombardierSwingConsole {
 
         controller.startStats();
 
-        if (ReflectionUtils.classExists("sun.swing.plaf.synth.SynthUI")) {
-            try {
-                UIManager.setLookAndFeel("com.seaglasslookandfeel.SeaGlassLookAndFeel");
+        try {
+            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
             }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
+        } catch (Exception e) {
+            // If Nimbus is not available, you can set the GUI to another look and feel.
         }
 
-        frame = new VLFrame("jbombardier - Interactive Console", "black-flask-hi.png");
+//        if (ReflectionUtils.classExists("sun.swing.plaf.synth.SynthUI")) {
+//            try {
+//                UIManager.setLookAndFeel("com.seaglasslookandfeel.SeaGlassLookAndFeel");
+//            }
+//            catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
+
+        frame = new VLFrame("JBombardier - Interactive Console", "black-flask-hi.png");
 
         frame.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
@@ -86,7 +99,7 @@ public class JBombardierSwingConsole {
                     controller.endTestAbnormally();
                     controller.killAgents();
                 }
-            };
+            }
         });
 
         Container contentPane = frame.getContentPane();
@@ -94,12 +107,13 @@ public class JBombardierSwingConsole {
 
         // frame.setSize(0.9f);
         frame.setVisible(true);
+
+        controller.startAgentConnections();
     }
 
     private void initialiseComponents(Container contentPane) {
         SwingConsoleMainPanel panel = new SwingConsoleMainPanel();
-        panel.setController(controller);
-        panel.setModel(model);
+        panel.bind(controller, temporalController);
         contentPane.add(panel);
     }
 

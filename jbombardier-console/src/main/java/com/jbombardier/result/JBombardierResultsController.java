@@ -22,6 +22,8 @@ import com.logginghub.utils.SystemTimeProvider;
 import com.logginghub.utils.TimeProvider;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Results structure:
@@ -34,13 +36,13 @@ import java.util.List;
  * <p/>
  * Created by james on 10/01/15.
  */
-public class ResultController {
+public class JBombardierResultsController {
 
     private final JBombardierRunResult model;
     private TimeProvider time = new SystemTimeProvider();
     private JBombardierPhaseResult currentPhase;
 
-    public ResultController(JBombardierRunResult resultModel) {
+    public JBombardierResultsController(JBombardierRunResult resultModel) {
         this.model = resultModel;
     }
 
@@ -117,14 +119,23 @@ public class ResultController {
     }
 
     public void onPhaseStarted(String phaseName) {
-
-        JBombardierPhaseResult phaseResult = new JBombardierPhaseResult();
-        phaseResult.setPhaseName(phaseName);
+        JBombardierPhaseResult phaseResult = model.getPhaseResults().get(phaseName);
         phaseResult.setPhaseStartTime(time.getTime());
-
-        model.getPhaseResults().add(phaseResult);
-
         currentPhase = phaseResult;
+    }
 
+
+    public interface CompletedBucketListener {
+        void onCompletedResultBucket(long bucketTime, Map<String, JBombardierTestResult> result);
+    }
+
+    private List<CompletedBucketListener> completedBucketListeners = new CopyOnWriteArrayList<CompletedBucketListener>();
+
+    public void addCompletedBucketListener(CompletedBucketListener listener) {
+        completedBucketListeners.add(listener);
+    }
+
+    public void removeCompletedBucketListener(CompletedBucketListener listener) {
+        completedBucketListeners.remove(listener);
     }
 }

@@ -23,7 +23,7 @@ import com.logginghub.utils.TimeUtils;
 import com.logginghub.utils.logging.Logger;
 import com.jbombardier.console.JBombardierController;
 import com.jbombardier.console.model.JSONHelper;
-import com.jbombardier.console.model.result.TestRunResult;
+import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.repository.model.RepositoryModel;
 import com.jbombardier.repository.model.RepositoryTestModel;
 
@@ -44,39 +44,40 @@ public class RepositoryController {
 
     public void postResult(String jsonResult) {
 
-        TestRunResult testRunResult = helper.fromJSON(jsonResult);
-        addResult(testRunResult);
+        RunResult runResult = helper.fromJSON(jsonResult);
+        addResult(runResult);
 
-        File jsonResultsFile = getFile(testRunResult);
+        File jsonResultsFile = getFile(runResult);
         FileUtils.write(jsonResult, jsonResultsFile);
     }
 
-    public void postResult(TestRunResult testRunResult) {
-        File jsonResultsFile = getFile(testRunResult);
-        logger.debug("Posting result for test '{}' at '{}' to '{}'", testRunResult.getConfigurationName(), Logger.toDateString(testRunResult.getStartTime()), jsonResultsFile.getAbsolutePath());
-        addResult(testRunResult);
+    public void postResult(RunResult runResult) {
+        File jsonResultsFile = getFile(runResult);
+        logger.debug("Posting result for test '{}' at '{}' to '{}'", runResult.getConfigurationName(), Logger.toDateString(
+                runResult.getStartTime()), jsonResultsFile.getAbsolutePath());
+        addResult(runResult);
 
-        String jsonResult = helper.toJSON(testRunResult);
+        String jsonResult = helper.toJSON(runResult);
         FileUtils.write(jsonResult, jsonResultsFile);
     }
 
-    private File getFile(TestRunResult testRunResult) {
+    private File getFile(RunResult runResult) {
         
         File dataFolder = new File(model.getDataPath().get());
-        File testFolder = new File(dataFolder, testRunResult.getConfigurationName());
-        File timeFolder = new File(testFolder, TimeUtils.toDailyFolderSplit(testRunResult.getStartTime()));
+        File testFolder = new File(dataFolder, runResult.getConfigurationName());
+        File timeFolder = new File(testFolder, TimeUtils.toDailyFolderSplit(runResult.getStartTime()));
         
         timeFolder.mkdirs();
 
         File jsonResultsFile = JBombardierController.getJSONResultsFile(timeFolder,
-                                                                        testRunResult.getConfigurationName(),
-                                                                        testRunResult.getStartTime());
+                                                                        runResult.getConfigurationName(),
+                                                                        runResult.getStartTime());
         return jsonResultsFile;
     }
 
-    private void addResult(TestRunResult testRunResult) {
-        RepositoryTestModel testModel = model.getRepositoryTestModelForTest(testRunResult.getConfigurationName());
-        testModel.add(testRunResult);
+    private void addResult(RunResult runResult) {
+        RepositoryTestModel testModel = model.getRepositoryTestModelForTest(runResult.getConfigurationName());
+        testModel.add(runResult);
     }
 
 }

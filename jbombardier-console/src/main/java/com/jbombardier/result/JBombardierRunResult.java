@@ -16,13 +16,16 @@
 
 package com.jbombardier.result;
 
-import com.logginghub.utils.StringUtils;
+import com.jbombardier.console.configuration.JBombardierConfiguration;
+import com.jbombardier.console.configuration.PhaseConfiguration;
 import com.logginghub.utils.StringUtils.StringUtilsBuilder;
 import com.logginghub.utils.TimeUtils;
 import com.logginghub.utils.logging.Logger;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by james on 10/01/15.
@@ -30,19 +33,40 @@ import java.util.List;
 public class JBombardierRunResult {
     public final static long unknown_time = -1;
     public final static String unknown_state = "Unknown";
+    public final static String defaultPhase = "default";
 
     private String testName = unknown_state;
     private long startTime = JBombardierRunResult.unknown_time;
     private long duration = JBombardierRunResult.unknown_time;
     private String outcomeSummary = unknown_state;
 
-    private List<JBombardierPhaseResult> phaseResults = new ArrayList<JBombardierPhaseResult>();
+    private Map<String, JBombardierPhaseResult> phaseResults = new HashMap<String, JBombardierPhaseResult>();
+    private List<String> phaseOrder =new ArrayList<String>();
+
+    public JBombardierRunResult(JBombardierConfiguration configuration) {
+        this.testName = configuration.getTestName();
+
+        List<PhaseConfiguration> phases = configuration.getPhases();
+        if (phases.isEmpty()) {
+            JBombardierPhaseResult defaultPhase = new JBombardierPhaseResult();
+            defaultPhase.setPhaseName(this.defaultPhase);
+            phaseResults.put(this.defaultPhase, defaultPhase);
+            phaseOrder.add(this.defaultPhase);
+        }else{
+            for (PhaseConfiguration phase : phases) {
+                JBombardierPhaseResult phaseResult = new JBombardierPhaseResult();
+                phaseResult.setPhaseName(phase.getPhaseName());
+                phaseResults.put(phase.getPhaseName(), phaseResult);
+                phaseOrder.add(phase.getPhaseName());
+            }
+        }
+    }
 
     public String getTestName() {
         return testName;
     }
 
-    public List<JBombardierPhaseResult> getPhaseResults() {
+    public Map<String, JBombardierPhaseResult> getPhaseResults() {
         return phaseResults;
     }
 
@@ -78,12 +102,14 @@ public class JBombardierRunResult {
         StringUtilsBuilder builder = new StringUtilsBuilder();
 
         builder.appendLine("JBombardierRunResult : name='{}' outcomeState='{}' startTime='{}' duration='{}'",
-                       testName, outcomeSummary, Logger.toDateString(startTime),
-                       TimeUtils.formatIntervalMilliseconds(duration));
-
+                           testName,
+                           outcomeSummary,
+                           Logger.toDateString(startTime),
+                           TimeUtils.formatIntervalMilliseconds(duration));
 
         builder.indent();
-        for (JBombardierPhaseResult phaseResult : phaseResults) {
+        for (String phase : phaseOrder) {
+            JBombardierPhaseResult phaseResult = phaseResults.get(phase);
             phaseResult.toStringDeep(builder);
             builder.newline();
         }

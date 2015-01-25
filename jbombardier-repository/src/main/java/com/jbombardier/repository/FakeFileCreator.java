@@ -16,7 +16,7 @@
 
 package com.jbombardier.repository;
 
-import com.jbombardier.console.model.result.TestRunResult;
+import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.console.model.result.TestRunResultBuilder;
 import com.jbombardier.repository.model.RepositoryTestModel;
 import com.logginghub.utils.FactoryMapDecorator;
@@ -115,9 +115,9 @@ public class FakeFileCreator {
                                                     .transactionsSuccess(succesful));
             }
 
-            TestRunResult testRunResult = builder.toTestRunResult();
+            RunResult runResult = builder.toTestRunResult();
 
-            controller.postResult(testRunResult);
+            controller.postResult(runResult);
 
             calendar.add(Calendar.DAY_OF_WEEK, 1);
         }
@@ -155,7 +155,7 @@ public class FakeFileCreator {
                 failureReason = "This run failed as the failure tolerance was exceeded";
             }
 
-            TestRunResult testRunResult = TestRunResultBuilder.start()
+            RunResult runResult = TestRunResultBuilder.start()
                                                               .name(EXAMPLE_TEST1)
                                                               .failureReason(failureReason)
                                                               .startTime(calendar.getTimeInMillis())
@@ -188,7 +188,7 @@ public class FakeFileCreator {
                                                                                            .transactionsSuccess(100))
                                                               .toTestRunResult();
 
-            controller.postResult(testRunResult);
+            controller.postResult(runResult);
 
             calendar.add(Calendar.HOUR_OF_DAY, 1);
         }

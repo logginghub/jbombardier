@@ -23,7 +23,7 @@ import java.util.List;
 import com.logginghub.utils.FileUtils;
 import com.logginghub.utils.logging.Logger;
 import com.jbombardier.console.model.JSONHelper;
-import com.jbombardier.console.model.result.TestRunResult;
+import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.repository.model.RepositoryModel;
 import com.jbombardier.repository.model.RepositoryTestModel;
 
@@ -50,9 +50,9 @@ public class ModelBuilder {
     public void buildFromFile(File file, RepositoryModel model) {
         logger.debug("Loading file {}", file.getName());
         try {
-            TestRunResult testRunResult = helper.fromJSON(FileUtils.read(file));
-            RepositoryTestModel testModel = model.getRepositoryTestModelForTest(testRunResult.getConfigurationName());
-            testModel.add(testRunResult);
+            RunResult runResult = helper.fromJSON(FileUtils.read(file));
+            RepositoryTestModel testModel = model.getRepositoryTestModelForTest(runResult.getConfigurationName());
+            testModel.add(runResult);
         }
         catch (RuntimeException e) {
             logger.warn(e, "Failed to load file '{}', skipping", file.getAbsolutePath());

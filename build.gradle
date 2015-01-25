@@ -28,6 +28,19 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'distribution'
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// jshaw - workaround to fix the intellij resource copying bug
+//
+    task copyTestResources(type: Copy) {
+        from "${projectDir}/src/test/resources"
+        into "${buildDir}/classes/test"
+    }
+    processTestResources.dependsOn copyTestResources
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 //    gradle.projectsEvaluated {
 //        tasks.withType(JavaCompile) {
 //            options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"

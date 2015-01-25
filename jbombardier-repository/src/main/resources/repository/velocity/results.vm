@@ -103,11 +103,11 @@ $(document).ready(function() {
             <td>$utils.toDateTimeString($transactionResultSnapshot.testTime)</td>
             <td>$utils.format($transactionResultSnapshot.transactionCount)</td>
             
-            <td>$utils.format($transactionResultSnapshot.transactionsSuccess)</td>
+            <td>$utils.format($transactionResultSnapshot.transactionsSuccessful)</td>
             <td>$utils.format($transactionResultSnapshot.getSuccessDurationMS())</td>
             <td>$utils.format($transactionResultSnapshot.sla)</td>
             
-            <td>$utils.format($transactionResultSnapshot.transactionsFailed)</td>
+            <td>$utils.format($transactionResultSnapshot.transactionsUnsuccessful)</td>
             <td>$utils.format($transactionResultSnapshot.getFailedDurationMS())</td>
         </tr>
     #end

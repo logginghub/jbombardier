@@ -16,30 +16,27 @@
 
 package com.jbombardier.console.panels;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
-import javax.swing.JButton;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
-import javax.swing.border.TitledBorder;
-
+import com.jbombardier.JBombardierTemporalController;
+import com.jbombardier.console.JBombardierController;
+import com.jbombardier.console.JBombardierModel;
 import com.jbombardier.console.components.JDynamicStateButton;
+import com.logginghub.utils.data.DataStructure;
+import com.logginghub.utils.observable.ObservablePropertyListener;
 import net.miginfocom.swing.MigLayout;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jbombardier.console.JBombardierController;
-import com.jbombardier.console.JBombardierModel;
-import com.logginghub.utils.data.DataStructure;
-import com.logginghub.utils.observable.ObservablePropertyListener;
+import javax.swing.*;
+import javax.swing.border.TitledBorder;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 public class SwingConsoleMainPanel extends JPanel {
 
     private JBombardierController controller;
+    private JBombardierTemporalController temporalController;
     private AgentStatusButtonsPanel agentStatusPanel;
+    private PhaseView phaseView;
     private RateControlPanel threadStatePanel;
     private JDynamicStateButton stopTestButton;
     private JDynamicStateButton startTestButton;
@@ -56,9 +53,6 @@ public class SwingConsoleMainPanel extends JPanel {
     private static final Logger logger = LoggerFactory.getLogger(SwingConsoleMainPanel.class);
     private JPanel agentControlPanel;
 
-    public void setController(JBombardierController controller) {
-        this.controller = controller;
-    }
 
     /**
      * Create the panel.
@@ -70,10 +64,15 @@ public class SwingConsoleMainPanel extends JPanel {
         // topPanel.setBorder(new TitledBorder(null, "Agent Control",
         // TitledBorder.LEADING, TitledBorder.TOP, null, null));
         add(topPanel, "cell 0 0");
-        topPanel.setLayout(new MigLayout("ins 0, gap 0", "[][grow,fill]", "[][grow]"));
+        topPanel.setLayout(new MigLayout("ins 0, gap 0", "[][][grow,fill]", "[grow, fill][grow]"));
 
         agentControlPanel = new JPanel();
-        agentControlPanel.setBorder(new TitledBorder(null, "Agent Control", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+        agentControlPanel.setBorder(new TitledBorder(null,
+                "Agent Control",
+                TitledBorder.LEADING,
+                TitledBorder.TOP,
+                null,
+                null));
         topPanel.add(agentControlPanel, "cell 0 0");
         agentControlPanel.setLayout(new MigLayout("ins 0, gap 0", "[grow,center]", "[grow,center]"));
 
@@ -81,15 +80,17 @@ public class SwingConsoleMainPanel extends JPanel {
         startTestButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 try {
-                    controller.publishTestInstructionsAndStartRunning();
-                }
-                catch (Throwable t) {
-                    JOptionPane.showMessageDialog(SwingConsoleMainPanel.this, t.getMessage(), "Failed to start test", JOptionPane.ERROR_MESSAGE);
+                    temporalController.start();
+                } catch (Throwable t) {
+                    JOptionPane.showMessageDialog(SwingConsoleMainPanel.this,
+                            t.getMessage(),
+                            "Failed to start test",
+                            JOptionPane.ERROR_MESSAGE);
                     logger.warn("Failed to start test", t);
                 }
             }
         });
-        agentControlPanel.add(startTestButton, "flowx,cell 0 0,alignx left,aligny top");
+        agentControlPanel.add(startTestButton, "cell 0 0");
 
         stopTestButton = new JDynamicStateButton("Stop test");
         stopTestButton.addActionListener(new ActionListener() {
@@ -123,9 +124,18 @@ public class SwingConsoleMainPanel extends JPanel {
         });
         agentControlPanel.add(generateReportButton, "cell 0 0");
 
+        phaseView = new PhaseView();
+        phaseView.setBorder(new TitledBorder(null, "Phases", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+        topPanel.add(phaseView, "cell 1 0,alignx left");
+
         agentStatusPanel = new AgentStatusButtonsPanel();
-        agentStatusPanel.setBorder(new TitledBorder(null, "Agents available", TitledBorder.LEADING, TitledBorder.TOP, null, null));
-        topPanel.add(agentStatusPanel, "cell 1 0,alignx left");
+        agentStatusPanel.setBorder(new TitledBorder(null,
+                "Agents available",
+                TitledBorder.LEADING,
+                TitledBorder.TOP,
+                null,
+                null));
+        topPanel.add(agentStatusPanel, "cell 2 0,alignx left");
 
         threadStatePanel = new RateControlPanel();
         transactionStatePanel = new TransactionStatePanel();
@@ -153,7 +163,11 @@ public class SwingConsoleMainPanel extends JPanel {
         }
     }
 
-    public void setModel(JBombardierModel model) {
+    public void bind(JBombardierController controller, JBombardierTemporalController temporalController) {
+        this.controller = controller;
+        this.temporalController = temporalController;
+
+        JBombardierModel model = controller.getModel();
         agentStatusPanel.initialise(model);
         threadStatePanel.initialise(model, controller);
         transactionStatePanel.initialise(model);
@@ -171,8 +185,7 @@ public class SwingConsoleMainPanel extends JPanel {
                 if (newValue) {
                     startTestButton.setEnabled(false);
                     stopTestButton.setEnabled(true);
-                }
-                else {
+                } else {
                     startTestButton.setEnabled(true);
                     stopTestButton.setEnabled(false);
                 }
@@ -180,15 +193,22 @@ public class SwingConsoleMainPanel extends JPanel {
         });
 
         stopTestButton.setName("stopTestButton");
-        stopTestButton.setName("startTestButton");
+        startTestButton.setName("startTestButton");
 
         consolePanel.initialise(model);
 
         model.addListener(new JBombardierModel.InteractiveModelListenerAdaptor() {
             public void onTestAbandoned(String reason) {
-                JOptionPane.showMessageDialog(SwingConsoleMainPanel.this, reason, "Test abandoned", JOptionPane.WARNING_MESSAGE);
-            };
+                JOptionPane.showMessageDialog(SwingConsoleMainPanel.this,
+                        reason,
+                        "Test abandoned",
+                        JOptionPane.WARNING_MESSAGE);
+            }
+
+            ;
         });
+
+        phaseView.bind(controller);
     }
 
 }

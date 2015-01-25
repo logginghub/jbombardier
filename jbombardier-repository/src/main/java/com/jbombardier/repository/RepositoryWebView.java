@@ -18,8 +18,8 @@ package com.jbombardier.repository;
 
 import com.jbombardier.common.serialisableobject.CapturedStatistic;
 import com.jbombardier.console.VelocityUtils;
-import com.jbombardier.console.model.result.TestRunResult;
-import com.jbombardier.console.model.result.TransactionResultSnapshot;
+import com.jbombardier.console.model.result.RunResult;
+import com.jbombardier.console.model.result.TransactionResult;
 import com.jbombardier.repository.model.RepositoryModel;
 import com.jbombardier.repository.model.ResultDeltasForRun;
 import com.jbombardier.repository.model.RepositoryTestModel;
@@ -32,7 +32,6 @@ import com.logginghub.web.RequestContext;
 import com.logginghub.web.WebController;
 import org.apache.velocity.VelocityContext;
 
-import java.net.URLClassLoader;
 import java.text.NumberFormat;
 import java.util.*;
 
@@ -67,18 +66,18 @@ import java.util.*;
 
     public String resultsSuccessPerSecond(String testName, String resultName) {
 
-        List<TransactionResultSnapshot> results = getSortedResultsForTest(testName, resultName);
+        List<TransactionResult> results = getSortedResultsForTest(testName, resultName);
 
         StringBuilder builder = new StringBuilder();
         builder.append("[[");
 
         String div = "";
-        for (TransactionResultSnapshot transactionResultSnapshot : results) {
+        for (TransactionResult transactionResult : results) {
             builder.append(div);
             builder.append("[");
-            builder.append(transactionResultSnapshot.getTestTime())
+            builder.append(transactionResult.getTestTime())
                    .append(",")
-                   .append(transactionResultSnapshot.getTransactionsSuccess());
+                   .append(transactionResult.getTransactionsSuccessful());
             builder.append("]");
             div = ",";
         }
@@ -89,7 +88,7 @@ import java.util.*;
 
     public String resultsSuccessTimes(String testName, String resultName) {
 
-        List<TransactionResultSnapshot> results = getSortedResultsForTest(testName, resultName);
+        List<TransactionResult> results = getSortedResultsForTest(testName, resultName);
 
         StringBuilder builder = new StringBuilder();
         builder.append("[");
@@ -97,12 +96,12 @@ import java.util.*;
         // Build the first series, the actual results
         builder.append("[");
         String div = "";
-        for (TransactionResultSnapshot transactionResultSnapshot : results) {
+        for (TransactionResult transactionResult : results) {
             builder.append(div);
             builder.append("[");
-            builder.append(transactionResultSnapshot.getTestTime())
+            builder.append(transactionResult.getTestTime())
                    .append(",")
-                   .append(transactionResultSnapshot.getSuccessDurationMS());
+                   .append(transactionResult.getSuccessDurationMS());
             builder.append("]");
             div = ",";
         }
@@ -111,14 +110,14 @@ import java.util.*;
         // The second series is the SLA values
         builder.append("[");
         div = "";
-        for (TransactionResultSnapshot transactionResultSnapshot : results) {
+        for (TransactionResult transactionResult : results) {
             builder.append(div);
             builder.append("[");
-            double sla = transactionResultSnapshot.getSla();
+            double sla = transactionResult.getSla();
             if (!Double.isNaN(sla)) {
-                builder.append(transactionResultSnapshot.getTestTime())
+                builder.append(transactionResult.getTestTime())
                        .append(",")
-                       .append(transactionResultSnapshot.getSla());
+                       .append(transactionResult.getSla());
             }
             builder.append("]");
             div = ",";
@@ -144,11 +143,11 @@ import java.util.*;
 
         long startTime = Long.parseLong(testStartTime);
 
-        TestRunResult result = null;
+        RunResult result = null;
         RepositoryTestModel repositoryTestModelForTest = model.getRepositoryTestModelForTest(testname);
         if (repositoryTestModelForTest != null) {
-            List<TestRunResult> lastXResults = repositoryTestModelForTest.getLastXResults(50);
-            for (TestRunResult lastXResult : lastXResults) {
+            List<RunResult> lastXResults = repositoryTestModelForTest.getLastXResults(50);
+            for (RunResult lastXResult : lastXResults) {
                 if (lastXResult.getStartTime() == startTime) {
                     result = lastXResult;
                     break;
@@ -177,40 +176,40 @@ import java.util.*;
             HTMLBuilder2.TableElement resultsTable = div.table();
 
             resultsTable.getThead().row().cells("Test name", "Total transactions", "Mean success time", "SLA");
-
-            Map<String, TransactionResultSnapshot> testResults = result.getTestResults();
-            Set<String> testNamesSet = testResults.keySet();
+            // TODO : refactor fix me
+//            Map<String, TransactionResult> testResults = result.getTestResults();
+//            Set<String> testNamesSet = testResults.keySet();
             List<String> sortedTestNames = new ArrayList<String>();
-            sortedTestNames.addAll(testNamesSet);
+//            sortedTestNames.addAll(testNamesSet);
             Collections.sort(sortedTestNames);
 
             NumberFormat nf = NumberFormat.getInstance();
 
-            for (String testName : sortedTestNames) {
-                TransactionResultSnapshot transactionResultSnapshot = testResults.get(testName);
-
-                resultsTable.getTbody()
-                            .row()
-                            .cells(transactionResultSnapshot.getTestName(),
-                                   nf.format(transactionResultSnapshot.getTransactionCount()),
-                                   nf.format(transactionResultSnapshot.getSuccessDurationMS()),
-                                   nf.format(transactionResultSnapshot.getSla()));
-            }
+//            for (String testName : sortedTestNames) {
+//                TransactionResult transactionResult = testResults.get(testName);
+//
+//                resultsTable.getTbody()
+//                            .row()
+//                            .cells(transactionResult.getTestName(),
+//                                   nf.format(transactionResult.getTransactionCount()),
+//                                   nf.format(transactionResult.getSuccessDurationMS()),
+//                                   nf.format(transactionResult.getSla()));
+//            }
 
             div.h3("Captured statistics : ");
-            List<CapturedStatistic> capturedStatistics = result.getCapturedStatistics();
+//            List<CapturedStatistic> capturedStatistics = result.getCapturedStatistics();
 
-            HTMLBuilder2.TableElement statisticsTable = div.table();
-            statisticsTable.getThead().row().cells("Time", "Path", "Value");
-            for (CapturedStatistic capturedStatistic : capturedStatistics) {
-                statisticsTable.getTbody()
-                            .row()
-                            .cells(Logger.toDateString(capturedStatistic.getTime()).toString(),
-                                   capturedStatistic.getPath(),
-                                   capturedStatistic.getValue());
-
-
-            }
+//            HTMLBuilder2.TableElement statisticsTable = div.table();
+//            statisticsTable.getThead().row().cells("Time", "Path", "Value");
+//            for (CapturedStatistic capturedStatistic : capturedStatistics) {
+//                statisticsTable.getTbody()
+//                            .row()
+//                            .cells(Logger.toDateString(capturedStatistic.getTime()).toString(),
+//                                   capturedStatistic.getPath(),
+//                                   capturedStatistic.getValue());
+//
+//
+//            }
         } else {
             div.span("Could not find a run that started at '{}' for test '{}'", testStartTime, testname);
         }
@@ -230,8 +229,8 @@ import java.util.*;
         HTMLBuilder2.Element tbody = table.getTbody();
 
         RepositoryTestModel repositoryTestModelForTest = model.getRepositoryTestModelForTest(testname);
-        List<TestRunResult> lastXResults = repositoryTestModelForTest.getLastXResults(50);
-        for (TestRunResult lastXResult : lastXResults) {
+        List<RunResult> lastXResults = repositoryTestModelForTest.getLastXResults(50);
+        for (RunResult lastXResult : lastXResults) {
             HTMLBuilder2.Element cell = tbody.row().cell();
             cell.a(StringUtils.format("/runs/{}/{}", testname, lastXResult.getStartTime()),
                    Logger.toDateString(lastXResult.getStartTime()).toString());
@@ -259,12 +258,12 @@ import java.util.*;
         VelocityContext context = velocityHelper.buildContext();
 
         RepositoryTestModel repositoryTestModelForTest = model.getRepositoryTestModelForTest(testname);
-        List<TestRunResult> lastXResults = repositoryTestModelForTest.getLastXResults(100);
-
+        List<RunResult> lastXResults = repositoryTestModelForTest.getLastXResults(100);
         Set<String> testNames = new HashSet<String>();
-        for (TestRunResult testRunResult : lastXResults) {
-            Set<String> keySet = testRunResult.getTestResults().keySet();
-            testNames.addAll(keySet);
+        for (RunResult runResult : lastXResults) {
+        // TODO : refactor fix me
+//            Set<String> keySet = runResult.getTestResults().keySet();
+//            testNames.addAll(keySet);
         }
 
         List<String> sortedNames = new ArrayList<String>();
@@ -289,12 +288,13 @@ import java.util.*;
         VelocityContext context = velocityHelper.buildContext();
 
         RepositoryTestModel repositoryTestModelForTest = model.getRepositoryTestModelForTest(testname);
-        List<TestRunResult> lastXResults = repositoryTestModelForTest.getLastXResults(100);
+        List<RunResult> lastXResults = repositoryTestModelForTest.getLastXResults(100);
 
         Set<String> testNames = new HashSet<String>();
-        for (TestRunResult testRunResult : lastXResults) {
-            Set<String> keySet = testRunResult.getTestResults().keySet();
-            testNames.addAll(keySet);
+        for (RunResult runResult : lastXResults) {
+            // TODO : refactor fix me
+//            Set<String> keySet = runResult.getTestResults().keySet();
+//            testNames.addAll(keySet);
         }
 
         List<String> sortedNames = new ArrayList<String>();
@@ -318,10 +318,10 @@ import java.util.*;
     public String test(String testName, String resultName) {
         VelocityContext context = velocityHelper.buildContext();
 
-        List<TransactionResultSnapshot> results = getResultsForTest(testName, resultName);
+        List<TransactionResult> results = getResultsForTest(testName, resultName);
 
-        Collections.sort(results, new Comparator<TransactionResultSnapshot>() {
-            @Override public int compare(TransactionResultSnapshot o1, TransactionResultSnapshot o2) {
+        Collections.sort(results, new Comparator<TransactionResult>() {
+            @Override public int compare(TransactionResult o1, TransactionResult o2) {
                 return CompareUtils.compareLongs(o2.getTestTime(), o1.getTestTime());
             }
         });
@@ -333,17 +333,17 @@ import java.util.*;
         return velocityHelper.help(context, "repository/velocity/results.vm");
     }
 
-    private List<ResultDeltasForRun> buildResultDeltas(List<String> sortedNames, List<TestRunResult> lastXResults) {
+    private List<ResultDeltasForRun> buildResultDeltas(List<String> sortedNames, List<RunResult> lastXResults) {
         List<ResultDeltasForRun> resultDeltas = new ArrayList<ResultDeltasForRun>();
 
         if (lastXResults.size() >= 2) {
 
-            Iterator<TestRunResult> iterator = lastXResults.iterator();
-            TestRunResult currentResult = iterator.next();
+            Iterator<RunResult> iterator = lastXResults.iterator();
+            RunResult currentResult = iterator.next();
 
             // Go through the results in order
             while (iterator.hasNext()) {
-                TestRunResult nextResult = iterator.next();
+                RunResult nextResult = iterator.next();
 
                 ResultDeltasForRun deltas = new ResultDeltasForRun();
                 deltas.setStartTime(currentResult.getStartTime());
@@ -353,39 +353,40 @@ import java.util.*;
 
                 // Iterate through the sorted test names to get the column order right
                 for (String testName : sortedNames) {
-                    TransactionResultSnapshot currentSnapshot = currentResult.getTestResults().get(testName);
-                    TransactionResultSnapshot nextSnapshot = nextResult.getTestResults().get(testName);
+                    // TODO : refactor fix me
+//                    TransactionResult currentSnapshot = currentResult.getTestResults().get(testName);
+//                    TransactionResult nextSnapshot = nextResult.getTestResults().get(testName);
 
-                    ResultDelta resultDelta = new ResultDelta();
-                    resultDelta.setTest(testName);
-
-                    if (currentSnapshot != null && nextSnapshot != null) {
-
-                        double deltaTotalTransactions = currentSnapshot.getTransactionCount() - nextSnapshot.getTransactionCount();
-                        double deltaTransactionsPerSecond = currentSnapshot.getTransactionsSuccess() - nextSnapshot.getTransactionsSuccess();
-                        double deltaTransactionTimes = currentSnapshot.getSuccessDuration() - nextSnapshot.getSuccessDuration();
-
-                        double percentageDeltaTransactions = -100 + currentSnapshot.getTransactionsSuccess() / nextSnapshot
-                                .getTransactionsSuccess() * 100f;
-                        double percentageDeltaTotalTransactions = -100 + ((double) currentSnapshot.getTransactionCount()) / ((double) nextSnapshot
-                                .getTransactionCount()) * 100f;
-                        double percentageDeltaTime = -100 + currentSnapshot.getSuccessDuration() / nextSnapshot.getSuccessDuration() * 100f;
-
-                        resultDelta.setDeltaTransactionsTotal(deltaTotalTransactions);
-                        resultDelta.setTransactionCount(currentSnapshot.getTransactionCount());
-                        resultDelta.setDeltaSuccessTransactionsPerSecond(deltaTransactionsPerSecond);
-                        resultDelta.setDeltaSuccessTransactionTime(deltaTransactionTimes);
-                        resultDelta.setPercentageDeltaTransactionsPerSecond(percentageDeltaTransactions);
-                        resultDelta.setPercentageDeltaTotalTransactions(percentageDeltaTotalTransactions);
-                        resultDelta.setPercentageDeltaTransactionTime(percentageDeltaTime);
-                        resultDelta.setCurrentTransactions(currentSnapshot.getTransactionsSuccess());
-                        resultDelta.setCurrentTransactionTime(currentSnapshot.getSuccessDuration());
-                        resultDelta.setSLA(currentSnapshot.getSla());
-                    } else {
-                        // One of these results didn't have the test we are interested in comparing
-                    }
-
-                    deltas.add(resultDelta);
+//                    ResultDelta resultDelta = new ResultDelta();
+//                    resultDelta.setTest(testName);
+//
+//                    if (currentSnapshot != null && nextSnapshot != null) {
+//
+//                        double deltaTotalTransactions = currentSnapshot.getTransactionCount() - nextSnapshot.getTransactionCount();
+//                        double deltaTransactionsPerSecond = currentSnapshot.getTransactionsSuccessful() - nextSnapshot.getTransactionsSuccessful();
+//                        double deltaTransactionTimes = currentSnapshot.getSuccessDuration() - nextSnapshot.getSuccessDuration();
+//
+//                        double percentageDeltaTransactions = -100 + currentSnapshot.getTransactionsSuccessful() / nextSnapshot
+//                                .getTransactionsSuccessful() * 100f;
+//                        double percentageDeltaTotalTransactions = -100 + ((double) currentSnapshot.getTransactionCount()) / ((double) nextSnapshot
+//                                .getTransactionCount()) * 100f;
+//                        double percentageDeltaTime = -100 + currentSnapshot.getSuccessDuration() / nextSnapshot.getSuccessDuration() * 100f;
+//
+//                        resultDelta.setDeltaTransactionsTotal(deltaTotalTransactions);
+//                        resultDelta.setTransactionCount(currentSnapshot.getTransactionCount());
+//                        resultDelta.setDeltaSuccessTransactionsPerSecond(deltaTransactionsPerSecond);
+//                        resultDelta.setDeltaSuccessTransactionTime(deltaTransactionTimes);
+//                        resultDelta.setPercentageDeltaTransactionsPerSecond(percentageDeltaTransactions);
+//                        resultDelta.setPercentageDeltaTotalTransactions(percentageDeltaTotalTransactions);
+//                        resultDelta.setPercentageDeltaTransactionTime(percentageDeltaTime);
+//                        resultDelta.setCurrentTransactions(currentSnapshot.getTransactionsSuccessful());
+//                        resultDelta.setCurrentTransactionTime(currentSnapshot.getSuccessDuration());
+//                        resultDelta.setSLA(currentSnapshot.getSla());
+//                    } else {
+//                        One of these results didn't have the test we are interested in comparing
+//                    }
+//
+//                    deltas.add(resultDelta);
                 }
 
                 resultDeltas.add(deltas);
@@ -397,15 +398,15 @@ import java.util.*;
 
     }
 
-    private List<TransactionResultSnapshot> getResultsForTest(String testName, String resultName) {
+    private List<TransactionResult> getResultsForTest(String testName, String resultName) {
         RepositoryTestModel repositoryTestModelForTest = model.getRepositoryTestModelForTest(testName);
         return repositoryTestModelForTest.getResultsForTest(resultName);
     }
 
-    private List<TransactionResultSnapshot> getSortedResultsForTest(String testName, String resultName) {
-        List<TransactionResultSnapshot> results = getResultsForTest(testName, resultName);
-        Collections.sort(results, new Comparator<TransactionResultSnapshot>() {
-            @Override public int compare(TransactionResultSnapshot o1, TransactionResultSnapshot o2) {
+    private List<TransactionResult> getSortedResultsForTest(String testName, String resultName) {
+        List<TransactionResult> results = getResultsForTest(testName, resultName);
+        Collections.sort(results, new Comparator<TransactionResult>() {
+            @Override public int compare(TransactionResult o1, TransactionResult o2) {
                 return CompareUtils.compareLongs(o2.getTestTime(), o1.getTestTime());
             }
         });

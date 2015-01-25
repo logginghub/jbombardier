@@ -33,6 +33,7 @@ import java.util.List;
     @XmlElementWrapper(name = "tests") @XmlElement(name = "test")
     private List<TestConfiguration> tests = new ArrayList<TestConfiguration>();
     @XmlAttribute private String duration;
+    @XmlAttribute private String warmupDuration;
 
     public List<TestConfiguration> getTests() {
         return tests;
@@ -52,5 +53,13 @@ import java.util.List;
 
     public void setDuration(String duration) {
         this.duration = duration;
+    }
+
+    public String getWarmupDuration() {
+        return warmupDuration;
+    }
+
+    public void setWarmupDuration(String warmupDuration) {
+        this.warmupDuration = warmupDuration;
     }
 }

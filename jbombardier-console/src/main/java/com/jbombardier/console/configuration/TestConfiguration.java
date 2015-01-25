@@ -28,7 +28,6 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 
 import com.jbombardier.console.model.TransactionResultModel;
-import com.jbombardier.console.model.TransactionResultModel.TransactionTimeThresholdMode;
 
 @SuppressWarnings("restriction") @XmlAccessorType(XmlAccessType.FIELD) public class TestConfiguration {
 
@@ -45,7 +44,7 @@ import com.jbombardier.console.model.TransactionResultModel.TransactionTimeThres
     @XmlAttribute private double sla = Double.NaN;
     
     @XmlAttribute private double failureThreshold = Double.NaN;
-    @XmlAttribute private TransactionResultModel.TransactionTimeThresholdMode failureThresholdMode = TransactionTimeThresholdMode.Mean;
+    @XmlAttribute private TransactionResultModel.SuccessfulTransactionsDurationFailureType failureThresholdMode = TransactionResultModel.SuccessfulTransactionsDurationFailureType.Mean;
     @XmlAttribute private int failedTransactionCountFailureThreshold = -1;
     @XmlAttribute private int failureThresholdResultCountMinimum = 10;
     @XmlAttribute private int movingAveragePoints = 5;
@@ -205,11 +204,11 @@ import com.jbombardier.console.model.TransactionResultModel.TransactionTimeThres
         this.failureThreshold = failureThreshold;
     }
     
-    public void setFailureThresholdMode(TransactionResultModel.TransactionTimeThresholdMode failureThresholdMode) {
+    public void setFailureThresholdMode(TransactionResultModel.SuccessfulTransactionsDurationFailureType failureThresholdMode) {
         this.failureThresholdMode = failureThresholdMode;
     }
     
-    public TransactionResultModel.TransactionTimeThresholdMode getFailureThresholdMode() {
+    public TransactionResultModel.SuccessfulTransactionsDurationFailureType getFailureThresholdMode() {
         return failureThresholdMode;
     }
 

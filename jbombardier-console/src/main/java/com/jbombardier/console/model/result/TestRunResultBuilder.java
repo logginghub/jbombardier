@@ -22,8 +22,8 @@ package com.jbombardier.console.model.result;
 
 public class TestRunResultBuilder {
 
-    private TestRunResult testRunResult = new TestRunResult();
-    
+    private RunResult runResult = new RunResult();
+
     public static TestRunResultBuilder start() {
         return new TestRunResultBuilder();
     }
@@ -32,33 +32,35 @@ public class TestRunResultBuilder {
         return new TransactionResultSnapshotBuilder();
     }
     
-    public TestRunResult toTestRunResult() {
-        return testRunResult;
+    public RunResult toTestRunResult() {
+        return runResult;
     }
     
     public TestRunResultBuilder name(String string) {
-        testRunResult.setConfigurationName(string);
+        runResult.setConfigurationName(string);
         return this;
     }
     
     public TestRunResultBuilder failureReason(String string) {
-        testRunResult.setFailureReason(string);
+        runResult.setFailureReason(string);
         return this;
     }
     
     public TestRunResultBuilder startTime(long startTime) {
-        testRunResult.setStartTime(startTime);
+        runResult.setStartTime(startTime);
         return this;
     }
 
     public void result(String test, TransactionResultSnapshotBuilder builder) {
-        testRunResult.getTestResults().put(test, builder.toSnapshot());
+        // TODO : refactor fix me
+//        runResult.getTestResults().put(test, builder.toSnapshot());
     }
     
     public TestRunResultBuilder results(TransactionResultSnapshotBuilder... builders) {
         for (TransactionResultSnapshotBuilder transactionResultSnapshotBuilder : builders) {
-            TransactionResultSnapshot snapshot = transactionResultSnapshotBuilder.toSnapshot();
-            testRunResult.getTestResults().put(snapshot.getTestName(), snapshot);
+            TransactionResult snapshot = transactionResultSnapshotBuilder.toSnapshot();
+            // TODO : refactor fix me
+//            runResult.getTestResults().put(snapshot.getTestName(), snapshot);
         }
         return this;
     }
@@ -66,10 +68,10 @@ public class TestRunResultBuilder {
     
     public static class TransactionResultSnapshotBuilder {
 
-        TransactionResultSnapshot snapshot = new TransactionResultSnapshot();
+        TransactionResult snapshot = new TransactionResult();
         
         public TransactionResultSnapshotBuilder failedDuration(double f) {
-            snapshot.setFailedDuration(f);
+            snapshot.setUnsucccesfulDuration(f);
             return this;
         }
         
@@ -104,12 +106,12 @@ public class TestRunResultBuilder {
         }
         
         public TransactionResultSnapshotBuilder transactionsFailed(long f) {
-            snapshot.setTransactionsFailed(f);
+            snapshot.setTransactionsUnsuccessful(f);
             return this;
         }
         
         public TransactionResultSnapshotBuilder transactionsSuccess(long f) {
-            snapshot.setTransactionsSuccess(f);
+            snapshot.setTransactionsSuccessful(f);
             return this;
         }
 
@@ -118,7 +120,7 @@ public class TestRunResultBuilder {
             return this;
         }
         
-        public TransactionResultSnapshot toSnapshot() {
+        public TransactionResult toSnapshot() {
             return snapshot;             
         }
         

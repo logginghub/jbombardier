@@ -23,6 +23,7 @@ import java.util.List;
 
 import javax.swing.UIManager;
 
+import com.jbombardier.JBombardierTemporalController;
 import com.jbombardier.console.JBombardierSwingConsole;
 import com.jbombardier.console.JBombardierModel;
 import com.jbombardier.console.configuration.JBombardierConfiguration;
@@ -40,6 +41,7 @@ public class EmbeddedPerformanceTest {
     private JBombardierModel model;
     private MainFrame frame;
     private JBombardierController controller;
+    private JBombardierTemporalController temporalController;
     private JBombardierConfiguration configuration;
     //    private InteractiveConfiguration configuration;
     
@@ -62,17 +64,20 @@ public class EmbeddedPerformanceTest {
         model = new JBombardierModel();
         configuration = new JBombardierConfiguration();
         controller = new JBombardierController(model, configuration);
+        temporalController = new JBombardierTemporalController(controller);
         
         for (Pair<String, TestFactory> pair : testFactories) {
             TestModel testModel = new TestModel();
             testModel.setClassname(pair.getA());
             testModel.setName(pair.getA());
-            testModel.setTargetThreads(1);
+            testModel.getTargetThreads().set(1);
             testModel.setRateStep(1);
             testModel.setRateStepTime(500);
-            testModel.setTargetRate(1);
-            testModel.setThreadStep(1);
-            model.addTestModel(testModel);
+            testModel.getTargetRate().set(1);
+            testModel.getThreadStep().set(1);
+
+            // TODO : refactor fix. Not even sure what this class does :/
+            //model.addTestModel(testModel);
         }
         
         try {
@@ -88,7 +93,7 @@ public class EmbeddedPerformanceTest {
                 if (configuration.isSendKillOnConsoleClose()) {
                     controller.endTestAbnormally();
                 }
-            };
+            }
         };
 
         frame.setIcon("black-flask-hi.png");
@@ -108,8 +113,7 @@ public class EmbeddedPerformanceTest {
     private void initialiseComponents(Container contentPane) {
         SwingConsoleMainPanel panel = new SwingConsoleMainPanel();
         panel.setDisplayAgentControl(false);
-        panel.setController(controller);
-        panel.setModel(model);
+        panel.bind(controller, temporalController);
         contentPane.add(panel);
     }
 

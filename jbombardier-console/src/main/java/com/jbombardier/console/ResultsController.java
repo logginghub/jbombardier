@@ -19,7 +19,12 @@ package com.jbombardier.console;
 import com.jbombardier.common.AgentStats;
 import com.jbombardier.common.AgentStats.TestStats;
 import com.jbombardier.common.serialisableobject.CapturedStatistic;
+import com.jbombardier.console.model.AgentModel;
+import com.jbombardier.console.model.PhaseModel;
 import com.jbombardier.console.model.TransactionResultModel;
+import com.jbombardier.console.model.result.AgentResult;
+import com.jbombardier.console.model.result.PhaseResult;
+import com.jbombardier.console.model.result.RunResult;
 import com.logginghub.utils.Destination;
 import com.logginghub.utils.FactoryMap;
 import com.logginghub.utils.FileUtils;
@@ -27,6 +32,7 @@ import com.logginghub.utils.SinglePassStatisticsLongPrecisionCircular;
 import com.logginghub.utils.Stopwatch;
 import com.logginghub.utils.TimerUtils;
 import com.logginghub.utils.logging.Logger;
+import com.logginghub.utils.observable.ObservableList;
 import com.logginghub.utils.sof.SerialisableObject;
 import com.logginghub.utils.sof.SofConfiguration;
 import com.logginghub.utils.sof.SofException;
@@ -54,6 +60,7 @@ public class ResultsController {
     private BufferedOutputStream statisticsStream;
     private SofConfiguration sofConfig;
     private int maximumResultsPerKey = 100;
+
     private HashMap<String, SinglePassStatisticsLongPrecisionCircular> successStatsByTest = new FactoryMap<String, SinglePassStatisticsLongPrecisionCircular>() {
         @Override protected SinglePassStatisticsLongPrecisionCircular createEmptyValue(String key) {
             SinglePassStatisticsLongPrecisionCircular stats = new SinglePassStatisticsLongPrecisionCircular(TimeUnit.NANOSECONDS);
@@ -187,6 +194,7 @@ public class ResultsController {
                         synchronized (stats) {
                             stats.doCalculations();
                             transactionResultModel.getTp90().set(stats.getPercentiles()[90] * 1e-6);
+
                             double value = stats.getStandardDeviationPopulationDistrubution() * 1e-6;
                             transactionResultModel.getStddev().set(value);
                         }
@@ -289,6 +297,40 @@ public class ResultsController {
             } catch (IOException e) {
             }
         }
+
+    }
+
+    public RunResult createSnapshot(JBombardierModel model) {
+
+        RunResult result = new RunResult();
+
+        result.setStartTime(model.getTestStartTime());
+        result.setConfigurationName(model.getTestName());
+        result.setFailureReason(model.getFailureReason());
+
+        ObservableList<PhaseModel> phaseModels = model.getPhaseModels();
+        for (PhaseModel phaseModel : phaseModels) {
+
+            PhaseResult phaseResult = new PhaseResult();
+            phaseResult.setDuration(phaseModel.getPhaseDuration().get());
+            phaseResult.setWarmup(phaseModel.getWarmupDuration().get());
+            phaseResult.setPhaseName(phaseModel.getPhaseName().get());
+
+            result.getPhaseResults().add(phaseResult);
+        }
+
+        List<AgentModel> agentModels = model.getAgentModels();
+        for (AgentModel agentModel : agentModels) {
+
+            AgentResult agentResult = new AgentResult();
+            agentResult.setAddress(agentModel.getAddress().get());
+            agentResult.setPort(agentModel.getPort().get());
+            agentResult.setName(agentModel.getName().get());
+
+            result.getAgentResults().add(agentResult);
+        }
+
+        return result;
 
     }
 }

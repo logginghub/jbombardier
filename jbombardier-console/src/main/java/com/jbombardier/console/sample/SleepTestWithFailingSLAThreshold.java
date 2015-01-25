@@ -17,7 +17,7 @@
 package com.jbombardier.console.sample;
 
 import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
-import com.jbombardier.console.model.TransactionResultModel.TransactionTimeThresholdMode;
+import com.jbombardier.console.model.TransactionResultModel;
 
 public class SleepTestWithFailingSLAThreshold {
 
@@ -30,7 +30,7 @@ public class SleepTestWithFailingSLAThreshold {
                                                .rateStep(40)
                                                .sla(25)
                                                .failureThreshold(9)
-                                               .failureThresholdMode(TransactionTimeThresholdMode.Mean)
+                                               .failureThresholdMode(TransactionResultModel.SuccessfulTransactionsDurationFailureType.Mean)
                                                .failureThresholdResultCountMinimum(20))
                  .addTest(JBombardierConfigurationBuilder.test(SleepTest.class).name("sleep 100@10").properties("delay=100").targetRate(10).rateStep(10))
                  .addAgent(JBombardierConfigurationBuilder.embeddedAgent())

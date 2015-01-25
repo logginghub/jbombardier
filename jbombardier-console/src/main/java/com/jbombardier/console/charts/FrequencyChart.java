@@ -75,7 +75,7 @@ public class FrequencyChart {
                         .addSeries("Frequency", aggregated, AggregatedDataKey.Count)
                         .setTitle("Frequency distribution of " + transactionResultModel.getKey())
                         .setPlainXY()
-                        .addYMarker(transactionResultModel.getTransactionSLA(), "SLA (" + transactionResultModel.getTransactionSLA() + ")", Color.BLACK, 0)
+                        .addYMarker(transactionResultModel.getSuccessfulTransactionDurationSLA().get(), "SLA (" + transactionResultModel.getSuccessfulTransactionDurationSLA().get() + ")", Color.BLACK, 0)
                         .addYMarker(tp90, "TP90 (" + NumberFormat.getInstance().format(tp90) + ")", Color.BLACK, 15)
                         .addYMarker(mean, "Mean (" + NumberFormat.getInstance().format(mean) + ")", Color.BLACK, 30)
                         .setXAxisLabel("Elapsed time")
