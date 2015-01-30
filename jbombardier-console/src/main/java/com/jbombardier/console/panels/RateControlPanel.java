@@ -101,7 +101,7 @@ public class RateControlPanel extends JPanel {
         scrollPane.setViewportView(table);
     }
 
-    public void initialise(final JBombardierModel model, final JBombardierController controller) {
+    public void bind(final JBombardierModel model, final JBombardierController controller) {
 
         this.controller = controller;
         model.addListener(new JBombardierModel.InteractiveModelListenerAdaptor() {

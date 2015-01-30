@@ -23,10 +23,14 @@ import com.logginghub.utils.observable.ObservableLong;
 import com.logginghub.utils.observable.ObservableProperty;
 import org.codehaus.jackson.annotate.JsonIgnore;
 
+import java.nio.DoubleBuffer;
+
 /**
  * Represents the summary values for a single test or transaction.
  */
 public class TransactionResultModel extends Observable {
+
+    private ObservableLong testDuration = createLongProperty("testDuration", 0);
 
     private ObservableProperty<String> testName = createStringProperty("testName", "");
     private ObservableProperty<String> transactionName = createStringProperty("transactionName", "");
@@ -35,84 +39,65 @@ public class TransactionResultModel extends Observable {
     private ObservableDouble stddev = createDoubleProperty("stddev", Double.NaN);
 
     /**
-     * A "fake" property that you can watch to be notified when the whole object has been updated. Not sure I like it
-     * too much, but it works for now. Would be nice if the Observable provided some sort of atomic update and
-     * notification.
+     * A "fake" property that you can watch to be notified when the whole object has been updated. Not sure I like it too much, but it works for now. Would be nice if the Observable provided some sort
+     * of atomic update and notification.
      */
     private ObservableLong modelUpdates = createLongProperty("modelUpdates", 0);
 
     /**
      * The total number of successful transactions we should expect per second, based on the test configuration
      */
-    private ObservableDouble targetSuccessfulTransactionsPerSecond = createDoubleProperty(
-            "targetSuccessfulTransactionsPerSecond",
-            0);
+    private ObservableDouble targetSuccessfulTransactionsPerSecond = createDoubleProperty("targetSuccessfulTransactionsPerSecond", 0);
 
 
     /**
      * The SLA for successful transactions durations
      */
-    private ObservableDouble successfulTransactionDurationSLA = createDoubleProperty("successfulTransactionDurationSLA",
-                                                                                     0);
+    private ObservableDouble successfulTransactionDurationSLA = createDoubleProperty("successfulTransactionDurationSLA", 0);
 
     /**
      * The total number of successful transactions
      */
-    private ObservableLong successfulTransactionsTotal = createLongProperty("successfulTransactionsTotal", 0);
+    private ObservableLong successfulTransactionsCountTotal = createLongProperty("successfulTransactionsCountTotal", 0);
 
     /**
      * The total number of unsuccessful transactions
      */
-    private ObservableLong unsuccessfulTransactionsTotal = createLongProperty("unsuccessfulTransactionsTotal", 0);
+    private ObservableLong unsuccessfulTransactionsCountTotal = createLongProperty("unsuccessfulTransactionsCountTotal", 0);
+
+    private ObservableLong successfulTransactionsDurationTotal = createLongProperty("successfulTransactionsDurationTotal", 0);
+    private ObservableLong unsuccessfulTransactionsDurationTotal = createLongProperty("unsuccessfulTransactionsDurationTotal", 0);
 
     /**
      * The number of unsuccessful transations that will trigger a test failure
      */
-    private ObservableLong unsuccessfulTransactionsTotalFailureThreshold = createLongProperty(
-            "unsuccessfulTransactionsTotalFailureThreshold",
-            -1);
+    private ObservableLong unsuccessfulTransactionsTotalFailureThreshold = createLongProperty("unsuccessfulTransactionsTotalFailureThreshold", -1);
 
 
     /**
-     * The minimum number of succesful transactions that need to be processed before we can fail a test due to poor
-     * performance
+     * The minimum number of succesful transactions that need to be processed before we can fail a test due to poor performance
      */
-    private ObservableLong successfulTransactionsTotalFailureResultCountMinimum = createLongProperty(
-            "successfulTransactionsTotalFailureResultCountMinimum",
-            -1);
+    private ObservableLong successfulTransactionsTotalFailureResultCountMinimum = createLongProperty("successfulTransactionsTotalFailureResultCountMinimum", -1);
 
     /**
      * The threshold below which we will fail a test due to poor performance on successful transactions
      */
-    private ObservableDouble successfulTransactionsDurationFailureThreshold = createDoubleProperty(
-            "successfulTransactionsDurationFailureThreshold",
-            Double.NaN);
+    private ObservableDouble successfulTransactionsDurationFailureThreshold = createDoubleProperty("successfulTransactionsDurationFailureThreshold", Double.NaN);
 
     /**
      * The number of successful transactions in the time period (ie not total, most likely per second)
      */
-    private ObservableLong successfulTransactionsCountPerSecond = createLongProperty("successfulTransactionsCountPerSecond", 0);
-    private ObservableLong unsuccessfulTransactionsCountPerSecond = createLongProperty("unsuccessfulTransactionsCountPerSecond", 0);
 
-    private ObservableDouble successfulTransactionsPerSecond = createDoubleProperty("successfulTransactionsPerSecond",
-                                                                                    Double.NaN);
-    private ObservableDouble unsuccessfulTransactionsPerSecond = createDoubleProperty(
-            "unsuccessfulTransactionsPerSecond",
-            Double.NaN);
+    private ObservableDouble successfulMeanTransactionsPerSecond = createDoubleProperty("successfulMeanTransactionsPerSecond", Double.NaN);
+    private ObservableDouble unsuccessfulMeanTransactionsPerSecond = createDoubleProperty("unsuccessfulMeanTransactionsPerSecond", Double.NaN);
 
 
-    private ObservableDouble successfulTransactionDuration = createDoubleProperty("successfulTransactionDuration",
-                                                                                  Double.NaN);
-    private ObservableDouble successfulTransactionTotalDuration = createDoubleProperty(
-            "successfulTransactionTotalDuration",
-            Double.NaN);
-    private ObservableDouble unsuccessfulTransactionDuration = createDoubleProperty("successfulTransactionDuration",
-                                                                                    Double.NaN);
+    private ObservableDouble successfulTransactionDuration = createDoubleProperty("successfulTransactionDuration", Double.NaN);
+    private ObservableDouble successfulTransactionTotalDuration = createDoubleProperty("successfulTransactionTotalDuration", Double.NaN);
+    private ObservableDouble unsuccessfulTransactionDuration = createDoubleProperty("successfulTransactionDuration", Double.NaN);
 
 
-    @JsonIgnore private ObservableProperty<ChartLineFormat> chartLineFormat = new ObservableProperty<ChartLineFormat>(
-            null,
-            this);
+    @JsonIgnore private ObservableProperty<ChartLineFormat> chartLineFormat = new ObservableProperty<ChartLineFormat>(null, this);
 
     private ObservableList<ChartEvent> chartEvents = createListProperty("chartEvents", ChartEvent.class);
 
@@ -122,10 +107,18 @@ public class TransactionResultModel extends Observable {
         Stddev
     }
 
-    private ObservableProperty<SuccessfulTransactionsDurationFailureType> successfulTransactionsDurationFailureType = createProperty(
-            "successfulTransactionsDurationFailureType",
+    private ObservableProperty<SuccessfulTransactionsDurationFailureType> successfulTransactionsDurationFailureType = createProperty("successfulTransactionsDurationFailureType",
             SuccessfulTransactionsDurationFailureType.class,
             SuccessfulTransactionsDurationFailureType.TP90);
+
+
+    public ObservableLong getTestDuration() {
+        return testDuration;
+    }
+
+    public void setTestDuration(ObservableLong testDuration) {
+        this.testDuration = testDuration;
+    }
 
 
     //    private long failedTransactionsCount = 0;
@@ -217,13 +210,6 @@ public class TransactionResultModel extends Observable {
         return stddev;
     }
 
-    public ObservableLong getSuccessfulTransactionsCountPerSecond() {
-        return successfulTransactionsCountPerSecond;
-    }
-
-    public ObservableLong getUnsuccessfulTransactionsCountPerSecond() {
-        return unsuccessfulTransactionsCountPerSecond;
-    }
 
     public ObservableDouble getSuccessfulTransactionDuration() {
         return successfulTransactionDuration;
@@ -274,7 +260,7 @@ public class TransactionResultModel extends Observable {
     //    }
 
     public long calculateTotalTransactions() {
-        return successfulTransactionsCountPerSecond.get() + unsuccessfulTransactionsCountPerSecond.get();
+        return successfulTransactionsCountTotal.get() + unsuccessfulTransactionsCountTotal.get();
     }
 
     //    public long getSuccessTransactions() {
@@ -342,12 +328,12 @@ public class TransactionResultModel extends Observable {
     //        return getSuccessTransactionsTotalTimeMillis() / getSuccessTransactions();
     //    }
 
-    public ObservableDouble getSuccessfulTransactionsPerSecond() {
-        return successfulTransactionsPerSecond;
+    public ObservableDouble getSuccessfulMeanTransactionsPerSecond() {
+        return successfulMeanTransactionsPerSecond;
     }
 
-    public ObservableDouble getUnsuccessfulTransactionsPerSecond() {
-        return unsuccessfulTransactionsPerSecond;
+    public ObservableDouble getUnsuccessfulMeanTransactionsPerSecond() {
+        return unsuccessfulMeanTransactionsPerSecond;
     }
 
     public ObservableLong getUnsuccessfulTransactionsTotalFailureThreshold() {
@@ -358,8 +344,8 @@ public class TransactionResultModel extends Observable {
         return successfulTransactionsDurationFailureThreshold;
     }
 
-    public ObservableLong getUnsuccessfulTransactionsTotal() {
-        return unsuccessfulTransactionsTotal;
+    public ObservableLong getUnsuccessfulTransactionsCountTotal() {
+        return unsuccessfulTransactionsCountTotal;
     }
 
     //    public double getFailedTimeMeanMillis() {
@@ -461,8 +447,8 @@ public class TransactionResultModel extends Observable {
         return successfulTransactionsTotalFailureResultCountMinimum;
     }
 
-    public ObservableLong getSuccessfulTransactionsTotal() {
-        return successfulTransactionsTotal;
+    public ObservableLong getSuccessfulTransactionsCountTotal() {
+        return successfulTransactionsCountTotal;
     }
 
     public ObservableDouble getTargetSuccessfulTransactionsPerSecond() {
@@ -483,5 +469,13 @@ public class TransactionResultModel extends Observable {
 
     public ObservableLong getModelUpdates() {
         return modelUpdates;
+    }
+
+    public ObservableLong getSuccessfulTransactionsDurationTotal() {
+        return successfulTransactionsDurationTotal;
+    }
+
+    public ObservableLong getUnsuccessfulTransactionsDurationTotal() {
+        return unsuccessfulTransactionsDurationTotal;
     }
 }

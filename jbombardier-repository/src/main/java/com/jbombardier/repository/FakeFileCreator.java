@@ -105,14 +105,14 @@ public class FakeFileCreator {
                 int succesful = (int) randomTransactionCount.next();
                 int total = (int) (succesful + randomTotalTransactionsByTest.get(i).next());
 
-                builder.results(TestRunResultBuilder.result()
-                                                    .testName("test_" + i)
-                                                    .testTime(1000)
-                                                    .transactionCount(total)
-                                                    .sla(60)
-                                                    .successDuration(transactionTime)
-                                                    .successTotalDuration(transactionTime + 34532)
-                                                    .transactionsSuccess(succesful));
+//                builder.results(TestRunResultBuilder.result()
+//                                                    .testName("test_" + i)
+//                                                    .testTime(1000)
+//                                                    .transactionCount(total)
+//                                                    .sla(60)
+//                                                    .successDuration(transactionTime)
+//                                                    .successTotalDuration(transactionTime + 34532)
+//                                                    .transactionsSuccess(succesful));
             }
 
             RunResult runResult = builder.toTestRunResult();
@@ -155,40 +155,40 @@ public class FakeFileCreator {
                 failureReason = "This run failed as the failure tolerance was exceeded";
             }
 
-            RunResult runResult = TestRunResultBuilder.start()
-                                                              .name(EXAMPLE_TEST1)
-                                                              .failureReason(failureReason)
-                                                              .startTime(calendar.getTimeInMillis())
-                                                              .results(TestRunResultBuilder.result()
-                                                                                           .testName("write_log_event")
-                                                                                           .testTime(1000)
-                                                                                           .transactionCount(100)
-                                                                                           .sla(60)
-                                                                                           .successDuration(1e3 * randomADuration
-                                                                                                   .next())
-                                                                                           .successTotalDuration(1e3 * 60)
-                                                                                           .transactionsSuccess((long) randomATransactions
-                                                                                                   .next()))
-                                                              .results(TestRunResultBuilder.result()
-                                                                                           .testName(
-                                                                                                   "connect_disconnect")
-                                                                                           .testTime(1000)
-                                                                                           .transactionCount(1000)
-                                                                                           .successDuration(1e6 * randomB
-                                                                                                   .next())
-                                                                                           .successTotalDuration(1e6 * 60)
-                                                                                           .transactionsSuccess(100))
-                                                              .results(TestRunResultBuilder.result()
-                                                                                           .testName("read_log_events")
-                                                                                           .testTime(1000)
-                                                                                           .transactionCount(1000)
-                                                                                           .successDuration(1e6 * randomC
-                                                                                                   .next())
-                                                                                           .successTotalDuration(1e6 * 60)
-                                                                                           .transactionsSuccess(100))
-                                                              .toTestRunResult();
-
-            controller.postResult(runResult);
+//            RunResult runResult = TestRunResultBuilder.start()
+//                                                              .name(EXAMPLE_TEST1)
+//                                                              .failureReason(failureReason)
+//                                                              .startTime(calendar.getTimeInMillis())
+//                                                              .results(TestRunResultBuilder.result()
+//                                                                                           .testName("write_log_event")
+//                                                                                           .testTime(1000)
+//                                                                                           .transactionCount(100)
+//                                                                                           .sla(60)
+//                                                                                           .successDuration(1e3 * randomADuration
+//                                                                                                   .next())
+//                                                                                           .successTotalDuration(1e3 * 60)
+//                                                                                           .transactionsSuccess((long) randomATransactions
+//                                                                                                   .next()))
+//                                                              .results(TestRunResultBuilder.result()
+//                                                                                           .testName(
+//                                                                                                   "connect_disconnect")
+//                                                                                           .testTime(1000)
+//                                                                                           .transactionCount(1000)
+//                                                                                           .successDuration(1e6 * randomB
+//                                                                                                   .next())
+//                                                                                           .successTotalDuration(1e6 * 60)
+//                                                                                           .transactionsSuccess(100))
+//                                                              .results(TestRunResultBuilder.result()
+//                                                                                           .testName("read_log_events")
+//                                                                                           .testTime(1000)
+//                                                                                           .transactionCount(1000)
+//                                                                                           .successDuration(1e6 * randomC
+//                                                                                                   .next())
+//                                                                                           .successTotalDuration(1e6 * 60)
+//                                                                                           .transactionsSuccess(100))
+//                                                              .toTestRunResult();
+//
+//            controller.postResult(runResult);
 
             calendar.add(Calendar.HOUR_OF_DAY, 1);
         }

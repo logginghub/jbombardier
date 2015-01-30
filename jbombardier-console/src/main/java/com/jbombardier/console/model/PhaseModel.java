@@ -18,8 +18,12 @@ package com.jbombardier.console.model;
 
 import com.logginghub.utils.observable.Observable;
 import com.logginghub.utils.observable.ObservableList;
+import com.logginghub.utils.observable.ObservableListListener;
 import com.logginghub.utils.observable.ObservableLong;
 import com.logginghub.utils.observable.ObservableProperty;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class PhaseModel extends Observable {
 
@@ -30,6 +34,33 @@ public class PhaseModel extends Observable {
     private ObservableLong phaseDuration = createLongProperty("phaseDuration", -1);
     private ObservableLong warmupDuration = createLongProperty("warmupDuration", NO_WARMUP);
     private ObservableLong phaseRemainingTime = createLongProperty("phaseRemainingTime", -1);
+    private ObservableList<TransactionResultModel> transactionResultModels = createListProperty(
+            "transactionResultModels",
+            TransactionResultModel.class);
+
+    private Map<String, TransactionResultModel> transactionResultModelByTransactionKey = new HashMap<String, TransactionResultModel>();
+
+    public PhaseModel() {
+        // Bind the lookup map for TRMs to the list
+        transactionResultModels.addListener(new ObservableListListener<TransactionResultModel>() {
+            @Override public void onAdded(TransactionResultModel transactionResultModel) {
+                transactionResultModelByTransactionKey.put(transactionResultModel.getKey(), transactionResultModel);
+            }
+
+            @Override public void onRemoved(TransactionResultModel transactionResultModel) {
+                transactionResultModelByTransactionKey.remove(transactionResultModel.getKey());
+            }
+
+            @Override public void onCleared() {
+                transactionResultModelByTransactionKey.clear();
+            }
+        });
+    }
+
+
+    public ObservableList<TransactionResultModel> getTransactionResultModels() {
+        return transactionResultModels;
+    }
 
     public ObservableList<TestModel> getTestModels() {
         return testModels;
@@ -49,5 +80,13 @@ public class PhaseModel extends Observable {
 
     public ObservableLong getWarmupDuration() {
         return warmupDuration;
+    }
+
+    public TransactionResultModel getTransactionResultModelForTransaction(String testTransactionKey) {
+        return transactionResultModelByTransactionKey.get(testTransactionKey);
+    }
+
+    public void resetStats() {
+        transactionResultModels.clear();
     }
 }

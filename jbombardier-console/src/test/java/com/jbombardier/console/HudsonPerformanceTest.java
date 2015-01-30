@@ -18,8 +18,6 @@ package com.jbombardier.console;
 
 public class HudsonPerformanceTest {
     public static void main(String[] args) {    
-        JBombardierSwingConsole.runWithAutostart(
-                "src/main/resources/com/jbombardier/console/configuration/webpage-loading.xml",
-                1);
+        JBombardierSwingConsole.run("src/main/resources/com/jbombardier/console/configuration/webpage-loading.xml");
     }
 }

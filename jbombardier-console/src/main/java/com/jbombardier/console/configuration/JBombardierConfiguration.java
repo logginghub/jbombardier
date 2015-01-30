@@ -39,18 +39,12 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD) @XmlRootElement(name = "jbombardierConfiguration")
 public class JBombardierConfiguration {
 
-    @XmlElementWrapper(name = "phases") @XmlElement(name = "phase")
-    private List<PhaseConfiguration> phases = new ArrayList<PhaseConfiguration>();
-
-    @XmlElementWrapper(name = "agents") @XmlElement(name = "agent") private List<Agent> agents = new ArrayList<Agent>();
-    @XmlElementWrapper(name = "tests") @XmlElement(name = "test")
-    private List<TestConfiguration> tests = new ArrayList<TestConfiguration>();
-    @XmlElementWrapper(name = "transactions") @XmlElement(name = "transaction")
-    private List<Transaction> transactions = new ArrayList<Transaction>();
-    @XmlElementWrapper(name = "properties") @XmlElement(name = "property")
-    private List<Property> properties = new ArrayList<Property>();
-    @XmlElementWrapper(name = "data") @XmlElement(name = "csvProperty")
-    private List<CsvProperty> csvProperties = new ArrayList<CsvProperty>();
+    @XmlElement private List<PhaseConfiguration> phase = new ArrayList<PhaseConfiguration>();
+    @XmlElement private List<Agent> agent = new ArrayList<Agent>();
+    @XmlElement private List<TestConfiguration> test = new ArrayList<TestConfiguration>();
+    @XmlElement private List<Transaction> transaction = new ArrayList<Transaction>();
+    @XmlElement private List<Property> property = new ArrayList<Property>();
+    @XmlElement private List<CsvProperty> csvProperty = new ArrayList<CsvProperty>();
 
     @XmlElement private List<HubCapture> hubCapture = new ArrayList<HubCapture>();
     @XmlElement private List<JmxCapture> jmxCapture = new ArrayList<JmxCapture>();
@@ -82,6 +76,7 @@ public class JBombardierConfiguration {
 
     @XmlAttribute private String warmupTime = "0";
     @XmlAttribute private String duration = "1 minute";
+    @XmlAttribute private boolean openReport = false;
 
     public String getResultRepositoryHost() {
         return resultRepositoryHost;
@@ -148,43 +143,43 @@ public class JBombardierConfiguration {
     }
 
     public List<Transaction> getTransactions() {
-        return transactions;
+        return transaction;
     }
 
     public void setTransactions(List<Transaction> transactions) {
-        this.transactions = transactions;
+        this.transaction = transactions;
     }
 
     public List<Property> getProperties() {
-        return properties;
+        return property;
     }
 
     public void setProperties(List<Property> properties) {
-        this.properties = properties;
+        this.property = properties;
     }
 
     public List<Agent> getAgents() {
-        return agents;
+        return agent;
     }
 
     public void setAgents(List<Agent> agentDetails) {
-        this.agents = agentDetails;
+        this.agent = agentDetails;
     }
 
     public List<CsvProperty> getCsvProperties() {
-        return csvProperties;
+        return csvProperty;
     }
 
     public void setCsvProperties(List<CsvProperty> csvProperties) {
-        this.csvProperties = csvProperties;
+        this.csvProperty = csvProperties;
     }
 
     public List<TestConfiguration> getTests() {
-        return tests;
+        return test;
     }
 
     public void setTests(List<TestConfiguration> tests) {
-        this.tests = tests;
+        this.test = tests;
     }
 
     public static JBombardierConfiguration loadConfiguration(String configurationPath) {
@@ -306,7 +301,7 @@ public class JBombardierConfiguration {
     }
 
     public List<PhaseConfiguration> getPhases() {
-        return phases;
+        return phase;
     }
 
     public void setWarmUpTime(String warmupTime) {
@@ -323,5 +318,13 @@ public class JBombardierConfiguration {
 
     public void setDuration(String duration) {
         this.duration = duration;
+    }
+
+    public boolean isOpenReport() {
+        return openReport;
+    }
+
+    public void setOpenReport(boolean openReport) {
+        this.openReport = openReport;
     }
 }

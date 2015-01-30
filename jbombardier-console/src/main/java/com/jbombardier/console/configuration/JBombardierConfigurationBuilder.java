@@ -263,6 +263,11 @@ public class JBombardierConfigurationBuilder {
         return warmUpTime(Long.toString(milliseconds));
     }
 
+    public JBombardierConfigurationBuilder openReport(boolean value) {
+        configuration.setOpenReport(value);
+        return  this;
+    }
+
     public final static class PhaseBuilder {
         private PhaseConfiguration phaseConfiguration = new PhaseConfiguration();
 

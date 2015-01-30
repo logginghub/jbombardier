@@ -28,9 +28,9 @@ public class TestRunResultBuilder {
         return new TestRunResultBuilder();
     }
     
-    public static TransactionResultSnapshotBuilder result() {
-        return new TransactionResultSnapshotBuilder();
-    }
+//    public static TransactionResultSnapshotBuilder result() {
+//        return new TransactionResultSnapshotBuilder();
+//    }
     
     public RunResult toTestRunResult() {
         return runResult;
@@ -51,80 +51,80 @@ public class TestRunResultBuilder {
         return this;
     }
 
-    public void result(String test, TransactionResultSnapshotBuilder builder) {
-        // TODO : refactor fix me
+//    public void result(String test, TransactionResultSnapshotBuilder builder) {
+//        TODO : refactor fix me
 //        runResult.getTestResults().put(test, builder.toSnapshot());
-    }
+//    }
     
-    public TestRunResultBuilder results(TransactionResultSnapshotBuilder... builders) {
-        for (TransactionResultSnapshotBuilder transactionResultSnapshotBuilder : builders) {
-            TransactionResult snapshot = transactionResultSnapshotBuilder.toSnapshot();
+//    public TestRunResultBuilder results(TransactionResultSnapshotBuilder... builders) {
+//        for (TransactionResultSnapshotBuilder transactionResultSnapshotBuilder : builders) {
+//            TransactionResult snapshot = transactionResultSnapshotBuilder.toSnapshot();
             // TODO : refactor fix me
 //            runResult.getTestResults().put(snapshot.getTestName(), snapshot);
-        }
-        return this;
-    }
+//        }
+//        return this;
+//    }
     
     
-    public static class TransactionResultSnapshotBuilder {
-
-        TransactionResult snapshot = new TransactionResult();
-        
-        public TransactionResultSnapshotBuilder failedDuration(double f) {
-            snapshot.setUnsucccesfulDuration(f);
-            return this;
-        }
-        
-        public TransactionResultSnapshotBuilder sla(double f) {
-            snapshot.setSla(f);
-            return this;
-        }
-        
-        public TransactionResultSnapshotBuilder successDuration(double f) {
-            snapshot.setSuccessDuration(f);
-            return this;
-        }
-
-        public TransactionResultSnapshotBuilder successTotalDuration(double f) {
-            snapshot.setSuccessTotalDuration(f);
-            return this;
-        }
-
-        public TransactionResultSnapshotBuilder testName(String f) {
-            snapshot.setTestName(f);
-            return this;
-        }
-        
-        public TransactionResultSnapshotBuilder transactionName(String f) {
-            snapshot.setTransactionName(f);
-            return this;
-        }
-        
-        public TransactionResultSnapshotBuilder testTime(long f) {
-            snapshot.setTestTime(f);
-            return this;
-        }
-        
-        public TransactionResultSnapshotBuilder transactionsFailed(long f) {
-            snapshot.setTransactionsUnsuccessful(f);
-            return this;
-        }
-        
-        public TransactionResultSnapshotBuilder transactionsSuccess(long f) {
-            snapshot.setTransactionsSuccessful(f);
-            return this;
-        }
-
-        public TransactionResultSnapshotBuilder transactionCount(long f) {
-            snapshot.setTransactionCount(f);
-            return this;
-        }
-        
-        public TransactionResult toSnapshot() {
-            return snapshot;             
-        }
-        
-    }
+//    public static class TransactionResultSnapshotBuilder {
+//
+//        TransactionResult snapshot = new TransactionResult();
+//
+//        public TransactionResultSnapshotBuilder failedDuration(double f) {
+//            snapshot.setUnsucccesfulDuration(f);
+//            return this;
+//        }
+//
+//        public TransactionResultSnapshotBuilder sla(double f) {
+//            snapshot.setSla(f);
+//            return this;
+//        }
+//
+//        public TransactionResultSnapshotBuilder successDuration(double f) {
+//            snapshot.setSuccessDuration(f);
+//            return this;
+//        }
+//
+//        public TransactionResultSnapshotBuilder successTotalDuration(double f) {
+//            snapshot.setSuccessTotalDuration(f);
+//            return this;
+//        }
+//
+//        public TransactionResultSnapshotBuilder testName(String f) {
+//            snapshot.setTestName(f);
+//            return this;
+//        }
+//
+//        public TransactionResultSnapshotBuilder transactionName(String f) {
+//            snapshot.setTransactionName(f);
+//            return this;
+//        }
+//
+//        public TransactionResultSnapshotBuilder testTime(long f) {
+//            snapshot.setTestTime(f);
+//            return this;
+//        }
+//
+//        public TransactionResultSnapshotBuilder transactionsFailed(long f) {
+//            snapshot.setTransactionsUnsuccessful(f);
+//            return this;
+//        }
+//
+//        public TransactionResultSnapshotBuilder transactionsSuccess(long f) {
+//            snapshot.setTransactionsSuccessful(f);
+//            return this;
+//        }
+//
+//        public TransactionResultSnapshotBuilder transactionCount(long f) {
+//            snapshot.setTotalTransactionCount(f);
+//            return this;
+//        }
+//
+//        public TransactionResult toSnapshot() {
+//            return snapshot;
+//        }
+//
+//    }
 
     
     

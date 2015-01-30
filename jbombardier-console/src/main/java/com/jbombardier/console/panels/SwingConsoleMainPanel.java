@@ -95,6 +95,7 @@ public class SwingConsoleMainPanel extends JPanel {
         stopTestButton = new JDynamicStateButton("Stop test");
         stopTestButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                temporalController.stop();
                 controller.endTestAbnormally();
             }
         });
@@ -168,9 +169,9 @@ public class SwingConsoleMainPanel extends JPanel {
         this.temporalController = temporalController;
 
         JBombardierModel model = controller.getModel();
-        agentStatusPanel.initialise(model);
-        threadStatePanel.initialise(model, controller);
-        transactionStatePanel.initialise(model);
+        agentStatusPanel.bind(model);
+        threadStatePanel.bind(model, controller);
+        transactionStatePanel.bind(model);
 
         model.addListener(new JBombardierModel.InteractiveModelListenerAdaptor() {
 
@@ -195,7 +196,7 @@ public class SwingConsoleMainPanel extends JPanel {
         stopTestButton.setName("stopTestButton");
         startTestButton.setName("startTestButton");
 
-        consolePanel.initialise(model);
+        consolePanel.bind(model);
 
         model.addListener(new JBombardierModel.InteractiveModelListenerAdaptor() {
             public void onTestAbandoned(String reason) {

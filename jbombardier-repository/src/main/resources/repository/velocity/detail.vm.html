@@ -64,7 +64,7 @@
             
             #foreach($resultDelta in $delta.resultDeltas)            
             
-               <td>$utils.format($resultDelta.transactionCount)</td>
+               <td>$utils.format($resultDelta.totalTransactionCount)</td>
                <td>$utils.format($resultDelta.currentTransactions)</td>
                <td>$utils.formatDelta($resultDelta.deltaTransactionsPerSecond)</td>
           

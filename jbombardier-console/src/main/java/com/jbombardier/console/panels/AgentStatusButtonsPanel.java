@@ -49,7 +49,7 @@ public class AgentStatusButtonsPanel extends JPanel {
         add(button_1, "cell 0 0");
     }
 
-    public void initialise(JBombardierModel model) {
+    public void bind(JBombardierModel model) {
         
         removeAll();
         

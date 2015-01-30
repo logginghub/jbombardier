@@ -11,3 +11,4 @@ jbombardier-integrationtests/test-output/
 target/
 jbombardier-integrationtests/reports/
 reports/
+build/

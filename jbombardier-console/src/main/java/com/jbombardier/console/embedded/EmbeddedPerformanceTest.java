@@ -146,7 +146,7 @@ public class EmbeddedPerformanceTest {
 //        console.loadConfigurationFile(configurationFilePath);
 //        console.getConfiguration().setAutostartAgents(autostartAgents);
 //
-//        console.initialise();
+//        console.bind();
 //        console.start();
 //
 //        return console;
@@ -163,7 +163,7 @@ public class EmbeddedPerformanceTest {
 //    public static jbombardierConsole run(InteractiveConfiguration configuration) {
 //        jbombardierConsole console = new jbombardierConsole();
 //        console.setConfiguration(configuration);
-//        console.initialise();
+//        console.bind();
 //        console.start();
 //        return console;
 //    }

@@ -23,6 +23,7 @@ import com.jbombardier.console.charts.XYTimeChartPanel;
 import com.jbombardier.console.components.ReflectiveTable;
 import com.jbombardier.console.components.TableDataProvider;
 import com.jbombardier.console.model.ChartLineFormat;
+import com.jbombardier.console.model.PhaseModel;
 import com.jbombardier.console.model.TransactionResultModel;
 import com.jbombardier.console.model.TransactionResultModel.ChartEvent;
 import com.logginghub.swingutils.MigPanel;
@@ -68,11 +69,11 @@ public class TransactionStatePanel extends JPanel {
         JPanel transactionRatePanel = new MigPanel("", "[grow][grow]", "[grow]");
         splitPane.setLeftComponent(transactionRatePanel);
         transactionRatePanel.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"),
-                                                        "Transaction Rate",
-                                                        TitledBorder.LEADING,
-                                                        TitledBorder.TOP,
-                                                        null,
-                                                        Color.black));
+                "Transaction Rate",
+                TitledBorder.LEADING,
+                TitledBorder.TOP,
+                null,
+                Color.black));
 
         lineFormatController = new LineFormatController();
 
@@ -99,11 +100,11 @@ public class TransactionStatePanel extends JPanel {
         JPanel rateControlPanel = new MigPanel("", "[grow]", "[fill]");
         splitPane.setRightComponent(rateControlPanel);
         rateControlPanel.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"),
-                                                    "Realtime results",
-                                                    TitledBorder.LEADING,
-                                                    TitledBorder.TOP,
-                                                    null,
-                                                    new Color(0, 0, 0)));
+                "Realtime results",
+                TitledBorder.LEADING,
+                TitledBorder.TOP,
+                null,
+                new Color(0, 0, 0)));
 
         JScrollPane scrollPane = new JScrollPane();
         final JCheckBox hideBaseTest = new JCheckBox("Hide base tests");
@@ -121,48 +122,47 @@ public class TransactionStatePanel extends JPanel {
         nf.setMaximumFractionDigits(2);
 
         table = new ReflectiveTable<TransactionResultModel>(TransactionResultModel.class,
-                                                            new TableDataProvider<TransactionResultModel>() {
-                                                                @Override public Object getValueForColumn(int column,
-                                                                                                          TransactionResultModel item) {
-                                                                    switch (column) {
-                                                                        case 0:
-                                                                            return item.getChartLineFormat().get();
-                                                                        case 1:
-                                                                            return item.getTestName().get();
-                                                                        case 2:
-                                                                            return item.getTransactionName().get();
-                                                                        case 3:
-                                                                            return nf.format(item.getSuccessfulTransactionDurationSLA().get());
-                                                                        case 4:
-                                                                            return nf.format(item.calculateTotalTransactions());
-                                                                        case 5:
-                                                                            return nf.format(item.getTargetSuccessfulTransactionsPerSecond().get());
-                                                                        case 6:
-                                                                            return nf.format(item.getSuccessfulTransactionsPerSecond().get());
-                                                                        case 7:
-                                                                            return TimeUtils.formatIntervalNanoseconds(item.getSuccessfulTransactionDuration().get());
-                                                                        case 8:
-                                                                            return nf.format(item.getTp90().get());
-                                                                        case 9:
-                                                                            return nf.format(item.getStddev().get());
-                                                                        case 10:
-                                                                            return nf.format(item.getSuccessfulTransactionTotalDuration()
-                                                                                                 .get() * 1e-6);
-                                                                        case 11:
-                                                                            return nf.format(item.calculateMaximumRate());
-                                                                        default:
-                                                                            return "?";
-                                                                    }
-                                                                }
+                new TableDataProvider<TransactionResultModel>() {
+                    @Override public Object getValueForColumn(int column, TransactionResultModel item) {
+                        switch (column) {
+                            case 0:
+                                return item.getChartLineFormat().get();
+                            case 1:
+                                return item.getTestName().get();
+                            case 2:
+                                return item.getTransactionName().get();
+                            case 3:
+                                return nf.format(item.getSuccessfulTransactionDurationSLA().get());
+                            case 4:
+                                return nf.format(item.calculateTotalTransactions());
+                            case 5:
+                                return nf.format(item.getTargetSuccessfulTransactionsPerSecond().get());
+                            case 6:
+                                return nf.format(item.getSuccessfulMeanTransactionsPerSecond().get());
+                            case 7:
+                                return TimeUtils.formatIntervalNanoseconds(item.getSuccessfulTransactionDuration()
+                                                                               .get());
+                            case 8:
+                                return nf.format(item.getTp90().get());
+                            case 9:
+                                return nf.format(item.getStddev().get());
+                            case 10:
+                                return nf.format(item.getSuccessfulTransactionTotalDuration().get() * 1e-6);
+                            case 11:
+                                return nf.format(item.calculateMaximumRate());
+                            default:
+                                return "?";
+                        }
+                    }
 
-                                                                @Override public String getColumnName(int column) {
-                                                                    return columnNames[column];
-                                                                }
+                    @Override public String getColumnName(int column) {
+                        return columnNames[column];
+                    }
 
-                                                                @Override public int getColumnCount() {
-                                                                    return columnNames.length;
-                                                                }
-                                                            });
+                    @Override public int getColumnCount() {
+                        return columnNames.length;
+                    }
+                });
         //
         // table.dontShowColumns("successfulTransactionsAverageNanos",
         // "failedTransactionsAverageNanos",
@@ -225,98 +225,37 @@ public class TransactionStatePanel extends JPanel {
         }
     }
 
-    public void initialise(JBombardierModel model) {
+    public void bind(JBombardierModel model) {
 
-        model.getTransactionResultModels()
-             .addListenerAndNotifyExisting(new ObservableListListener<TransactionResultModel>() {
-                 @Override public void onRemoved(TransactionResultModel t) {}
+        final ObservableListListener<TransactionResultModel> listener = new ObservableListListener<TransactionResultModel>() {
+            @Override public void onRemoved(TransactionResultModel t) {}
 
-                 @Override public void onCleared() {
-                     table.clear();
-                 }
+            @Override public void onCleared() {
+                table.clear();
+                rateChartPanel.clearChartData();
+                elapsedChartPanel.clearChartData();
+            }
 
-                 @Override public void onAdded(final TransactionResultModel testModel) {
-                     table.addItem(testModel);
+            @Override public void onAdded(final TransactionResultModel testModel) {
+                configureTransactionResultModel(testModel);
+            }
+        };
 
-                     String key = testModel.getKey();
+        model.getCurrentPhase().addListenerAndNotifyCurrent(new ObservablePropertyListener<PhaseModel>() {
+            @Override public void onPropertyChanged(PhaseModel oldModel, PhaseModel newModel) {
 
-                     Paint paint = lineFormatController.allocateColour(key);
-                     final String successName = key + ".success";
-                     final String failureName = key + ".failure";
+                if (oldModel != null) {
+                    oldModel.getTransactionResultModels().removeListener(listener);
+                }
 
-                     lineFormatController.setPaint(successName, paint);
-                     lineFormatController.setPaint(failureName, paint);
-                     BasicStroke successStroke = new BasicStroke(2);
-                     lineFormatController.setStroke(successName, successStroke);
-
-                     float[] dashes = {3.0F, 3.0F, 3.0F, 3.0F};
-                     BasicStroke failStroke = new BasicStroke(1.0F,
-                                                              BasicStroke.CAP_BUTT,
-                                                              BasicStroke.JOIN_MITER,
-                                                              10.0F,
-                                                              dashes,
-                                                              0.F);
-                     lineFormatController.setStroke(failureName, failStroke);
-
-                     testModel.getChartLineFormat().set(new ChartLineFormat(paint, successStroke));
-
-                     testModel.getModelUpdates().addListener(new ObservablePropertyListener<Long>() {
-                         @Override public void onPropertyChanged(Long oldValue, Long newValue) {
-                             final long now = System.currentTimeMillis();
-
-                             SwingUtilities.invokeLater(new Runnable() {
-                                 public void run() {
-
-                                     if (testModel.getSuccessfulTransactionsPerSecond().get() > 0) {
-                                         rateChartPanel.addValue(successName,
-                                                                 now,
-                                                                 testModel.getSuccessfulTransactionsPerSecond().get());
-                                     }
-
-                                     if (testModel.getUnsuccessfulTransactionsPerSecond().get() > 0) {
-                                         rateChartPanel.addValue(failureName,
-                                                                 now,
-                                                                 testModel.getUnsuccessfulTransactionsPerSecond()
-                                                                          .get());
-                                     }
-
-                                     if (testModel.getSuccessfulTransactionDuration().get() > 0) {
-                                         elapsedChartPanel.addValue(successName,
-                                                                    now,
-                                                                    testModel.getSuccessfulTransactionDuration().get());
-                                     }
-
-                                     if (testModel.getUnsuccessfulTransactionDuration().get() > 0) {
-                                         elapsedChartPanel.addValue(failureName,
-                                                                    now,
-                                                                    testModel.getUnsuccessfulTransactionDuration()
-                                                                             .get());
-                                     }
-
-                                     rateChartPanel.removeOldDataPoints();
-                                     elapsedChartPanel.removeOldDataPoints();
-                                 }
-                             });
-                         }
-                     });
-
-                     testModel.getChartEvents()
-                              .addListenerAndNotifyExisting(new ObservableListListener<TransactionResultModel.ChartEvent>() {
-                                  @Override public void onRemoved(ChartEvent t) {}
-
-                                  @Override public void onCleared() {}
-
-                                  @Override public void onAdded(final ChartEvent t) {
-                                      SwingUtilities.invokeLater(new Runnable() {
-                                          @Override public void run() {
-                                              elapsedChartPanel.addEvent(t.time, t.text);
-                                              rateChartPanel.addEvent(t.time, t.text);
-                                          }
-                                      });
-                                  }
-                              });
-                 }
-             });
+                if (newModel != null) {
+                    rateChartPanel.clearChartData();
+                    elapsedChartPanel.clearChartData();
+                    table.clear();
+                    newModel.getTransactionResultModels().addListenerAndNotifyExisting(listener);
+                }
+            }
+        });
 
         JBombardierController.getEventStream().addListener(new StreamListener<String>() {
             @Override public void onNewItem(final String t) {
@@ -336,6 +275,85 @@ public class TransactionStatePanel extends JPanel {
                         table.clear();
                         rateChartPanel.clearChartData();
                         elapsedChartPanel.clearChartData();
+                    }
+                });
+            }
+        });
+    }
+
+    private void configureTransactionResultModel(final TransactionResultModel testModel) {
+        table.addItem(testModel);
+
+        String key = testModel.getKey();
+
+        Paint paint = lineFormatController.allocateColour(key);
+        final String successName = key + ".success";
+        final String failureName = key + ".failure";
+
+        lineFormatController.setPaint(successName, paint);
+        lineFormatController.setPaint(failureName, paint);
+        BasicStroke successStroke = new BasicStroke(2);
+        lineFormatController.setStroke(successName, successStroke);
+
+        float[] dashes = {3.0F, 3.0F, 3.0F, 3.0F};
+        BasicStroke failStroke = new BasicStroke(1.0F,
+                BasicStroke.CAP_BUTT,
+                BasicStroke.JOIN_MITER,
+                10.0F,
+                dashes,
+                0.F);
+        lineFormatController.setStroke(failureName, failStroke);
+
+        testModel.getChartLineFormat().set(new ChartLineFormat(paint, successStroke));
+
+        testModel.getModelUpdates().addListener(new ObservablePropertyListener<Long>() {
+            @Override public void onPropertyChanged(Long oldValue, Long newValue) {
+                final long now = System.currentTimeMillis();
+
+                SwingUtilities.invokeLater(new Runnable() {
+                    public void run() {
+
+                        if (testModel.getSuccessfulMeanTransactionsPerSecond().get() > 0) {
+                            rateChartPanel.addValue(successName,
+                                    now,
+                                    testModel.getSuccessfulMeanTransactionsPerSecond().get());
+                        }
+
+                        if (testModel.getUnsuccessfulMeanTransactionsPerSecond().get() > 0) {
+                            rateChartPanel.addValue(failureName,
+                                    now,
+                                    testModel.getUnsuccessfulMeanTransactionsPerSecond().get());
+                        }
+
+                        if (testModel.getSuccessfulTransactionDuration().get() > 0) {
+                            elapsedChartPanel.addValue(successName,
+                                    now,
+                                    testModel.getSuccessfulTransactionDuration().get() * 1e-6);
+                        }
+
+                        if (testModel.getUnsuccessfulTransactionDuration().get() > 0) {
+                            elapsedChartPanel.addValue(failureName,
+                                    now,
+                                    testModel.getUnsuccessfulTransactionDuration().get()* 1e-6);
+                        }
+
+                        rateChartPanel.removeOldDataPoints();
+                        elapsedChartPanel.removeOldDataPoints();
+                    }
+                });
+            }
+        });
+
+        testModel.getChartEvents().addListenerAndNotifyExisting(new ObservableListListener<ChartEvent>() {
+            @Override public void onRemoved(ChartEvent t) {}
+
+            @Override public void onCleared() {}
+
+            @Override public void onAdded(final ChartEvent t) {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override public void run() {
+                        elapsedChartPanel.addEvent(t.time, t.text);
+                        rateChartPanel.addEvent(t.time, t.text);
                     }
                 });
             }

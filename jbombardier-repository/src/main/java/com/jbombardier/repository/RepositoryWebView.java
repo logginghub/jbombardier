@@ -77,7 +77,7 @@ import java.util.*;
             builder.append("[");
             builder.append(transactionResult.getTestTime())
                    .append(",")
-                   .append(transactionResult.getTransactionsSuccessful());
+                   .append(transactionResult.getSuccessfulTransactionCount());
             builder.append("]");
             div = ",";
         }
@@ -101,7 +101,7 @@ import java.util.*;
             builder.append("[");
             builder.append(transactionResult.getTestTime())
                    .append(",")
-                   .append(transactionResult.getSuccessDurationMS());
+                   .append(transactionResult.getSuccessfulTransactionMeanDuration());
             builder.append("]");
             div = ",";
         }
@@ -191,7 +191,7 @@ import java.util.*;
 //                resultsTable.getTbody()
 //                            .row()
 //                            .cells(transactionResult.getTestName(),
-//                                   nf.format(transactionResult.getTransactionCount()),
+//                                   nf.format(transactionResult.getTotalTransactionCount()),
 //                                   nf.format(transactionResult.getSuccessDurationMS()),
 //                                   nf.format(transactionResult.getSla()));
 //            }
@@ -362,18 +362,18 @@ import java.util.*;
 //
 //                    if (currentSnapshot != null && nextSnapshot != null) {
 //
-//                        double deltaTotalTransactions = currentSnapshot.getTransactionCount() - nextSnapshot.getTransactionCount();
+//                        double deltaTotalTransactions = currentSnapshot.getTotalTransactionCount() - nextSnapshot.getTotalTransactionCount();
 //                        double deltaTransactionsPerSecond = currentSnapshot.getTransactionsSuccessful() - nextSnapshot.getTransactionsSuccessful();
 //                        double deltaTransactionTimes = currentSnapshot.getSuccessDuration() - nextSnapshot.getSuccessDuration();
 //
 //                        double percentageDeltaTransactions = -100 + currentSnapshot.getTransactionsSuccessful() / nextSnapshot
 //                                .getTransactionsSuccessful() * 100f;
-//                        double percentageDeltaTotalTransactions = -100 + ((double) currentSnapshot.getTransactionCount()) / ((double) nextSnapshot
-//                                .getTransactionCount()) * 100f;
+//                        double percentageDeltaTotalTransactions = -100 + ((double) currentSnapshot.getTotalTransactionCount()) / ((double) nextSnapshot
+//                                .getTotalTransactionCount()) * 100f;
 //                        double percentageDeltaTime = -100 + currentSnapshot.getSuccessDuration() / nextSnapshot.getSuccessDuration() * 100f;
 //
 //                        resultDelta.setDeltaTransactionsTotal(deltaTotalTransactions);
-//                        resultDelta.setTransactionCount(currentSnapshot.getTransactionCount());
+//                        resultDelta.setTotalTransactionCount(currentSnapshot.getTotalTransactionCount());
 //                        resultDelta.setDeltaSuccessTransactionsPerSecond(deltaTransactionsPerSecond);
 //                        resultDelta.setDeltaSuccessTransactionTime(deltaTransactionTimes);
 //                        resultDelta.setPercentageDeltaTransactionsPerSecond(percentageDeltaTransactions);

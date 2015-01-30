@@ -79,7 +79,7 @@ public class ConsolePanel extends JPanel {
 
     }
 
-    public void initialise(final JBombardierModel model) {
+    public void bind(final JBombardierModel model) {
         
         table.setMaximumEntries(model.getMaximumConsoleEntries());
 

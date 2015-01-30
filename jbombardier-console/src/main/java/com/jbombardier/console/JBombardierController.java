@@ -98,7 +98,9 @@ import com.logginghub.utils.StatBundle;
 import com.logginghub.utils.Stream;
 import com.logginghub.utils.StringUtils;
 import com.logginghub.utils.StringUtils.StringUtilsBuilder;
+import com.logginghub.utils.SystemTimeProvider;
 import com.logginghub.utils.ThreadUtils;
+import com.logginghub.utils.TimeProvider;
 import com.logginghub.utils.TimeUtils;
 import com.logginghub.utils.TimerUtils;
 import com.logginghub.utils.WorkerThread;
@@ -138,6 +140,7 @@ import java.util.concurrent.TimeUnit;
 public class JBombardierController {
 
     private static final Logger logger = Logger.getLoggerFor(JBombardierController.class);
+    private TimeProvider timeProvider = new SystemTimeProvider();
     // TODO : figure out a nicer way of doing this!!
     private static Stream<String> eventStream = new Stream<String>();
     // private InteractiveConfiguration configuration;
@@ -242,8 +245,7 @@ public class JBombardierController {
         List<AgentModel> connectedAgentModels = model.getConnectedAgents();
         logger.debug("We have {} connected agents", connectedAgentModels.size());
 
-        FactoryMap<String, FactoryMap<String, DataBucket>> dataBucketsByAgentName = divideDataIntoBuckets(
-                connectedAgentModels);
+        FactoryMap<String, FactoryMap<String, DataBucket>> dataBucketsByAgentName = divideDataIntoBuckets(connectedAgentModels);
 
         List<PhaseInstruction> instructions = new ArrayList<PhaseInstruction>();
         populateInstructionsList(instructions);
@@ -280,8 +282,7 @@ public class JBombardierController {
     //        this.model = model;
     //    }
 
-    @SuppressWarnings("serial")
-    public FactoryMap<String, FactoryMap<String, DataBucket>> divideDataIntoBuckets(List<AgentModel> connectedAgentModels) {
+    @SuppressWarnings("serial") public FactoryMap<String, FactoryMap<String, DataBucket>> divideDataIntoBuckets(List<AgentModel> connectedAgentModels) {
 
         Is.greaterThanZero(connectedAgentModels.size(), "You must have at least one connected agent to start the test");
 
@@ -399,9 +400,7 @@ public class JBombardierController {
 
     public void handleAgentFailedInstruction(AgentFailedInstruction afi) {
         endTestAbnormally();
-        model.abandonTest(
-                "One of the agents reported an exception during setup; please check the console tab to find out what went wrong",
-                afi);
+        model.abandonTest("One of the agents reported an exception during setup; please check the console tab to find out what went wrong", afi);
     }
 
     public void handleAgentLogMessage(AgentLogMessage agentLogMessage) {
@@ -438,17 +437,14 @@ public class JBombardierController {
         // TODO : why are we repeating all the values in the reponse? The
         // request/response mapping code should ensure we dont have to do that
         // anymore!
-        response = new AgentPropertyResponse(agentPropertyRequest.getPropertyName(),
-                agentPropertyRequest.getThreadName(),
-                propertyValue);
+        response = new AgentPropertyResponse(agentPropertyRequest.getPropertyName(), agentPropertyRequest.getThreadName(), propertyValue);
         return response;
     }
 
     public void handleAgentStatusUpdate(AgentStats agentStats) {
 
         if (state != State.Warmup && state != State.TestRunning) {
-            throw new IllegalStateException(
-                    "Unable to handle agent stats whilst the test isn't running - looks like something has gone wrong");
+            throw new IllegalStateException("Unable to handle agent stats whilst the test isn't running - looks like something has gone wrong");
         }
 
         agentStatusUpdatesStat.increment();
@@ -470,9 +466,7 @@ public class JBombardierController {
             // TODO : work out why we have to provide a string there in this
             // case.
             PropertyEntry propertyEntry = csvPropertiesProvider.getPropertyEntry("dontmatteratthisbit");
-            response = new AgentPropertyEntryResponse(request.getPropertyName(),
-                    request.getThreadName(),
-                    propertyEntry);
+            response = new AgentPropertyEntryResponse(request.getPropertyName(), request.getThreadName(), propertyEntry);
         } else {
             response = new AgentPropertyEntryResponse(request.getPropertyName(), request.getThreadName(), null);
         }
@@ -495,20 +489,16 @@ public class JBombardierController {
 
                     logger.debug("Validing test class {}", classname);
                     try {
-                        @SuppressWarnings("unused") PerformanceTest performanceTest = (PerformanceTest) Class.forName(
-                                classname).newInstance();
+                        @SuppressWarnings("unused") PerformanceTest performanceTest = (PerformanceTest) Class.forName(classname).newInstance();
                     } catch (ClassNotFoundException e) {
-                        buffer.append("Class '").append(classname).append(
-                                "' could not be found, please check your configuration!\n");
+                        buffer.append("Class '").append(classname).append("' could not be found, please check your configuration!\n");
                     } catch (InstantiationException e) {
                         buffer.append("Class '").append(classname).append(
                                 "' could not be instantiated, please ensure it has a default constructor. Any arguments should be setup using the properties methods on the TestContext class before the test starts.\n");
                     } catch (IllegalAccessException e) {
-                        buffer.append("Class '").append(classname).append(
-                                "' could not be instantiated, please check to make sure the default constructor is public.\n");
+                        buffer.append("Class '").append(classname).append("' could not be instantiated, please check to make sure the default constructor is public.\n");
                     } catch (ClassCastException e) {
-                        buffer.append("Class '").append(classname).append(
-                                "' does't implement the PerformanceTest interface. All tests must implement this interface, please check your test code.\n");
+                        buffer.append("Class '").append(classname).append("' does't implement the PerformanceTest interface. All tests must implement this interface, please check your test code.\n");
                     }
 
                     alreadyChecked.add(classname);
@@ -697,8 +687,7 @@ public class JBombardierController {
                 logger.debug("Loading {} data from {}", csvProperty.getName(), csvfile);
 
                 // Also process the config information into DataSources
-                DataSource dataSource = new DataSource(csvProperty.getName(),
-                        DataStrategy.valueOf(csvProperty.getStrategy()));
+                DataSource dataSource = new DataSource(csvProperty.getName(), DataStrategy.valueOf(csvProperty.getStrategy()));
 
                 DataSource existingDataSource = alreadyLoaded.get(csvfile);
                 if (existingDataSource != null) {
@@ -708,10 +697,7 @@ public class JBombardierController {
 
                     String content = ResourceUtils.read(csvfile);
                     if (content.isEmpty()) {
-                        throw new RuntimeException(String.format(
-                                "The csv data file for property '%s' provided was '%s', but this file was empty.",
-                                csvProperty.getName(),
-                                csvfile));
+                        throw new RuntimeException(String.format("The csv data file for property '%s' provided was '%s', but this file was empty.", csvProperty.getName(), csvfile));
                     }
 
                     String[] lines = content.split("\r\n|\n");
@@ -768,8 +754,7 @@ public class JBombardierController {
                 PhaseModel phaseModel = new PhaseModel();
                 phaseModel.getPhaseName().set(phase.getPhaseName());
 
-                Is.notNullOrEmpty(phase.getDuration(), StringUtils.format("Phase duration must be set for phase '{}'",
-                        phase.getPhaseName()));
+                Is.notNullOrEmpty(phase.getDuration(), StringUtils.format("Phase duration must be set for phase '{}'", phase.getPhaseName()));
 
                 phaseModel.getPhaseDuration().set(TimeUtils.parseInterval(phase.getDuration()));
 
@@ -783,19 +768,64 @@ public class JBombardierController {
                     phaseModel.getTestModels().add(testModel);
                 }
 
+                String inheritFrom = phase.getInheritFrom();
+                if (StringUtils.isNotNullOrEmpty(inheritFrom)) {
+
+                    List<TestConfiguration> inheritedTests = getTestsForPhase(configuration, inheritFrom);
+                    if (inheritedTests == null) {
+                        throw new IllegalArgumentException(StringUtils.format("Phase '{}' attempted to inherit from '{}' - this phase could not be found in the configuration",
+                                phase.getPhaseName(),
+                                inheritFrom));
+                    } else {
+                        for (TestConfiguration testConfiguration : inheritedTests) {
+                            TestModel testModel = createTestModel(testConfiguration);
+                            phaseModel.getTestModels().add(testModel);
+                        }
+                    }
+                }
+
+                // Apply the transaction multiplier
+                ObservableList<TestModel> testModels = phaseModel.getTestModels();
+                for (TestModel testModel : testModels) {
+                    testModel.getTargetRate().set(testModel.getTargetRate().get() * phase.getRateMultiplier());
+                }
+
                 model.getPhaseModels().add(phaseModel);
             }
         }
+
         model.getTransactionRateModifier().set(configuration.getTransactionRateModifier());
 
         validateModel(model);
+
+    }
+
+    private List<TestConfiguration> getTestsForPhase(JBombardierConfiguration configuration, String inheritFrom) {
+
+        List<TestConfiguration> tests = null;
+
+        for (PhaseConfiguration phaseConfiguration : configuration.getPhases()) {
+            if (phaseConfiguration.getPhaseName().equals(inheritFrom)) {
+                tests = phaseConfiguration.getTests();
+                break;
+            }
+        }
+
+
+        return tests;
     }
 
     private TestModel createTestModel(TestConfiguration testConfiguration) {
         TestModel testModel = new TestModel();
         testModel.setClassname(testConfiguration.getClassname());
         testModel.setRateStep(testConfiguration.getRateStep());
-        testModel.setName(testConfiguration.getName());
+
+        if (StringUtils.isNotNullOrEmpty(testConfiguration.getName())) {
+            testModel.setName(testConfiguration.getName());
+        } else {
+            testModel.setName(StringUtils.afterLast(testConfiguration.getClassname(), "."));
+        }
+
         testModel.setRateStepTime(testConfiguration.getRateStepTime());
         testModel.getTargetRate().set(testConfiguration.getTargetRate());
         testModel.getTargetThreads().set(testConfiguration.getTargetThreads());
@@ -813,8 +843,7 @@ public class JBombardierController {
     }
 
     private void validateModel(JBombardierModel model) {
-        Is.greaterThanZero(model.getPhaseModels().size(),
-                "The test model has no phases; please make sure you have at least one phase or one test in your configuration.");
+        Is.greaterThanZero(model.getPhaseModels().size(), "The test model has no phases; please make sure you have at least one phase or one test in your configuration.");
         assertTestClassesAreValid(model.getPhaseModels());
     }
 
@@ -873,8 +902,7 @@ public class JBombardierController {
                     logger.info("Agent has connected {}", agentModel);
                     agentModel.getConnected().set(true);
 
-                    client.sendRequest("agent", new SendTelemetryRequest(NetUtils.getLocalIP(),
-                            configuration.getTelemetryHubPort()), new ResponseHandler<String>() {
+                    client.sendRequest("agent", new SendTelemetryRequest(NetUtils.getLocalIP(), configuration.getTelemetryHubPort()), new ResponseHandler<String>() {
                         public void onResponse(String response) {
 
                         }
@@ -1014,8 +1042,7 @@ public class JBombardierController {
         }
     }
 
-    private void publishTestInstructionsToAgents(List<PhaseInstruction> instructions,
-                                                 FactoryMap<String, FactoryMap<String, DataBucket>> dataBucketsByAgentName) {
+    private void publishTestInstructionsToAgents(List<PhaseInstruction> instructions, FactoryMap<String, FactoryMap<String, DataBucket>> dataBucketsByAgentName) {
         int agentsInTest = 0;
         for (final AgentModel agentModel : model.getAgentModels()) {
             logger.info("Publishing data buckets to agent {}", agentModel);
@@ -1045,9 +1072,7 @@ public class JBombardierController {
 
                     boolean wasReceived = latch.await();
                     if (!wasReceived) {
-                        logger.warn(
-                                "The data bucket wasn't received by agent {} within the wait period, the console can't be sure the agent is ready to start",
-                                agentModel);
+                        logger.warn("The data bucket wasn't received by agent {} within the wait period, the console can't be sure the agent is ready to start", agentModel);
                     } else {
                         logger.info("Agent {} has received data bucket {}", agentModel, dataBucket);
                     }
@@ -1084,14 +1109,12 @@ public class JBombardierController {
 
         try {
             if (!instructionsReceivedLatch.await(30, TimeUnit.SECONDS)) {
-                throw new IllegalStateException(String.format(
-                        "One or more agent have not responded to the test package message after the timeout interval - aborting test"));
+                throw new IllegalStateException(String.format("One or more agent have not responded to the test package message after the timeout interval - aborting test"));
             } else {
                 logger.info("All agents have confirmed receipt of test instructions");
             }
         } catch (InterruptedException e) {
-            logger.warn(
-                    "Thread interupted waiting for confirmation that all agents have received their instructions. We have no way of knowing the agent state from this point.");
+            logger.warn("Thread interupted waiting for confirmation that all agents have received their instructions. We have no way of knowing the agent state from this point.");
         }
 
 
@@ -1104,9 +1127,7 @@ public class JBombardierController {
         // Attach a reflection notifier to fire message back at the
         // controller if we get anything sent to us
 
-        ReflectionDispatchMessageListener messageListener = new ReflectionDispatchMessageListener("controller",
-                client,
-                this);
+        ReflectionDispatchMessageListener messageListener = new ReflectionDispatchMessageListener("controller", client, this);
         dispatchingListeners.put(messageListener, client);
         client.addMessageListener(messageListener);
     }
@@ -1172,14 +1193,14 @@ public class JBombardierController {
         reportsFolder.mkdirs();
 
         generateReport(reportsFolder);
-        if(openInBrowser) {
+        if (openInBrowser) {
             BrowserUtils.browseTo(new File(reportsFolder, "index.html").toURI());
         }
     }
 
     public void generateReport(File reportsFolder) {
         RunResult snapshot = resultsController.createSnapshot(model);
-        ReportGenerator.generateReport(reportsFolder, snapshot);
+        ReportGenerator.generateReport(reportsFolder, snapshot, TimeUnit.MILLISECONDS);
     }
 
     public String generateReportOld(boolean openInBrowser, boolean queueCharts) {
@@ -1195,49 +1216,32 @@ public class JBombardierController {
         EventCartridge eventCartridge = new EventCartridge();
         eventCartridge.addInvalidReferenceEventHandler(new InvalidReferenceEventHandler() {
 
-            @Override public Object invalidGetMethod(Context context,
-                                                     String reference,
-                                                     Object object,
-                                                     String property,
-                                                     Info info) {
+            @Override public Object invalidGetMethod(Context context, String reference, Object object, String property, Info info) {
                 // This mean quiet references dont trigger errors - this is used
                 // for things like null checks
                 if (!reference.startsWith("$!")) {
-                    errors.appendLine("Invalid get method : reference {} object {} property {} info {}",
-                            reference,
-                            object,
-                            property,
-                            info);
+                    errors.appendLine("Invalid get method : reference {} object {} property {} info {}", reference, object, property, info);
                 }
                 return null;
             }
 
-            @Override
-            public boolean invalidSetMethod(Context context, String leftreference, String rightreference, Info info) {
-                errors.appendLine("Invalid set method : leftReference {} rightReference {} info {}",
-                        leftreference,
-                        rightreference,
-                        info);
+            @Override public boolean invalidSetMethod(Context context, String leftreference, String rightreference, Info info) {
+                errors.appendLine("Invalid set method : leftReference {} rightReference {} info {}", leftreference, rightreference, info);
                 return false;
 
             }
 
-            @Override
-            public Object invalidMethod(Context context, String reference, Object object, String method, Info info) {
+            @Override public Object invalidMethod(Context context, String reference, Object object, String method, Info info) {
                 // This mean quiet references dont trigger errors - this is used
                 // for things like null checks
                 if (!reference.startsWith("$!")) {
-                    errors.appendLine("Invalid method : reference '{}' object '{}' method '{}' info [{}]",
-                            reference,
-                            object,
-                            method,
-                            info);
+                    errors.appendLine("Invalid method : reference '{}' object '{}' method '{}' info [{}]", reference, object, method, info);
                 }
                 return null;
             }
         });
 
-        ListBackedMap<String, TransactionResultModel> results = model.getTotalTransactionModelsByTestName();
+        ListBackedMap<String, TransactionResultModel> results = null; // = model.getTotalTransactionModelsByTestName();
         resultsController.generateStats();
 
         // Replaced velocity tools with this to save a bit of jar space
@@ -1335,16 +1339,15 @@ public class JBombardierController {
         builder.toFile(statisticsCaptureOutput);
     }
 
-    public void outputJSONResults(ListBackedMap<String, TransactionResultModel> results,
-                                  List<CapturedStatistic> capturedStatistics) {
+    public void outputJSONResults(ListBackedMap<String, TransactionResultModel> results, List<CapturedStatistic> capturedStatistics) {
         RunResult result = new RunResult();
         result.setConfigurationName(model.getTestName());
         result.setStartTime(model.getTestStartTime());
 
         // TODO : refactor fix me
-//        result.setTestResultsFromModel(results.getMap());
+        //        result.setTestResultsFromModel(results.getMap());
         result.setFailureReason(model.getFailureReason());
-//        result.setCapturedStatistics(capturedStatistics);
+        //        result.setCapturedStatistics(capturedStatistics);
 
         outputJSONResults(result);
     }
@@ -1361,16 +1364,12 @@ public class JBombardierController {
             RepositoryMessagingClient client = new RepositoryMessagingClient();
 
             try {
-                logger.info("Attempting to connect to the results repository on {}:{}",
-                        configuration.getResultRepositoryHost(),
-                        configuration.getResultRepositoryPort());
+                logger.info("Attempting to connect to the results repository on {}:{}", configuration.getResultRepositoryHost(), configuration.getResultRepositoryPort());
                 client.connect(configuration.getResultRepositoryHost(), configuration.getResultRepositoryPort());
                 client.postResult(json);
                 logger.info("Sent results to remote repository at {}", configuration.getResultRepositoryHost());
             } catch (Exception e) {
-                logger.warning(e,
-                        "Failed to send results to remote repository at {}",
-                        configuration.getResultRepositoryHost());
+                logger.warning(e, "Failed to send results to remote repository at {}", configuration.getResultRepositoryHost());
             } finally {
                 client.close();
             }
@@ -1379,21 +1378,16 @@ public class JBombardierController {
     }
 
     public static File getJSONResultsFile(File path, String testName, long testTime) {
-        File jsonResultFile = new File(path,
-                testName + "." + TimeUtils.toFileSafeOrderedNoMillis(testTime) + ".results.json");
+        File jsonResultFile = new File(path, testName + "." + TimeUtils.toFileSafeOrderedNoMillis(testTime) + ".results.json");
         return jsonResultFile;
     }
 
-    protected void saveFrequencyChart(TransactionResultModel transactionResultModel,
-                                      ResultsController resultsController,
-                                      File reportsPath) {
+    protected void saveFrequencyChart(TransactionResultModel transactionResultModel, ResultsController resultsController, File reportsPath) {
 
         File file = new File(reportsPath, transactionResultModel.getKey() + ".frequency.png");
         FrequencyChart chart = new FrequencyChart();
 
-        SinglePassStatisticsLongPrecisionCircular singlePassStatisticsLongPrecision = resultsController.getSuccessStatsByTest()
-                                                                                                       .get(transactionResultModel
-                                                                                                               .getKey());
+        SinglePassStatisticsLongPrecisionCircular singlePassStatisticsLongPrecision = resultsController.getSuccessStatsByTest().get(transactionResultModel.getKey());
         SinglePassStatisticsLongPrecisionCircular copy = singlePassStatisticsLongPrecision.copy();
         chart.generateChart(transactionResultModel, copy, file);
 
@@ -1489,9 +1483,7 @@ public class JBombardierController {
     public synchronized void endTestNormally() {
 
         if (state != State.TestRunning) {
-            throw new IllegalStateException(StringUtils.format(
-                    "The controller state is '{}' - you can't end a test normally from there",
-                    state));
+            throw new IllegalStateException(StringUtils.format("The controller state is '{}' - you can't end a test normally from there", state));
         }
 
         regularStop();
@@ -1513,9 +1505,7 @@ public class JBombardierController {
     public synchronized void endTestAbnormally() {
 
         if (state != State.TestRunning) {
-            throw new IllegalStateException(StringUtils.format(
-                    "The controller state is '{}' - you can't end a test from there",
-                    state));
+            throw new IllegalStateException(StringUtils.format("The controller state is '{}' - you can't end a test from there", state));
         }
 
         regularStop();
@@ -1594,14 +1584,12 @@ public class JBombardierController {
 
         try {
             if (!receivedLatch.await(5, TimeUnit.SECONDS)) {
-                throw new IllegalStateException(String.format(
-                        "One or more agent have not responded to the PhaseStartInstruction  after the timeout interval - aborting test"));
+                throw new IllegalStateException(String.format("One or more agent have not responded to the PhaseStartInstruction  after the timeout interval - aborting test"));
             } else {
                 logger.info("All agents have confirmed receipt of PhaseStartInstruction");
             }
         } catch (InterruptedException e) {
-            logger.warn(
-                    "Thread interrupted waiting for confirmation that all agents have received their PhaseStartInstruction. We have no way of knowing the agent state from this point.");
+            logger.warn("Thread interrupted waiting for confirmation that all agents have received their PhaseStartInstruction. We have no way of knowing the agent state from this point.");
         }
 
     }
@@ -1624,14 +1612,12 @@ public class JBombardierController {
 
         try {
             if (!receivedLatch.await(5, TimeUnit.SECONDS)) {
-                throw new IllegalStateException(String.format(
-                        "One or more agent have not responded to the PhaseStopInstruction  after the timeout interval - aborting test"));
+                throw new IllegalStateException(String.format("One or more agent have not responded to the PhaseStopInstruction  after the timeout interval - aborting test"));
             } else {
                 logger.info("All agents have confirmed receipt of PhaseStopInstruction");
             }
         } catch (InterruptedException e) {
-            logger.warn(
-                    "Thread interrupted waiting for confirmation that all agents have received their PhaseStopInstruction. We have no way of knowing the agent state from this point.");
+            logger.warn("Thread interrupted waiting for confirmation that all agents have received their PhaseStopInstruction. We have no way of knowing the agent state from this point.");
         }
 
     }
@@ -1705,6 +1691,7 @@ public class JBombardierController {
 
     public void stopPhase() {
         logger.info("Ending current phase...");
+        model.setPhaseEndTime(timeProvider.getTime());
         sendPhaseStopInstruction();
     }
 
@@ -1768,6 +1755,7 @@ public class JBombardierController {
         logger.info("Starting phase '{}'", getCurrentPhaseName());
 
         sendPhaseStartInstruction(getCurrentPhaseName());
+        model.setPhaseStartTime(timeProvider.getTime());
     }
 
     public boolean hasPreviousPhase() {
@@ -1833,5 +1821,7 @@ public class JBombardierController {
         }
     }
 
-
+    public void setTimeProvider(TimeProvider timeProvider) {
+        this.timeProvider = timeProvider;
+    }
 }

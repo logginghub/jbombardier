@@ -26,9 +26,7 @@ import com.jbombardier.console.model.ConsoleEventModel.Severity;
 import com.jbombardier.console.model.PhaseModel;
 import com.jbombardier.console.model.TestModel;
 import com.jbombardier.console.model.TransactionResultModel;
-import com.logginghub.utils.ArrayListBackedHashMap;
 import com.logginghub.utils.FactoryMap;
-import com.logginghub.utils.ListBackedMap;
 import com.logginghub.utils.data.DataStructure;
 import com.logginghub.utils.logging.Logger;
 import com.logginghub.utils.observable.Observable;
@@ -78,14 +76,11 @@ public class JBombardierModel extends Observable {
     private ObservableList<PhaseModel> phaseModels = createListProperty("phaseModels", PhaseModel.class);
 
 //    private Map<String, TestModel> testModelsByName = new HashMap<String, TestModel>();
-
     // private boolean testRunning = false;
 
     private String testName;
     private ObservableProperty<Boolean> testRunning = new ObservableProperty<Boolean>(false);
     private long testStartTime;
-
-    private ListBackedMap<String, TransactionResultModel> transactionModelsByTestName = new ArrayListBackedHashMap<String, TransactionResultModel>();
 
     private Map<String, TransactionMovingAverages> movingAveragesByTestName = new FactoryMap<String, TransactionMovingAverages>() {
         @Override protected TransactionMovingAverages createEmptyValue(String s) {
@@ -95,9 +90,10 @@ public class JBombardierModel extends Observable {
 
     private ObservableDouble transactionRateModifier = createDoubleProperty("transactionRateModifier", 1);
 
-    private ObservableList<TransactionResultModel> transactionResultModels = new ObservableList<TransactionResultModel>(
-            new ArrayList<TransactionResultModel>());
+    //private ObservableList<TransactionResultModel> transactionResultModels = new ObservableList<TransactionResultModel>(new ArrayList<TransactionResultModel>());
+
     private List<StatisticProvider> statisticsProviders = new ArrayList<StatisticProvider>();
+    private long currentPhaseStart;
 
     public List<StatisticProvider> getStatisticsProviders() {
         return statisticsProviders;
@@ -132,6 +128,17 @@ public class JBombardierModel extends Observable {
         }
 
         return found;
+    }
+
+    public void setPhaseStartTime(long time) {
+        currentPhaseStart = time;
+    }
+
+    public void setPhaseEndTime(long time) {
+        ObservableList<TransactionResultModel> transactionResultModels = currentPhase.get().getTransactionResultModels();
+        for (TransactionResultModel transactionResultModel : transactionResultModels) {
+            transactionResultModel.getTestDuration().set(time - currentPhaseStart);
+        }
     }
 
 
@@ -279,23 +286,19 @@ public class JBombardierModel extends Observable {
         return testStartTime;
     }
 
-    public synchronized ListBackedMap<String, TransactionResultModel> getTotalTransactionModelsByTestName() {
-
-        ListBackedMap<String, TransactionResultModel> copy = new ListBackedMap<String, TransactionResultModel>(this.transactionModelsByTestName);
-        return copy;
-    }
+//    public synchronized ListBackedMap<String, TransactionResultModel> getTotalTransactionModelsByTestName() {
+//        ListBackedMap<String, TransactionResultModel> copy = new ListBackedMap<String, TransactionResultModel>(this.transactionModelsByTestName);
+//        return copy;
+//    }
 
     public ObservableDouble getTransactionRateModifier() {
         return transactionRateModifier;
     }
 
-    public TransactionResultModel getTransactionResultModelForTest(String key) {
-        return transactionModelsByTestName.get(key);
-    }
+//    public TransactionResultModel getTransactionResultModelForTest(String key) {
+//        return transactionModelsByTestName.get(key);
+//    }
 
-    public ObservableList<TransactionResultModel> getTransactionResultModels() {
-        return transactionResultModels;
-    }
 
     public void incrementActiveThreadCount(String agent, int threads) {
         agentsByAgentName.get(agent).incrementActiveThreadCount(threads);
@@ -358,7 +361,8 @@ public class JBombardierModel extends Observable {
 
         TransactionMovingAverages transactionMovingAverages = movingAveragesByTestName.get(testTransactionKey);
 
-        TransactionResultModel transactionResultModel = transactionModelsByTestName.get(testTransactionKey);
+        TransactionResultModel transactionResultModel = currentPhase.get().getTransactionResultModelForTransaction(
+                testTransactionKey);
         if (transactionResultModel == null) {
 
             final TestModel testModel = getTestModelForTest(currentPhase.get(), testStats.getTestName());
@@ -385,8 +389,7 @@ public class JBombardierModel extends Observable {
             transactionResultModel.getSuccessfulTransactionsTotalFailureResultCountMinimum().set(testModel.getFailureThresholdResultCountMinimum());
             transactionResultModel.getUnsuccessfulTransactionsTotalFailureThreshold().set(testModel.getFailedTransactionCountThreshold());
 
-            transactionResultModels.add(transactionResultModel);
-            transactionModelsByTestName.put(testTransactionKey, transactionResultModel);
+            currentPhase.get().getTransactionResultModels().add(transactionResultModel);
 
             // Wire up the transaction results to listen for changes in the target rate
             final TransactionResultModel finalPointer = transactionResultModel;
@@ -406,8 +409,8 @@ public class JBombardierModel extends Observable {
         double sumSuccessDuration = 0;
         double sumSuccessTotalDuration = 0;
         double sumFailureDuration = 0;
-        double totalSuccessDuration = 0;
-        double totalFailureDuration = 0;
+        long totalSuccessDuration = 0;
+        long totalFailureDuration = 0;
 
         long successes = 0;
         long failures = 0;
@@ -451,8 +454,11 @@ public class JBombardierModel extends Observable {
         double averageSuccessTotalDuration = sumSuccessTotalDuration / agentsInTest;
         double averageFailureDuration = sumFailureDuration / agentsInTest;
 
-        transactionResultModel.getSuccessfulTransactionsCountPerSecond().increment(successes);
-        transactionResultModel.getUnsuccessfulTransactionsCountPerSecond().increment(failures);
+        transactionResultModel.getSuccessfulTransactionsCountTotal().increment(successes);
+        transactionResultModel.getUnsuccessfulTransactionsCountTotal().increment(failures);
+
+        transactionResultModel.getSuccessfulTransactionsDurationTotal().increment(totalSuccessDuration);
+        transactionResultModel.getUnsuccessfulTransactionsDurationTotal().increment(totalFailureDuration);
 
         // Update the moving averages
         if (successPerSecondTotal > 0) {
@@ -468,22 +474,20 @@ public class JBombardierModel extends Observable {
         transactionMovingAverages.getUnsuccessfulTransactionCount().addValue(failurePerSecondTotal);
 
         // Take the values from the moving averages and apply them to the transaction model
-        transactionResultModel.getSuccessfulTransactionsPerSecond()
+        transactionResultModel.getSuccessfulMeanTransactionsPerSecond()
                               .set(transactionMovingAverages.getSuccessfulTransactionCount().calculateMovingAverage());
 
-        transactionResultModel.getUnsuccessfulTransactionsPerSecond()
+        transactionResultModel.getUnsuccessfulMeanTransactionsPerSecond()
                               .set(transactionMovingAverages.getUnsuccessfulTransactionCount()
                                                             .calculateMovingAverage());
 
-        transactionResultModel.getSuccessfulTransactionDuration()
-                              .set(transactionMovingAverages.getSuccessfulTransactionDuration()
+        transactionResultModel.getSuccessfulTransactionDuration().set(transactionMovingAverages.getSuccessfulTransactionDuration()
                                                             .calculateMovingAverage());
         transactionResultModel.getUnsuccessfulTransactionDuration()
                               .set(transactionMovingAverages.getUnsuccessfulTransactionDuration()
                                                             .calculateMovingAverage());
 
-        transactionResultModel.getSuccessfulTransactionTotalDuration()
-                              .set(transactionMovingAverages.getSuccessfulTransactionTotalDuration()
+        transactionResultModel.getSuccessfulTransactionTotalDuration().set(transactionMovingAverages.getSuccessfulTransactionTotalDuration()
                                                             .calculateMovingAverage());
 
         // jshaw - this simulates an atomic update trigger to model listeners who want a coherent picture
@@ -512,8 +516,7 @@ public class JBombardierModel extends Observable {
     }
 
     public void resetStats() {
-        transactionResultModels.clear();
-        transactionModelsByTestName.clear();
+        getCurrentPhase().get().resetStats();
         latestTestStatsByTestThenAgentName.clear();
     }
 

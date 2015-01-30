@@ -48,7 +48,7 @@ public class TransactionRateCellRenderer extends DefaultTableCellRenderer {
         TransactionResultModel itemAtRow = t.getItemAtRow(row);
         
         double targetTransactions = itemAtRow.getTargetSuccessfulTransactionsPerSecond().get();
-        double successPerSecond = itemAtRow.getSuccessfulTransactionsPerSecond().get();
+        double successPerSecond = itemAtRow.getSuccessfulMeanTransactionsPerSecond().get();
         
         double delta = successPerSecond - targetTransactions;        
         double abs = Math.abs(delta);

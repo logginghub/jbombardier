@@ -52,20 +52,20 @@ public class TestJBombardierRepositoryLauncher {
         RepositoryMessagingClient client = new RepositoryMessagingClient();
         client.connect("localhost", serverPort);
 
-        RunResult runResult = TestRunResultBuilder.start()
-                                                          .name("MyTest")
-                                                          .results(TestRunResultBuilder.result()
-                                                                                       .testName("Test1")
-                                                                                       .testTime(1000)
-                                                                                       .transactionCount(100)
-                                                                                       .successDuration(50)
-                                                                                       .successTotalDuration(60)
-                                                                                       .transactionsSuccess(100))
-                                                          .toTestRunResult();
-
-        String json = helper.toJSON(runResult);
-
-        client.postResult(json);
+//        RunResult runResult = TestRunResultBuilder.start()
+//                                                          .name("MyTest")
+//                                                          .results(TestRunResultBuilder.result()
+//                                                                                       .testName("Test1")
+//                                                                                       .testTime(1000)
+//                                                                                       .transactionCount(100)
+//                                                                                       .successDuration(50)
+//                                                                                       .successTotalDuration(60)
+//                                                                                       .transactionsSuccess(100))
+//                                                          .toTestRunResult();
+//
+//        String json = helper.toJSON(runResult);
+//
+//        client.postResult(json);
 
         System.out.println(folder.getAbsolutePath());
         assertThat(folder.list().length, is(1));
@@ -91,20 +91,20 @@ public class TestJBombardierRepositoryLauncher {
         RepositoryMessagingClient client = new RepositoryMessagingClient();
         client.connect("localhost", serverPort);
 
-        RunResult runResult = TestRunResultBuilder.start()
-                                                          .name("MyTest")
-                                                          .results(TestRunResultBuilder.result()
-                                                                                       .testName("Test1")
-                                                                                       .testTime(1000)
-                                                                                       .transactionCount(100)
-                                                                                       .successDuration(50)
-                                                                                       .successTotalDuration(60)
-                                                                                       .transactionsSuccess(100))
-                                                          .toTestRunResult();
+//        RunResult runResult = TestRunResultBuilder.start()
+//                                                          .name("MyTest")
+//                                                          .results(TestRunResultBuilder.result()
+//                                                                                       .testName("Test1")
+//                                                                                       .testTime(1000)
+//                                                                                       .transactionCount(100)
+//                                                                                       .successDuration(50)
+//                                                                                       .successTotalDuration(60)
+//                                                                                       .transactionsSuccess(100))
+//                                                          .toTestRunResult();
+//
+//        String json = helper.toJSON(runResult);
 
-        String json = helper.toJSON(runResult);
-
-        client.postResult(json);
+//        client.postResult(json);
 
         assertThat(folder.list().length, is(1));
 

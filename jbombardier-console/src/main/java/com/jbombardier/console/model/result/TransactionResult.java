@@ -16,8 +16,6 @@
 
 package com.jbombardier.console.model.result;
 
-import com.jbombardier.console.model.TransactionResultModel;
-
 /**
  * Encapsulation of a TransactionResultModel for a single test/transaction. Serialised into JSON and sent to the repository to keep a record
  * of the test run as part of the TestRunResult object.
@@ -52,115 +50,75 @@ public class TransactionResult {
 //    private double successfulTransactionTotalDuration;
 //    private double unsuccessfulTransactionDuration;
 
-
-    private double unsucccesfulDuration = Double.NaN;
     private double sla = Double.NaN;
-    private double successDuration = Double.NaN;
-    private double successTotalDuration = Double.NaN;
+
     private String testName;
-    private long transactionCount = 0;
+    private long totalTransactionCount = 0;
     private String transactionName;
-    private double transactionsUnsuccessful = Double.NaN;
-    private double transactionsSuccessful = Double.NaN;
+
     private long testTime;
+    private long successfulTransactionCount;
+    private double successfulTransactionMeanDuration;
+    private double successfulTransactionMeanTransactionsPerSecond;
+    private long unsuccessfulTransactionCount;
+    private double unsuccessfulTransactionMeanDuration;
+    private double unsuccessfulTransactionMeanTransactionsPerSecond;
+    private double successfulTransactionMeanTotalDuration;
+    private double successfulTransactionMeanTransactionsPerSecondTarget;
 
-    public static TransactionResult fromModel(TransactionResultModel value) {
+    //    public static TransactionResult fromModel(TransactionResultModel value) {
+//
+//        TransactionResult snapshot = new TransactionResult();
+//
+//        snapshot.setTransactionsSuccessful(value.getSuccessfulTransactionsCountTotal().get());
+//        snapshot.setTransactionsUnsuccessful(value.getUnsuccessfulTransactionsCountTotal().get());
+//
+//        snapshot.setSuccessDuration(value.getSuccessfulTransactionDuration().get());
+//        snapshot.setUnsucccesfulDuration(value.getUnsuccessfulTransactionDuration().get());
+//        snapshot.setSuccessTotalDuration(value.getSuccessfulTransactionTotalDuration().get());
+//
+//        snapshot.setTestName(value.getTestName().get());
+//        snapshot.setTransactionName(value.getTransactionName().get());
+//        snapshot.setTotalTransactionCount(value.calculateTotalTransactions());
+//        snapshot.setSla(value.getSuccessfulTransactionDurationSLA().get());
+//
+//        return snapshot;
+//    }
 
-        TransactionResult snapshot = new TransactionResult();
-
-        snapshot.setTransactionsSuccessful(value.getSuccessfulTransactionsTotal().get());
-        snapshot.setTransactionsUnsuccessful(value.getUnsuccessfulTransactionsTotal().get());
-
-        snapshot.setSuccessDuration(value.getSuccessfulTransactionDuration().get());
-        snapshot.setUnsucccesfulDuration(value.getUnsuccessfulTransactionDuration().get());
-        snapshot.setSuccessTotalDuration(value.getSuccessfulTransactionTotalDuration().get());
-
-        snapshot.setTestName(value.getTestName().get());
-        snapshot.setTransactionName(value.getTransactionName().get());
-        snapshot.setTransactionCount(value.calculateTotalTransactions());
-        snapshot.setSla(value.getSuccessfulTransactionDurationSLA().get());
-
-        return snapshot;
-    }
-
-    public double getUnsucccesfulDuration() {
-        return unsucccesfulDuration;
-    }
 
     public double getSla() {
         return sla;
     }
 
-    public double getSuccessDuration() {
-        return successDuration;
-    }
-
-    public double getSuccessTotalDuration() {
-        return successTotalDuration;
-    }
 
     public String getTestName() {
         return testName;
     }
 
-    public long getTransactionCount() {
-        return transactionCount;
+    public long getTotalTransactionCount() {
+        return totalTransactionCount;
     }
 
     public String getTransactionName() {
         return transactionName;
     }
 
-    public double getTransactionsUnsuccessful() {
-        return transactionsUnsuccessful;
-    }
-
-    public double getTransactionsSuccessful() {
-        return transactionsSuccessful;
-    }
-
-    public void setUnsucccesfulDuration(double unsucccesfulDuration) {
-        this.unsucccesfulDuration = unsucccesfulDuration;
-    }
-
     public void setSla(double sla) {
         this.sla = sla;
     }
 
-    public void setSuccessDuration(double successDuration) {
-        this.successDuration = successDuration;
-    }
 
-    public double getSuccessDurationMS() {
-        return successDuration * 1e-6;
-    }
-
-    public double getUnsuccessfulDurationMS() {
-        return unsucccesfulDuration * 1e-6;
-    }
-
-    public void setSuccessTotalDuration(double successTotalDuration) {
-        this.successTotalDuration = successTotalDuration;
-    }
 
     public void setTestName(String testName) {
         this.testName = testName;
     }
 
-    public void setTransactionCount(long transactionCount) {
-        this.transactionCount = transactionCount;
+    public void setTotalTransactionCount(long totalTransactionCount) {
+        this.totalTransactionCount = totalTransactionCount;
     }
 
     public void setTransactionName(String transactionName) {
         this.transactionName = transactionName;
-    }
-
-    public void setTransactionsUnsuccessful(double transactionsUnsuccessful) {
-        this.transactionsUnsuccessful = transactionsUnsuccessful;
-    }
-
-    public void setTransactionsSuccessful(double transactionsSuccessful) {
-        this.transactionsSuccessful = transactionsSuccessful;
     }
 
     public void setTestTime(long testTime) {
@@ -170,7 +128,72 @@ public class TransactionResult {
     public long getTestTime() {
         return testTime;
     }
-    
+
+    public long getSuccessfulTransactionCount() {
+        return successfulTransactionCount;
+    }
+
+    public void setSuccessfulTransactionCount(long successfulTransactionCount) {
+        this.successfulTransactionCount = successfulTransactionCount;
+    }
+
+    public double getSuccessfulTransactionMeanDuration() {
+        return successfulTransactionMeanDuration;
+    }
+
+    public void setSuccessfulTransactionMeanDuration(double successfulTransactionMeanDuration) {
+        this.successfulTransactionMeanDuration = successfulTransactionMeanDuration;
+    }
+
+    public double getSuccessfulTransactionMeanTransactionsPerSecond() {
+        return successfulTransactionMeanTransactionsPerSecond;
+    }
+
+    public void setSuccessfulTransactionMeanTransactionsPerSecond(double successfulTransactionMeanTransactionsPerSecond) {
+        this.successfulTransactionMeanTransactionsPerSecond = successfulTransactionMeanTransactionsPerSecond;
+    }
+
+    public long getUnsuccessfulTransactionCount() {
+        return unsuccessfulTransactionCount;
+    }
+
+    public void setUnsuccessfulTransactionCount(long unsuccessfulTransactionCount) {
+        this.unsuccessfulTransactionCount = unsuccessfulTransactionCount;
+    }
+
+    public double getUnsuccessfulTransactionMeanDuration() {
+        return unsuccessfulTransactionMeanDuration;
+    }
+
+    public void setUnsuccessfulTransactionMeanDuration(double unsuccessfulTransactionMeanDuration) {
+        this.unsuccessfulTransactionMeanDuration = unsuccessfulTransactionMeanDuration;
+    }
+
+    public double getUnsuccessfulTransactionMeanTransactionsPerSecond() {
+        return unsuccessfulTransactionMeanTransactionsPerSecond;
+    }
+
+    public void setUnsuccessfulTransactionMeanTransactionsPerSecond(double unsuccessfulTransactionMeanTransactionsPerSecond) {
+        this.unsuccessfulTransactionMeanTransactionsPerSecond = unsuccessfulTransactionMeanTransactionsPerSecond;
+    }
+
+    public void setSuccessfulTransactionMeanTotalDuration(double successfulTransactionMeanTotalDuration) {
+        this.successfulTransactionMeanTotalDuration = successfulTransactionMeanTotalDuration;
+    }
+
+    public double getSuccessfulTransactionMeanTotalDuration() {
+        return successfulTransactionMeanTotalDuration;
+    }
+
+    public void setSuccessfulTransactionMeanTransactionsPerSecondTarget(double successfulTransactionMeanTransactionsPerSecondTarget) {
+        this.successfulTransactionMeanTransactionsPerSecondTarget = successfulTransactionMeanTransactionsPerSecondTarget;
+    }
+
+    public double getSuccessfulTransactionMeanTransactionsPerSecondTarget() {
+        return successfulTransactionMeanTransactionsPerSecondTarget;
+    }
+
+
     // private long totalTransactions = 0;
     // private boolean isTransaction;
     // private String transactionName;

@@ -16,24 +16,26 @@
 
 package com.jbombardier.console;
 
-import java.awt.Container;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-
-import javax.swing.JOptionPane;
-import javax.swing.UIManager;
-
 import com.jbombardier.JBombardierTemporalController;
 import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.panels.SwingConsoleMainPanel;
 import com.logginghub.utils.MainUtils;
 import com.logginghub.utils.NetUtils;
 import com.logginghub.utils.Out;
+import com.logginghub.utils.WorkerThread;
+import com.logginghub.utils.logging.Logger;
 import com.logginghub.utils.logging.SystemErrStream;
 import com.logginghub.utils.swing.VLFrame;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.concurrent.TimeUnit;
+
 public class JBombardierSwingConsole {
 
+    private static final Logger logger = Logger.getLoggerFor(JBombardierSwingConsole.class);
     // private String configurationFile =
     // "/com/jbombardier/interactive/configuration/sample_configuration.xml";
     private JBombardierModel model;
@@ -46,8 +48,7 @@ public class JBombardierSwingConsole {
 
         try {
             configuration.validate();
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             if (configuration.showVisualErrorMessages()) {
                 JOptionPane.showMessageDialog(null, e.getMessage(), "Failed to start test", JOptionPane.ERROR_MESSAGE);
             }
@@ -81,24 +82,29 @@ public class JBombardierSwingConsole {
             // If Nimbus is not available, you can set the GUI to another look and feel.
         }
 
-//        if (ReflectionUtils.classExists("sun.swing.plaf.synth.SynthUI")) {
-//            try {
-//                UIManager.setLookAndFeel("com.seaglasslookandfeel.SeaGlassLookAndFeel");
-//            }
-//            catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
+        //        if (ReflectionUtils.classExists("sun.swing.plaf.synth.SynthUI")) {
+        //            try {
+        //                UIManager.setLookAndFeel("com.seaglasslookandfeel.SeaGlassLookAndFeel");
+        //            }
+        //            catch (Exception e) {
+        //                e.printStackTrace();
+        //            }
+        //        }
 
         frame = new VLFrame("JBombardier - Interactive Console", "black-flask-hi.png");
 
         frame.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
-                controller.stopTelemetry();
-                if (configuration.isSendKillOnConsoleClose()) {
-                    controller.endTestAbnormally();
-                    controller.killAgents();
+                try {
+                    controller.stopTelemetry();
+                    if (configuration.isSendKillOnConsoleClose()) {
+                        controller.endTestAbnormally();
+                        controller.killAgents();
+                    }
+                } catch (Throwable t) {
                 }
+                super.windowClosing(e);
+                System.exit(-1);
             }
         });
 
@@ -109,6 +115,19 @@ public class JBombardierSwingConsole {
         frame.setVisible(true);
 
         controller.startAgentConnections();
+
+        if (configuration.getAutostartAgents() > 0) {
+            WorkerThread.every("ConsoleAutostartChecker", 100, TimeUnit.MILLISECONDS, new Runnable() {
+                @Override public void run() {
+                    logger.debug("Auto start {} agents {}", configuration.getAutostartAgents(), model.getConnectionAgentCount());
+                    if (model.getConnectionAgentCount() >= configuration.getAutostartAgents()) {
+                        logger.info("Auto start agent count reached, starting test");
+                        temporalController.start();
+                        throw new WorkerThread.StopRunningException();
+                    }
+                }
+            });
+        }
     }
 
     private void initialiseComponents(Container contentPane) {
@@ -117,12 +136,17 @@ public class JBombardierSwingConsole {
         contentPane.add(panel);
     }
 
-    public static void runWithAutostart(String configPath, int autostartAgents) {
-        JBombardierSwingConsole.main(new String[]{configPath, "" + autostartAgents});
-    }
+    public static JBombardierSwingConsole run(String configurationFilePath) {
+        SystemErrStream.gapThreshold = 1500;
 
-    public static void run(String configPath) {
-        JBombardierSwingConsole.main(new String[]{configPath});
+        JBombardierSwingConsole swingConsole = new JBombardierSwingConsole();
+
+        swingConsole.loadConfigurationFile(configurationFilePath);
+
+        swingConsole.initialise();
+        swingConsole.start();
+
+        return swingConsole;
     }
 
     public JBombardierController getController() {
@@ -132,26 +156,11 @@ public class JBombardierSwingConsole {
     public static void main(String[] args) {
         if (args.length > 0) {
             String configurationFile = MainUtils.getStringArgument(args, 0, "");
-            int autostartAgents = MainUtils.getIntArgument(args, 1, -1);
-            run(configurationFile, autostartAgents);
-        }
-        else {
+//            int autostartAgents = MainUtils.getIntArgument(args, 1, -1);
+            run(configurationFile);
+        } else {
             System.err.println("Please pass a configuration file path (either from the file system, or from the classpath) as the command line parameter.");
         }
-    }
-
-    public static JBombardierSwingConsole run(String configurationFilePath, int autostartAgents) {
-        SystemErrStream.gapThreshold = 1500;
-
-        JBombardierSwingConsole swingConsole = new JBombardierSwingConsole();
-
-        swingConsole.loadConfigurationFile(configurationFilePath);
-        swingConsole.getConfiguration().setAutostartAgents(autostartAgents);
-
-        swingConsole.initialise();
-        swingConsole.start();
-
-        return swingConsole;
     }
 
     public JBombardierConfiguration getConfiguration() {

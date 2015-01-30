@@ -25,6 +25,7 @@ import com.logginghub.utils.TimeUtils;
 import com.logginghub.utils.WorkerThread;
 import com.logginghub.utils.logging.Logger;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -40,6 +41,8 @@ public class JBombardierTemporalController implements Asynchronous {
     private long baselineTime;
     private long endTime;
     private long warmupEnd;
+
+    private CountDownLatch testCompleteLatch = new CountDownLatch(1);
 
     private PhaseModel phase;
     private boolean phaseHasWarmup;
@@ -78,14 +81,9 @@ public class JBombardierTemporalController implements Asynchronous {
         long duration = phase.getPhaseDuration().get();
 
         if (phaseHasWarmup) {
-            logger.info("Next phase is '{}' - warmup {} and duration {}",
-                    phase.getPhaseName().get(),
-                    TimeUtils.formatIntervalMilliseconds(warmup),
-                    TimeUtils.formatIntervalMilliseconds(duration));
+            logger.info("Next phase is '{}' - warmup {} and duration {}", phase.getPhaseName().get(), TimeUtils.formatIntervalMilliseconds(warmup), TimeUtils.formatIntervalMilliseconds(duration));
         } else {
-            logger.info("Next phase is '{}' - there is no warmup and duration {}",
-                    phase.getPhaseName().get(),
-                    TimeUtils.formatIntervalMilliseconds(duration));
+            logger.info("Next phase is '{}' - there is no warmup and duration {}", phase.getPhaseName().get(), TimeUtils.formatIntervalMilliseconds(duration));
         }
 
         baselineTime = timeProvider.getTime();
@@ -103,8 +101,7 @@ public class JBombardierTemporalController implements Asynchronous {
                     Logger.toLocalDateString(warmupEnd),
                     Logger.toLocalDateString(endTime));
         } else {
-            logger.info("Time is now '{}' - there is no warmup and the test will end at'{}'", Logger.toLocalDateString(
-                    baselineTime), Logger.toLocalDateString(endTime));
+            logger.info("Time is now '{}' - there is no warmup and the test will end at'{}'", Logger.toLocalDateString(baselineTime), Logger.toLocalDateString(endTime));
         }
     }
 
@@ -123,11 +120,9 @@ public class JBombardierTemporalController implements Asynchronous {
         if (now >= endTime) {
 
             if (controller.hasNextPhase()) {
-                logger.info("Phase '{}' is complete, recording stats and moving to next phase",
-                        phase.getPhaseName().get());
+                logger.info("Phase '{}' is complete, recording stats and moving to next phase", phase.getPhaseName().get());
 
                 controller.stopPhase();
-                controller.resetStats();
 
                 phase = controller.getNextPhase();
                 initialisePhase();
@@ -136,14 +131,14 @@ public class JBombardierTemporalController implements Asynchronous {
 
 
             } else {
-                logger.info("Phase '{}' is complete - this is the last phease, finishing the test",
-                        phase.getPhaseName().get());
+                logger.info("Phase '{}' is complete - this is the last phease, finishing the test", phase.getPhaseName().get());
 
                 controller.stopPhase();
                 controller.endTestNormally();
 
                 logger.info("Temporal controller test execution complete - ending control thread");
                 workerThread.dontRunAgain();
+                testCompleteLatch.countDown();
             }
 
         } else {
@@ -180,4 +175,10 @@ public class JBombardierTemporalController implements Asynchronous {
     }
 
 
+    public void waitForTestToComplete() {
+        try {
+            testCompleteLatch.await();
+        } catch (InterruptedException e) {
+        }
+    }
 }

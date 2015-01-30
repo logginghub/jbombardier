@@ -26,13 +26,19 @@ import java.util.List;
  */
 public class PhaseResult {
     private List<CapturedStatistic> capturedStatistics = new ArrayList<CapturedStatistic>();
+    private List<TransactionResult> transactionResults = new ArrayList<TransactionResult>();
     private String phaseName;
     private long duration;
     private long warmup;
 
+    public List<TransactionResult> getTransactionResults() {
+        return transactionResults;
+    }
+
     public List<CapturedStatistic> getCapturedStatistics() {
         return capturedStatistics;
     }
+
 
     public String getPhaseName() {
         return phaseName;

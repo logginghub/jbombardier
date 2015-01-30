@@ -215,10 +215,10 @@ public class ThreadController extends WorkerThread {
             int deltaThreads = targetThreads - threads.size();
 
             if (deltaThreads > 0) {
-                logger.info("ThreadController for " + testName + " is iterating. Delta threads is " + deltaThreads);
+                logger.debug("ThreadController for " + testName + " is iterating. Delta threads is " + deltaThreads);
                 int threadsToStart = Math.min(deltaThreads, threadRampupStepSize);
                 for (int i = 0; i < threadsToStart; i++) {
-                    logger.info("Starting a new instance of " + testName + " target rate is " + targetRate + ", rate step is " + rateStep + " and rateStepTime " + rateStepTime);
+                    logger.debug("Starting a new instance of " + testName + " target rate is " + targetRate + ", rate step is " + rateStep + " and rateStepTime " + rateStepTime);
 
                     String threadName = testName + "-thread-" + threads.size();
 
@@ -245,7 +245,7 @@ public class ThreadController extends WorkerThread {
                 int threadsToStop = Math.abs(deltaThreads);
                 for (int i = 0; i < threadsToStop; i++) {
                     WorkerThread workerThread = threads.remove(threads.size() - 1);
-                    logger.info("Stopping instance of " + testName);
+                    logger.debug("Stopping instance of " + testName);
                     stopThread(workerThread);
                 }
             }

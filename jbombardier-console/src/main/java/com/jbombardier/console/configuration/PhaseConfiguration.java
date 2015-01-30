@@ -30,13 +30,30 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD) public class PhaseConfiguration {
 
     @XmlAttribute(name = "name") private String phaseName;
-    @XmlElementWrapper(name = "tests") @XmlElement(name = "test")
-    private List<TestConfiguration> tests = new ArrayList<TestConfiguration>();
+    @XmlElement private List<TestConfiguration> test = new ArrayList<TestConfiguration>();
     @XmlAttribute private String duration;
     @XmlAttribute private String warmupDuration;
+    @XmlAttribute private String inheritFrom;
+    @XmlAttribute private double rateMultiplier = 1;
+
+    public void setRateMultiplier(double rateMultiplier) {
+        this.rateMultiplier = rateMultiplier;
+    }
+
+    public double getRateMultiplier() {
+        return rateMultiplier;
+    }
+
+    public String getInheritFrom() {
+        return inheritFrom;
+    }
+
+    public void setInheritFrom(String inheritFrom) {
+        this.inheritFrom = inheritFrom;
+    }
 
     public List<TestConfiguration> getTests() {
-        return tests;
+        return test;
     }
 
     public String getPhaseName() {

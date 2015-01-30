@@ -101,7 +101,7 @@ $(document).ready(function() {
     #foreach( $transactionResultSnapshot in $results)
         <tr>
             <td>$utils.toDateTimeString($transactionResultSnapshot.testTime)</td>
-            <td>$utils.format($transactionResultSnapshot.transactionCount)</td>
+            <td>$utils.format($transactionResultSnapshot.totalTransactionCount)</td>
             
             <td>$utils.format($transactionResultSnapshot.transactionsSuccessful)</td>
             <td>$utils.format($transactionResultSnapshot.getSuccessDurationMS())</td>

@@ -16,8 +16,17 @@
 
 package com.jbombardier.console.components;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
+import com.logginghub.utils.observable.Observable;
+import com.logginghub.utils.observable.ObservableDouble;
+import com.logginghub.utils.observable.ObservableInteger;
+import com.logginghub.utils.observable.ObservableItemContainer;
+import com.logginghub.utils.observable.ObservableListener;
+
+import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
 import java.lang.reflect.Method;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -31,19 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingUtilities;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableColumn;
-
-import com.logginghub.utils.observable.Observable;
-import com.logginghub.utils.observable.ObservableDouble;
-import com.logginghub.utils.observable.ObservableItemContainer;
-import com.logginghub.utils.observable.ObservableListener;
 
 public class ReflectiveTable<T> extends JTable {
     public interface SelectionHandler<T> {
@@ -131,8 +127,7 @@ public class ReflectiveTable<T> extends JTable {
 
                     if (hiddenColumnNames.contains(removeAccessorPart.toLowerCase())) {
                         // Not displaying this column
-                    }
-                    else {
+                    } else {
                         // Looks like a goer
                         if (columnOrder != null) {
                             int indexOf = Arrays.asList(columnOrder).indexOf(removeAccessorPart);
@@ -141,17 +136,14 @@ public class ReflectiveTable<T> extends JTable {
                             }
 
                             accessors.set(indexOf, method);
-                        }
-                        else {
+                        } else {
                             accessors.add(method);
                         }
 
                         try {
                             Method setter = c.getMethod("set" + removeAccessorPart, method.getReturnType());
                             setters.put(removeAccessorPart, setter);
-                        }
-                        catch (SecurityException e) {}
-                        catch (NoSuchMethodException e) {}
+                        } catch (SecurityException e) {} catch (NoSuchMethodException e) {}
                     }
                 }
             }
@@ -167,8 +159,7 @@ public class ReflectiveTable<T> extends JTable {
         @Override public int getColumnCount() {
             if (dataProvider != null) {
                 return dataProvider.getColumnCount();
-            }
-            else {
+            } else {
                 return accessors.size();
             }
         }
@@ -200,8 +191,7 @@ public class ReflectiveTable<T> extends JTable {
                 try {
                     Object converted = convert(aValue, returnType);
                     changeHandler.onChange(entry, attribute, converted);
-                }
-                catch (NumberFormatException nfe) {
+                } catch (NumberFormatException nfe) {
 
                 }
             }
@@ -223,20 +213,17 @@ public class ReflectiveTable<T> extends JTable {
 
             if (dataProvider != null) {
                 value = dataProvider.getValueForColumn(column, entry);
-            }
-            else {
+            } else {
                 Method method = accessors.get(column);
                 try {
                     value = method.invoke(entry, (Object[]) null);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     value = method.getName() + " failed : " + e.getMessage();
                 }
 
                 if (value instanceof Float || value instanceof Double) {
                     value = NumberFormat.getInstance().format(value);
-                }
-                else if (value instanceof ObservableDouble) {
+                } else if (value instanceof ObservableDouble) {
                     ObservableDouble observableDouble = (ObservableDouble) value;
                     value = NumberFormat.getInstance().format(observableDouble.doubleValue());
                 }
@@ -249,8 +236,7 @@ public class ReflectiveTable<T> extends JTable {
             String columnName;
             if (dataProvider != null) {
                 columnName = dataProvider.getColumnName(column);
-            }
-            else {
+            } else {
                 Method method = accessors.get(column);
                 String name = method.getName();
                 columnName = removeAccessorPart(name);
@@ -329,10 +315,14 @@ public class ReflectiveTable<T> extends JTable {
         }
 
         public void clear() {
-            synchronized (visibleEntries) {
-                visibleEntries.clear();
-            }
-            fireTableDataChanged();
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override public void run() {
+                    synchronized (visibleEntries) {
+                        visibleEntries.clear();
+                    }
+                    fireTableDataChanged();
+                }
+            });
         }
 
         public void setRowVisibilityFilter(final RowVisibilityFilter<T> rowVisibilityFilter) {
@@ -346,8 +336,7 @@ public class ReflectiveTable<T> extends JTable {
                             T t = iterator.next();
                             if (rowVisibilityFilter.isVisible(t)) {
                                 // Fine, leave it
-                            }
-                            else {
+                            } else {
                                 hiddenEntries.add(t);
                                 iterator.remove();
                             }
@@ -413,23 +402,19 @@ public class ReflectiveTable<T> extends JTable {
         Object converted;
         if (class1 == Integer.TYPE) {
             converted = Integer.parseInt(aValue.toString());
-        }
-        else if (class1 == Float.TYPE) {
+        } else if (class1 == Float.TYPE) {
             converted = Float.parseFloat(aValue.toString());
-        }
-        else if (class1 == Double.TYPE) {
+        } else if (class1 == Double.TYPE) {
             converted = Double.parseDouble(aValue.toString());
-        }
-        else if (class1 == Short.TYPE) {
+        } else if (class1 == Short.TYPE) {
             converted = Short.parseShort(aValue.toString());
-        }
-        else if (class1 == Long.TYPE) {
+        } else if (class1 == Long.TYPE) {
             converted = Long.parseLong(aValue.toString());
-        }
-        else if (class1 == Byte.TYPE) {
+        } else if (class1 == Byte.TYPE) {
             converted = Byte.parseByte(aValue.toString());
-        }
-        else {
+        } else if (class1 == ObservableInteger.class) {
+            converted = Integer.parseInt(aValue.toString());
+        } else {
             converted = aValue;
         }
 
@@ -441,11 +426,9 @@ public class ReflectiveTable<T> extends JTable {
         String sorted;
         if (name.startsWith("get")) {
             sorted = name.substring(3, name.length());
-        }
-        else if (name.startsWith("is")) {
+        } else if (name.startsWith("is")) {
             sorted = name.substring(2, name.length());
-        }
-        else {
+        } else {
             sorted = name;
         }
 

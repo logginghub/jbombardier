@@ -16,8 +16,10 @@
 
 package com.jbombardier.console.headless;
 
+import com.jbombardier.JBombardierTemporalController;
 import com.jbombardier.console.JBombardierController;
 import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.console.configuration.ConfigurationValidator;
 import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.model.AgentModel;
 import com.jbombardier.console.model.TransactionResultModel;
@@ -26,18 +28,15 @@ import com.logginghub.utils.QuietLatch;
 import com.logginghub.utils.StringUtils;
 import com.logginghub.utils.ThreadUtils;
 import com.logginghub.utils.TimeUtils;
-import com.logginghub.utils.Timeout;
 import com.logginghub.utils.TimerUtils;
 import com.logginghub.utils.logging.Logger;
 import com.logginghub.utils.logging.SystemErrStream;
 import com.logginghub.utils.observable.ObservableList;
 
-import java.io.File;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Main class for running the jbombardier console/controller in headless mode.
@@ -55,7 +54,7 @@ public class JBombardierHeadless {
     private long timeToWaitForAgents = 10000;
     private int agentsRequired = 1;
     //    private String reportFolder = "reports";
-    private Timer timer;
+    private Timer failureMonitorThread;
 
     private volatile boolean warmedUp = false;
     private volatile boolean failureDetected = false;
@@ -106,90 +105,92 @@ public class JBombardierHeadless {
     //    }
 
     public JBombardierController run(JBombardierConfiguration configuration) {
+        ConfigurationValidator.validateConfiguration(configuration);
+
         JBombardierModel model = new JBombardierModel();
         JBombardierController controller = new JBombardierController(model, configuration);
+
         controller.startStats();
         controller.startAgentConnections();
         controller.waitForEmbeddedIfNeeded();
-
-        // Attach the monitor to detect async failures
-        attachFailureMonitor(controller);
 
         listener = new HeadlessModeListener();
         model.addListener(listener);
         waitForAgents(model);
 
-        controller.startStatisticsCapture();
+        JBombardierTemporalController temporalController = new JBombardierTemporalController(controller);
+        temporalController.start();
 
-        long warmupTime = TimeUtils.parseInterval(configuration.getWarmupTime());
-        long testDuration = TimeUtils.parseInterval(configuration.getDuration());
+        temporalController.waitForTestToComplete();
 
-        if (warmupTime > 0) {
-            controller.startWarmUp();
-            controller.publishTestInstructions();
-            controller.getResultsController().stopStatsUpdater();
+        controller.generateReport(configuration.isOpenReport());
 
-            failureLatch.setTimeout(new Timeout(warmupTime, TimeUnit.MILLISECONDS));
-            if (!failureLatch.await()) {
-
-                logger.info("------------------- Warmup complete, real test run started ------------------------");
-                controller.startTest();
-                controller.getResultsController().startStatsUpdater(controller.getModel());
-                warmedUp = true;
-
-                long endTime = System.currentTimeMillis() + testDuration;
-                while (System.currentTimeMillis() < endTime) {
-                    ThreadUtils.sleep(1000);
-                    if (failureDetected) {
-                        break;
-                    }
-                }
-            }
-        } else {
-            logger.info("------------------- Skipping warm-up, real test run started ------------------------");
-            long endTime = System.currentTimeMillis() + testDuration;
-            logger.info("Running test for duration '{}' ({} milliseconds) - will end at '{}'", configuration.getDuration(), testDuration, Logger.toLocalDateString(endTime));
-            warmedUp = true;
-
-            controller.publishTestInstructions();
-            controller.getResultsController().stopStatsUpdater();
-
-            controller.startTest();
-            controller.getResultsController().startStatsUpdater(controller.getModel());
-
-            while (System.currentTimeMillis() < endTime) {
-                ThreadUtils.sleep(1000);
-                if (failureDetected) {
-                    break;
-                }
-            }
-        }
-
-        timer.cancel();
-        controller.getResultsController().
-
-                stopStatsUpdater();
-
-        controller.stopStats();
-        logger.info("-------------------         Test execution complete         ------------------------");
-
-        if (failureDetected) {
-            controller.getModel().setFailureReason(failureReason);
-            logger.severe("Test FAILED : {}", failureReason);
-        }
-
-        controller.killAgents();
-        controller.stopStatisticsCapture();
-        controller.generateReport(new File(configuration.getReportsFolder()));
-        controller.endTestNormally();
+//        long warmupTime = TimeUtils.parseInterval(configuration.getWarmupTime());
+//        long testDuration = TimeUtils.parseInterval(configuration.getDuration());
+//
+//        if (warmupTime > 0) {
+//            controller.startWarmUp();
+//            controller.publishTestInstructions();
+//            controller.getResultsController().stopStatsUpdater();
+//
+//            failureLatch.setTimeout(new Timeout(warmupTime, TimeUnit.MILLISECONDS));
+//            if (!failureLatch.await()) {
+//
+//                logger.info("------------------- Warmup complete, real test run started ------------------------");
+//                controller.startTest();
+//                controller.getResultsController().startStatsUpdater(controller.getModel());
+//                warmedUp = true;
+//
+//                long endTime = System.currentTimeMillis() + testDuration;
+//                while (System.currentTimeMillis() < endTime) {
+//                    ThreadUtils.sleep(1000);
+//                    if (failureDetected) {
+//                        break;
+//                    }
+//                }
+//            }
+//        } else {
+//            logger.info("------------------- Skipping warm-up, real test run started ------------------------");
+//            long endTime = System.currentTimeMillis() + testDuration;
+//            logger.info("Running test for duration '{}' ({} milliseconds) - will end at '{}'", configuration.getDuration(), testDuration, Logger.toLocalDateString(endTime));
+//            warmedUp = true;
+//
+//            controller.publishTestInstructions();
+//            controller.getResultsController().stopStatsUpdater();
+//
+//            controller.startTest();
+//            controller.getResultsController().startStatsUpdater(controller.getModel());
+//
+//            while (System.currentTimeMillis() < endTime) {
+//                ThreadUtils.sleep(1000);
+//                if (failureDetected) {
+//                    break;
+//                }
+//            }
+//        }
+//
+//        failureMonitorThread.cancel();
+//        controller.getResultsController().stopStatsUpdater();
+//        controller.stopStats();
+//        logger.info("-------------------         Test execution complete         ------------------------");
+//
+//        if (failureDetected) {
+//            controller.getModel().setFailureReason(failureReason);
+//            logger.severe("Test FAILED : {}", failureReason);
+//        }
+//
+//        controller.killAgents();
+//        controller.stopStatisticsCapture();
+//        controller.generateReport(new File(configuration.getReportsFolder()));
+//        controller.endTestNormally();
 
         return controller;
     }
 
     private void attachFailureMonitor(final JBombardierController controller) {
-        timer = TimerUtils.everySecond("Failing transaction monitor", new Runnable() {
+        failureMonitorThread = TimerUtils.everySecond("Failing transaction monitor", new Runnable() {
             @Override public void run() {
-                logger.debug("Failure timer check...");
+                logger.debug("Failure failureMonitorThread check...");
                 checkForFailures(controller);
             }
         });
@@ -216,9 +217,9 @@ public class JBombardierHeadless {
 
     private void checkWeAreStillReceivingResults(JBombardierModel model) {
         long totalResults = 0;
-        final ObservableList<TransactionResultModel> transactionResultModels = model.getTransactionResultModels();
+        final ObservableList<TransactionResultModel> transactionResultModels = model.getCurrentPhase().get().getTransactionResultModels();
         for (TransactionResultModel trm : transactionResultModels) {
-            totalResults += trm.getSuccessfulTransactionsCountPerSecond().get() + trm.getUnsuccessfulTransactionsCountPerSecond().get();
+            totalResults += trm.calculateTotalTransactions();
         }
 
         if (totalResults == lastTotalResults) {
@@ -237,11 +238,11 @@ public class JBombardierHeadless {
     }
 
     private void checkForTransactionFailureCountThresholdFailures(JBombardierModel model) {
-        final ObservableList<TransactionResultModel> transactionResultModels = model.getTransactionResultModels();
+        final ObservableList<TransactionResultModel> transactionResultModels = model.getCurrentPhase().get().getTransactionResultModels();
 
         long totalFailures = 0;
         for (TransactionResultModel trm : transactionResultModels) {
-            long unsuccessfulTotal = trm.getUnsuccessfulTransactionsTotal().get();
+            long unsuccessfulTotal = trm.getUnsuccessfulTransactionsCountTotal().get();
             totalFailures += unsuccessfulTotal;
 
             long failureThreshold = trm.getUnsuccessfulTransactionsTotalFailureThreshold().get();
@@ -268,7 +269,7 @@ public class JBombardierHeadless {
 
     private void checkForTransactionTimeThresholdFailures(JBombardierModel model) {
 
-        final ObservableList<TransactionResultModel> transactionResultModels = model.getTransactionResultModels();
+        final ObservableList<TransactionResultModel> transactionResultModels = model.getCurrentPhase().get().getTransactionResultModels();
         for (TransactionResultModel trm : transactionResultModels) {
 
             double durationFailureThreshold = trm.getSuccessfulTransactionsDurationFailureThreshold().get();
@@ -297,7 +298,7 @@ public class JBombardierHeadless {
 
                     dumpTestValues(model);
 
-                    long resultCount = trm.getSuccessfulTransactionsTotal().get();
+                    long resultCount = trm.getSuccessfulTransactionsCountTotal().get();
                     long resultCountMinimum = trm.getSuccessfulTransactionsTotalFailureResultCountMinimum().get();
 
                     if (resultCount >= resultCountMinimum) {
@@ -325,13 +326,13 @@ public class JBombardierHeadless {
 
     private void dumpTestValues(JBombardierModel model) {
         NumberFormat nf = NumberFormat.getInstance();
-        final ObservableList<TransactionResultModel> transactionResultModels = model.getTransactionResultModels();
+        final ObservableList<TransactionResultModel> transactionResultModels = model.getCurrentPhase().get().getTransactionResultModels();
         logger.info(String.format(" %20s | %20s | %20s | %20s |", "Test", "Transactions", "TPS", "Mean"));
         for (TransactionResultModel trm : transactionResultModels) {
             logger.info(String.format(" %20s | %20s | %20s | %20s |",
                                       trm.getTestName(),
                                       nf.format(trm.calculateTotalTransactions()),
-                                      nf.format(trm.getSuccessfulTransactionsCountPerSecond()),
+                                      nf.format(trm.getSuccessfulMeanTransactionsPerSecond()),
                                       nf.format(trm.getSuccessfulTransactionDuration())));
         }
     }
@@ -341,7 +342,7 @@ public class JBombardierHeadless {
         failureDetected = true;
         failureReason = StringUtils.format(format, params);
         failureLatch.countDown();
-        timer.cancel();
+        failureMonitorThread.cancel();
     }
 
     private void waitForAgents(JBombardierModel model) {
@@ -398,9 +399,10 @@ public class JBombardierHeadless {
         headless.run(configuration);
     }
 
-    public JBombardierController run(String absolutePath) {
+    public static JBombardierController run(String absolutePath) {
         JBombardierConfiguration configuration = JBombardierConfiguration.loadConfiguration(absolutePath);
-        return run(configuration);
+        JBombardierHeadless headless = new JBombardierHeadless();
+        return headless.run(configuration);
     }
 
     public static void main(String[] args) {

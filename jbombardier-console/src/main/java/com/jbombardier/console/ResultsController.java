@@ -25,6 +25,7 @@ import com.jbombardier.console.model.TransactionResultModel;
 import com.jbombardier.console.model.result.AgentResult;
 import com.jbombardier.console.model.result.PhaseResult;
 import com.jbombardier.console.model.result.RunResult;
+import com.jbombardier.console.model.result.TransactionResult;
 import com.logginghub.utils.Destination;
 import com.logginghub.utils.FactoryMap;
 import com.logginghub.utils.FileUtils;
@@ -187,7 +188,7 @@ public class ResultsController {
                 for (String key : keyCopy) {
                     SinglePassStatisticsLongPrecisionCircular stats = successStatsByTest.get(key);
 
-                    TransactionResultModel transactionResultModel = model.getTransactionResultModelForTest(key.toString());
+                    TransactionResultModel transactionResultModel = model.getCurrentPhase().get().getTransactionResultModelForTransaction(key.toString());
 
                     if (transactionResultModel != null) {
 
@@ -199,9 +200,7 @@ public class ResultsController {
                             transactionResultModel.getStddev().set(value);
                         }
                     } else {
-                        logger.warning(
-                                "No transaction results model found for key '{}' - this looks like a bug, the results controller hasn't been reset",
-                                key);
+                        logger.warning("No transaction results model found for key '{}' - this looks like a bug, the results controller hasn't been reset", key);
                     }
 
                 }
@@ -272,14 +271,11 @@ public class ResultsController {
 
             try {
                 bis = new BufferedInputStream(new FileInputStream(streamingFile));
-                SofStreamSerialiser.visit(bis,
-                                          streamingFile.length(),
-                                          sofConfig,
-                                          new Destination<SerialisableObject>() {
-                                              @Override public void send(SerialisableObject serialisableObject) {
-                                                  destination.send((CapturedStatistic) serialisableObject);
-                                              }
-                                          });
+                SofStreamSerialiser.visit(bis, streamingFile.length(), sofConfig, new Destination<SerialisableObject>() {
+                            @Override public void send(SerialisableObject serialisableObject) {
+                                destination.send((CapturedStatistic) serialisableObject);
+                            }
+                        });
             } catch (IOException e) {
                 logger.warn(e, "Failed to read serialised captured statistics file");
             } catch (SofException e) {
@@ -315,6 +311,38 @@ public class ResultsController {
             phaseResult.setDuration(phaseModel.getPhaseDuration().get());
             phaseResult.setWarmup(phaseModel.getWarmupDuration().get());
             phaseResult.setPhaseName(phaseModel.getPhaseName().get());
+
+            ObservableList<TransactionResultModel> transactionResultModels = phaseModel.getTransactionResultModels();
+            for (TransactionResultModel trm : transactionResultModels) {
+
+                TransactionResult tr = new TransactionResult();
+
+                tr.setTestName(trm.getTestName().get());
+                tr.setTransactionName(trm.getTransactionName().get());
+                tr.setTotalTransactionCount(trm.getSuccessfulTransactionsCountTotal().get());
+
+                tr.setSuccessfulTransactionCount(trm.getSuccessfulTransactionsCountTotal().get());
+
+                long totalTransactions = trm.getSuccessfulTransactionsCountTotal().get();
+                long totalTransactionTime = trm.getSuccessfulTransactionsDurationTotal().get();
+                long testDuration = trm.getTestDuration().get();
+
+                double meanTPS = totalTransactions / (testDuration/1000d);
+                double meanTransactionTimeNS = totalTransactionTime / totalTransactions;
+
+                tr.setSuccessfulTransactionMeanTransactionsPerSecond(meanTPS);
+                tr.setSuccessfulTransactionMeanDuration(meanTransactionTimeNS);
+                tr.setSuccessfulTransactionMeanTotalDuration(trm.getSuccessfulTransactionTotalDuration().get());
+                tr.setSuccessfulTransactionMeanTransactionsPerSecondTarget(trm.getTargetSuccessfulTransactionsPerSecond().get());
+
+                tr.setUnsuccessfulTransactionCount(trm.getUnsuccessfulTransactionsCountTotal().get());
+                tr.setUnsuccessfulTransactionMeanDuration(trm.getUnsuccessfulTransactionDuration().get());
+
+                tr.setSla(trm.getSuccessfulTransactionDurationSLA().get());
+
+                phaseResult.getTransactionResults().add(tr);
+
+            }
 
             result.getPhaseResults().add(phaseResult);
         }
