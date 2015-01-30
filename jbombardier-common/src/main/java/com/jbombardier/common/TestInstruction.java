@@ -28,19 +28,13 @@ import javax.xml.bind.annotation.XmlType;
     private int targetThreads;
     private long threadRampupTime;
     private int threadRampupStep;
-
     private long duration = -1;
-
     private double targetRate;
     private double rateStep;
     private long rateStepTime;
-    
     private String testName;
-
     private boolean recordAllValues;
-    
     private Map<String, String> properties = new HashMap<String, String>();
-
     private double transactionRateModifier =1;
 
     public void setProperties(Map<String, String> properties) {

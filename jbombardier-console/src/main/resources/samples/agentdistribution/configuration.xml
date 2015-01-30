@@ -1,0 +1,51 @@
+<!--
+  ~ Copyright (c) 2009-2015 Vertex Labs Limited.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<jbombardierConfiguration openReport="true" autostartAgents="3">
+
+    <agent name="embedded1"/>
+    <agent name="embedded2"/>
+    <agent name="embedded3"/>
+
+    <!--<phase name="Phase 1" duration="10 seconds" >-->
+        <!--<test name="0.1" class="com.jbombardier.console.sample.old.NoopTest" targetRate="0.1" rateStep="500" threads="1"/>-->
+    <!--</phase>-->
+<!---->
+    <!--<phase name="Phase 2" duration="10 seconds" >-->
+        <!--<test name="1" class="com.jbombardier.console.sample.old.NoopTest" targetRate="1" rateStep="500" threads="1"/>-->
+    <!--</phase>-->
+<!---->
+    <!--<phase name="Phase 3" duration="30 seconds" >-->
+        <!--<test name="2" class="com.jbombardier.console.sample.old.NoopTest" targetRate="2" rateStep="500" threads="1"/>-->
+    <!--</phase>-->
+<!---->
+    <!--<phase name="Phase 4" duration="10 seconds" >-->
+        <!--<test name="3" class="com.jbombardier.console.sample.old.NoopTest" targetRate="3" rateStep="500" threads="1"/>-->
+    <!--</phase>-->
+<!---->
+    <!--<phase name="Phase 5" duration="10 seconds" >-->
+        <!--<test name="4" class="com.jbombardier.console.sample.old.NoopTest" targetRate="4" rateStep="500" threads="1"/>-->
+    <!--</phase>-->
+<!---->
+    <!--<phase name="Phase 6" duration="10 seconds" >-->
+        <!--<test name="30" class="com.jbombardier.console.sample.old.NoopTest" targetRate="30" rateStep="500" threads="1"/>-->
+    <!--</phase>-->
+
+    <phase name="Phase 7" duration="10 seconds" >
+        <test name="100" class="com.jbombardier.console.sample.old.NoopTest" targetRate="100" rateStep="500" threads="1" agent="embedded2, embedded3"/>
+    </phase>
+
+</jbombardierConfiguration>

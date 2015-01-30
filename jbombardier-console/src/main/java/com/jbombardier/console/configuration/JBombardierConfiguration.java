@@ -28,7 +28,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.helpers.DefaultValidationEventHandler;
 import java.io.InputStream;
@@ -40,7 +39,7 @@ import java.util.List;
 public class JBombardierConfiguration {
 
     @XmlElement private List<PhaseConfiguration> phase = new ArrayList<PhaseConfiguration>();
-    @XmlElement private List<Agent> agent = new ArrayList<Agent>();
+    @XmlElement private List<AgentConfiguration> agent = new ArrayList<AgentConfiguration>();
     @XmlElement private List<TestConfiguration> test = new ArrayList<TestConfiguration>();
     @XmlElement private List<Transaction> transaction = new ArrayList<Transaction>();
     @XmlElement private List<Property> property = new ArrayList<Property>();
@@ -158,12 +157,12 @@ public class JBombardierConfiguration {
         this.property = properties;
     }
 
-    public List<Agent> getAgents() {
+    public List<AgentConfiguration> getAgents() {
         return agent;
     }
 
-    public void setAgents(List<Agent> agentDetails) {
-        this.agent = agentDetails;
+    public void setAgents(List<AgentConfiguration> agentConfigurationDetails) {
+        this.agent = agentConfigurationDetails;
     }
 
     public List<CsvProperty> getCsvProperties() {

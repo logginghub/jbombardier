@@ -69,20 +69,20 @@ public class ConfigurationValidator {
         }
 
         Set<String> agentNames = new HashSet<String>();
-        List<Agent> agents = configuration.getAgents();
-        for (Agent agent : agents) {
+        List<AgentConfiguration> agentConfigurations = configuration.getAgents();
+        for (AgentConfiguration agentConfiguration : agentConfigurations) {
 
-            Is.notNullOrEmpty(agent.getName(), "One of your agents has a null or empty name");
-            if (agent.getName().equals(Agent.embeddedName)) {
-                Is.nullOrEmpty(agent.getAddress(),
+            Is.notNullOrEmpty(agentConfiguration.getName(), "One of your agents has a null or empty name");
+            if (agentConfiguration.getName().startsWith(AgentConfiguration.embeddedName)) {
+                Is.nullOrEmpty(agentConfiguration.getAddress(),
                         "You have specified an address for the embedded agent - or maybe you have called a real agent 'embedded'? Either way, you can't do that - rename the agent or remove the address");
             } else {
-                Is.notNullOrEmpty(agent.getAddress(), StringUtils.format("You haven't provided a valid address for agent '{}'", agent.getName()));
-                Is.greaterThanZero(agent.getPort(), StringUtils.format("You haven't provided a valid port for agent '{}'", agent.getName()));
+                Is.notNullOrEmpty(agentConfiguration.getAddress(), StringUtils.format("You haven't provided a valid address for agent '{}'", agentConfiguration.getName()));
+                Is.greaterThanZero(agentConfiguration.getPort(), StringUtils.format("You haven't provided a valid port for agent '{}'", agentConfiguration.getName()));
             }
 
-            Is.notIn(agent.getName(), agentNames, "Some of your agents have the same name ({}); they must all be unique");
-            agentNames.add(agent.getName());
+            Is.notIn(agentConfiguration.getName(), agentNames, "Some of your agents have the same name ({}); they must all be unique");
+            agentNames.add(agentConfiguration.getName());
 
         }
 

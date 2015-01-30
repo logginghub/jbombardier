@@ -21,7 +21,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
 @XmlAccessorType(XmlAccessType.PUBLIC_MEMBER)
-public class Agent {
+public class AgentConfiguration {
     private String name;
     private String address;
     private int port = 20001;

@@ -49,7 +49,7 @@ import com.jbombardier.common.TestVariableUpdateRequest;
 import com.jbombardier.common.ThreadsChangedMessage;
 import com.jbombardier.common.serialisableobject.CapturedStatistic;
 import com.jbombardier.console.charts.FrequencyChart;
-import com.jbombardier.console.configuration.Agent;
+import com.jbombardier.console.configuration.AgentConfiguration;
 import com.jbombardier.console.configuration.HubCapture;
 import com.jbombardier.console.configuration.HubCapturePattern;
 import com.jbombardier.console.configuration.JBombardierConfiguration;
@@ -247,7 +247,11 @@ public class JBombardierController {
 
         FactoryMap<String, FactoryMap<String, DataBucket>> dataBucketsByAgentName = divideDataIntoBuckets(connectedAgentModels);
 
-        List<PhaseInstruction> instructions = new ArrayList<PhaseInstruction>();
+        Map<String, List<PhaseInstruction>> instructions = new FactoryMap<String, List<PhaseInstruction>>() {
+            @Override protected List<PhaseInstruction> createEmptyValue(String s) {
+                return new ArrayList<PhaseInstruction>();
+            }
+        };
         populateInstructionsList(instructions);
 
         publishTestInstructionsToAgents(instructions, dataBucketsByAgentName);
@@ -839,6 +843,8 @@ public class JBombardierController {
         testModel.setFailedTransactionCountThreshold(testConfiguration.getFailedTransactionCountFailureThreshold());
         testModel.setFailureThresholdResultCountMinimum(testConfiguration.getFailureThresholdResultCountMinimum());
         testModel.setMovingAveragePoints(testConfiguration.getMovingAveragePoints());
+        testModel.getAgent().set(testConfiguration.getAgent());
+
         return testModel;
     }
 
@@ -850,11 +856,11 @@ public class JBombardierController {
     private void initialiseAgents(final JBombardierConfiguration configuration, JBombardierModel model) {
         logger.info("Starting agent connections...");
 
-        List<Agent> agents = configuration.getAgents();
-        for (Agent agent : agents) {
+        List<AgentConfiguration> agentConfigurations = configuration.getAgents();
+        for (AgentConfiguration agentConfiguration : agentConfigurations) {
 
-            int objectBufferSize = agent.getObjectBufferSize();
-            int writeBufferSize = agent.getWriteBufferSize();
+            int objectBufferSize = agentConfiguration.getObjectBufferSize();
+            int writeBufferSize = agentConfiguration.getWriteBufferSize();
             final KryoClient client = new KryoClient("controller", writeBufferSize, objectBufferSize);
 
             KryoHelper.registerTypes(client.getKryo());
@@ -862,25 +868,25 @@ public class JBombardierController {
             final AgentModel agentModel = new AgentModel();
 
             agentModel.getConnected().set(false);
-            agentModel.getName().set(agent.getName());
+            agentModel.getName().set(agentConfiguration.getName());
 
-            if (agent.getName().equals(Agent.embeddedName)) {
+            if (agentConfiguration.getName().startsWith(AgentConfiguration.embeddedName)) {
                 Agent2 embeddedAgent = new Agent2();
                 int freePort = NetUtils.findFreePort();
                 embeddedAgent.disableSystemExitOnKill();
                 embeddedAgent.setOutputStats(configuration.isOutputEmbeddedAgentStats());
-                embeddedAgent.setWriteBufferSize(agent.getWriteBufferSize());
-                embeddedAgent.setObjectBufferSize(agent.getObjectBufferSize());
+                embeddedAgent.setWriteBufferSize(agentConfiguration.getWriteBufferSize());
+                embeddedAgent.setObjectBufferSize(agentConfiguration.getObjectBufferSize());
                 embeddedAgent.setBindPort(freePort);
-                embeddedAgent.setPingTimeout(agent.getPingTimeout());
+                embeddedAgent.setPingTimeout(agentConfiguration.getPingTimeout());
                 embeddedAgent.start();
                 embeddedAgents.add(embeddedAgent);
 
                 agentModel.getAddress().set("localhost");
                 agentModel.getPort().set(freePort);
             } else {
-                agentModel.getAddress().set(agent.getAddress());
-                agentModel.getPort().set(agent.getPort());
+                agentModel.getAddress().set(agentConfiguration.getAddress());
+                agentModel.getPort().set(agentConfiguration.getPort());
             }
 
             client.addConnectionPoint(new InetSocketAddress(agentModel.getAddress().get(), agentModel.getPort().get()));
@@ -929,7 +935,7 @@ public class JBombardierController {
         // worse than that previous hack!
         // model.setAgentsInTest(agents.size());
 
-        model.log(ConsoleEventModel.Severity.Information, "%d agents added", agents.size());
+        model.log(ConsoleEventModel.Severity.Information, "%d agents added", agentConfigurations.size());
     }
 
     public Map<String, AgentModel> getAgentsByAgentName() {
@@ -1042,8 +1048,10 @@ public class JBombardierController {
         }
     }
 
-    private void publishTestInstructionsToAgents(List<PhaseInstruction> instructions, FactoryMap<String, FactoryMap<String, DataBucket>> dataBucketsByAgentName) {
-        int agentsInTest = 0;
+    private void publishTestInstructionsToAgents(Map<String, List<PhaseInstruction>> instructions, FactoryMap<String, FactoryMap<String, DataBucket>> dataBucketsByAgentName) {
+
+        int agents = model.getConnectionAgentCount();
+
         for (final AgentModel agentModel : model.getAgentModels()) {
             logger.info("Publishing data buckets to agent {}", agentModel);
             if (agentModel.getConnected().get()) {
@@ -1052,15 +1060,11 @@ public class JBombardierController {
                 logger.debug("This agent has a data bucket with {} keys and {} items", data.size(), countItems(data));
 
                 KryoClient client = agentModel.getKryoClient();
-
                 Set<String> keySet = data.keySet();
 
-                // Send the buckets one at a time in case we blow the buffer
-                // size
+                // Send the buckets one at a time in case we blow the buffer size
                 for (String dataBucketName : keySet) {
-
                     final DataBucket dataBucket = data.get(dataBucketName);
-
                     logger.debug("Sending bucket {}", dataBucket);
 
                     final QuietLatch latch = new QuietLatch(1);
@@ -1080,14 +1084,15 @@ public class JBombardierController {
             }
         }
 
-        final CountDownLatch instructionsReceivedLatch = new CountDownLatch(model.getAgentModels().size());
+
+        final CountDownLatch instructionsReceivedLatch = new CountDownLatch(agents);
 
         for (final AgentModel agentModel : model.getAgentModels()) {
             logger.debug("Publishing test instruction to agent {}", agentModel);
             KryoClient client = agentModel.getKryoClient();
             if (agentModel.getConnected().get()) {
 
-                TestPackage testPackage = new TestPackage(agentModel.getName().get(), instructions);
+                TestPackage testPackage = new TestPackage(agentModel.getName().get(), instructions.get(agentModel.getName().get()));
                 testPackage.setLoggingHubs(configuration.getLoggingHubs());
                 testPackage.setLoggingType(configuration.getLoggingTypes());
 
@@ -1101,7 +1106,6 @@ public class JBombardierController {
 
                 logger.debug("Message sent to agent {}", agentModel);
 
-                agentsInTest++;
             } else {
                 logger.trace("Agent {} isn't connected, skipping", agentModel);
             }
@@ -1118,8 +1122,8 @@ public class JBombardierController {
         }
 
 
-        expectedAgentsStat.setValue(agentsInTest);
-        model.setAgentsInTest(agentsInTest);
+        expectedAgentsStat.setValue(agents);
+        model.setAgentsInTest(agents);
         // model.getTestRunning().set(true);
     }
 
@@ -1148,35 +1152,89 @@ public class JBombardierController {
         return count;
     }
 
-    public void populateInstructionsList(List<PhaseInstruction> instructions) {
+    public void populateInstructionsList(Map<String, List<PhaseInstruction>> instructions) {
+
+        int agents = model.getConnectionAgentCount();
+
         List<PhaseModel> phases = model.getPhaseModels();
         for (PhaseModel phase : phases) {
 
-            PhaseInstruction phaseInstruction = new PhaseInstruction();
-            phaseInstruction.setPhaseName(phase.getPhaseName().get());
-
-            for (TestModel test : phase.getTestModels()) {
-                TestInstruction instruction = new TestInstruction();
-                instruction.setTestName(test.getName());
-                instruction.setClassname(test.getClassname());
-                instruction.setTargetThreads(test.getTargetThreads().get());
-                instruction.setThreadRampupStep(test.getThreadStep().get());
-                instruction.setThreadRampupTime(test.getThreadStepTime().get());
-                instruction.setTargetRate(test.getTargetRate().get());
-                instruction.setRateStep(test.getRateStep());
-                instruction.setRateStepTime(test.getRateStepTime());
-                instruction.setRecordAllValues(test.getRecordAllValues());
-                instruction.setTransactionRateModifier(model.getTransactionRateModifier().get());
-                // Remember to add the default properties first, then the test
-                // specific ones afterwards
-                instruction.getProperties().putAll(properties);
-                instruction.getProperties().putAll(test.getProperties());
-
-                phaseInstruction.getInstructions().add(instruction);
+            // Build a phase instruction for each agent
+            Map<String, PhaseInstruction> phaseInstructionsByAgent = new HashMap<String, PhaseInstruction>();
+            for (final AgentModel agentModel : model.getAgentModels()) {
+                PhaseInstruction phaseInstruction = new PhaseInstruction();
+                phaseInstruction.setPhaseName(phase.getPhaseName().get());
+                phaseInstructionsByAgent.put(agentModel.getName().get(), phaseInstruction);
             }
 
-            instructions.add(phaseInstruction);
+            // Add the tests to each of these phase models
+            for (TestModel test : phase.getTestModels()) {
+
+                // Work out what the agent distribution will be
+                double targetRate = test.getTargetRate().get();
+
+                double perAgentRate = targetRate / agents;
+
+                int index = 0;
+                for (final AgentModel agentModel : model.getAgentModels()) {
+                    TestInstruction instruction = buildInstruction(test);
+                    phaseInstructionsByAgent.get(agentModel.getName().get()).getInstructions().add(instruction);
+
+                    // Set the appropriate target rate
+                    if (StringUtils.isNotNullOrEmpty(test.getAgent().get())) {
+                        Set<String> agentNames = new HashSet<String>();
+                        String[] split = test.getAgent().get().split(",");
+                        for (String s : split) {
+                            agentNames.add(s.trim());
+                        }
+
+                        double specificAgentsSplit = targetRate / split.length;
+
+                        // This test has been restricted to a particular agent
+                        if (agentNames.contains(agentModel.getName().get())) {
+                            instruction.setTargetRate(specificAgentsSplit);
+                        } else {
+                            instruction.setTargetRate(0);
+                        }
+                    } else {
+                        if (perAgentRate < 1) {
+                            // Give the work to the first agent, there is no point in spreading this around
+                            if (index == 0) {
+                                instruction.setTargetRate(targetRate);
+                            } else {
+                                instruction.setTargetRate(0);
+                            }
+                        } else {
+                            instruction.setTargetRate(perAgentRate);
+                        }
+                    }
+                    index++;
+                }
+
+            }
+
+            // Apply the phase instructions to the main map
+            for (final AgentModel agentModel : model.getAgentModels()) {
+                instructions.get(agentModel.getName().get()).add(phaseInstructionsByAgent.get(agentModel.getName().get()));
+            }
+
         }
+    }
+
+    private TestInstruction buildInstruction(TestModel test) {
+        TestInstruction instruction = new TestInstruction();
+        instruction.setTestName(test.getName());
+        instruction.setClassname(test.getClassname());
+        instruction.setTargetThreads(test.getTargetThreads().get());
+        instruction.setThreadRampupStep(test.getThreadStep().get());
+        instruction.setThreadRampupTime(test.getThreadStepTime().get());
+        instruction.setRateStep(test.getRateStep());
+        instruction.setRateStepTime(test.getRateStepTime());
+        instruction.setRecordAllValues(test.getRecordAllValues());
+        instruction.setTransactionRateModifier(model.getTransactionRateModifier().get());
+        instruction.getProperties().putAll(properties);
+        instruction.getProperties().putAll(test.getProperties());
+        return instruction;
     }
 
     public void generateReportAsync() {
@@ -1455,7 +1513,7 @@ public class JBombardierController {
     public void waitForEmbeddedIfNeeded() {
         List<AgentModel> agentModels = model.getAgentModels();
         for (final AgentModel agentModel : agentModels) {
-            if (agentModel.getName().equals(Agent.embeddedName)) {
+            if (agentModel.getName().equals(AgentConfiguration.embeddedName)) {
                 ThreadUtils.repeatUntilTrue(new Callable<Boolean>() {
                     @Override public Boolean call() throws Exception {
                         return agentModel.getConnected().get();
@@ -1745,6 +1803,8 @@ public class JBombardierController {
     }
 
     public void startNextPhase() {
+        resultsController.resetStats();
+
         PhaseModel nextPhase = getNextPhase();
         startPhase(nextPhase);
     }

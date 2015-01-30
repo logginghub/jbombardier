@@ -21,9 +21,11 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.jbombardier.common.PhaseInstruction;
 import com.jbombardier.console.model.PhaseModel;
+import com.logginghub.utils.FactoryMap;
 import org.junit.Test;
 
 import com.jbombardier.common.TestInstruction;
@@ -39,11 +41,15 @@ public class TestPerTestProperties {
         
         JBombardierController controller = swingConsole.getController();
 
-        List<PhaseInstruction> phaseInstructions = new ArrayList<PhaseInstruction>();
+        Map<String, List<PhaseInstruction>> phaseInstructions = new FactoryMap<String, List<PhaseInstruction>>() {
+            @Override protected List<PhaseInstruction> createEmptyValue(String s) {
+                return new ArrayList<PhaseInstruction>();
+            }
+        };
         controller.populateInstructionsList(phaseInstructions);
 
         assertThat(phaseInstructions.size(), is(1));
-        PhaseInstruction phaseInstruction = phaseInstructions.get(0);
+        PhaseInstruction phaseInstruction = phaseInstructions.get("embedded").get(0);
 
         List<TestInstruction> testInstructionsList = phaseInstruction.getInstructions();
 

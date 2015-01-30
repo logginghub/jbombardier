@@ -24,7 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.jbombardier.console.configuration.Agent;
+import com.jbombardier.console.configuration.AgentConfiguration;
 import com.jbombardier.console.configuration.TestConfiguration;
 
 public class TestConsoleStartFailures {
@@ -32,8 +32,8 @@ public class TestConsoleStartFailures {
     private JBombardierConfiguration configuration = new JBombardierConfiguration();
     private TestConfiguration testConfiguration1 = new TestConfiguration();
     private TestConfiguration testConfiguration2 = new TestConfiguration();
-    private Agent agent1 = new Agent();
-    private Agent agent2 = new Agent();
+    private AgentConfiguration agentConfiguration1 = new AgentConfiguration();
+    private AgentConfiguration agentConfiguration2 = new AgentConfiguration();
     
     @Before public void disableVisualErrors() {
         configuration.setVisualErrorMessages(false);
@@ -59,7 +59,7 @@ public class TestConsoleStartFailures {
     @Test public void test_fail_test_has_null_classname() {        
         testConfiguration1.setClassname(null);
         configuration.getTests().add(testConfiguration1);
-        configuration.getAgents().add(new Agent());
+        configuration.getAgents().add(new AgentConfiguration());
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("One of your tests has a null or empty classname"));
@@ -69,7 +69,7 @@ public class TestConsoleStartFailures {
     @Test public void test_fail_test_has_empty_classname() {        
         testConfiguration1.setClassname("");
         configuration.getTests().add(testConfiguration1);
-        configuration.getAgents().add(new Agent());
+        configuration.getAgents().add(new AgentConfiguration());
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("One of your tests has a null or empty classname"));
@@ -80,7 +80,7 @@ public class TestConsoleStartFailures {
         testConfiguration1.setClassname("class");
         testConfiguration1.setName("test");
         configuration.getTests().add(testConfiguration1);
-        configuration.getAgents().add(new Agent());
+        configuration.getAgents().add(new AgentConfiguration());
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("One of your tests (test) specifies a class (class) that could not be loaded"));
@@ -94,7 +94,7 @@ public class TestConsoleStartFailures {
         testConfiguration2.setName("test");
         configuration.getTests().add(testConfiguration1);
         configuration.getTests().add(testConfiguration2);
-        configuration.getAgents().add(new Agent());
+        configuration.getAgents().add(new AgentConfiguration());
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("Some of your tests have the same name"));
@@ -105,9 +105,9 @@ public class TestConsoleStartFailures {
         testConfiguration1.setClassname("com.jbombardier.console.sample.SleepTest");
         testConfiguration1.setName("test");
         configuration.getTests().add(testConfiguration1);
-        agent1.setName(Agent.embeddedName);
-        agent1.setAddress("123.123.123.123");
-        configuration.getAgents().add(agent1);
+        agentConfiguration1.setName(AgentConfiguration.embeddedName);
+        agentConfiguration1.setAddress("123.123.123.123");
+        configuration.getAgents().add(agentConfiguration1);
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("You have specified an address for the embedded agent"));
@@ -118,12 +118,12 @@ public class TestConsoleStartFailures {
         testConfiguration1.setClassname("com.jbombardier.console.sample.SleepTest");
         testConfiguration1.setName("test");
         configuration.getTests().add(testConfiguration1);
-        agent1.setName("agent");
-        agent1.setAddress("123.123.123.123");
-        agent2.setName("agent");
-        agent2.setAddress("123.123.123.123");
-        configuration.getAgents().add(agent1);
-        configuration.getAgents().add(agent2);
+        agentConfiguration1.setName("agent");
+        agentConfiguration1.setAddress("123.123.123.123");
+        agentConfiguration2.setName("agent");
+        agentConfiguration2.setAddress("123.123.123.123");
+        configuration.getAgents().add(agentConfiguration1);
+        configuration.getAgents().add(agentConfiguration2);
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("Some of your agents have the same name (agent)"));
@@ -134,9 +134,9 @@ public class TestConsoleStartFailures {
         testConfiguration1.setClassname("com.jbombardier.console.sample.SleepTest");
         testConfiguration1.setName("test");
         configuration.getTests().add(testConfiguration1);
-        agent1.setName("agent");
-        agent1.setAddress(null);
-        configuration.getAgents().add(agent1);
+        agentConfiguration1.setName("agent");
+        agentConfiguration1.setAddress(null);
+        configuration.getAgents().add(agentConfiguration1);
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("You haven't provided a valid address for agent 'agent'"));
@@ -147,10 +147,10 @@ public class TestConsoleStartFailures {
         testConfiguration1.setClassname("com.jbombardier.console.sample.SleepTest");
         testConfiguration1.setName("test");
         configuration.getTests().add(testConfiguration1);
-        agent1.setName("agent");
-        agent1.setAddress("123.123.123.123");
-        agent1.setPort(-1);
-        configuration.getAgents().add(agent1);
+        agentConfiguration1.setName("agent");
+        agentConfiguration1.setAddress("123.123.123.123");
+        agentConfiguration1.setPort(-1);
+        configuration.getAgents().add(agentConfiguration1);
         
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("You haven't provided a valid port for agent 'agent'"));

@@ -48,6 +48,7 @@ import com.jbombardier.console.model.TransactionResultModel;
     @XmlAttribute private int failedTransactionCountFailureThreshold = -1;
     @XmlAttribute private int failureThresholdResultCountMinimum = 10;
     @XmlAttribute private int movingAveragePoints = 5;
+    @XmlAttribute private String agent = null;
     
     @XmlElementWrapper(name = "properties") @XmlElement(name = "property") private List<Property> propertiesList = new ArrayList<Property>();
     @XmlElementWrapper(name = "transactionSLAs") @XmlElement(name = "transactionSLA") private List<TransactionSLA> transactionSLAs = new ArrayList<TransactionSLA>();
@@ -223,5 +224,13 @@ import com.jbombardier.console.model.TransactionResultModel;
     
     public void setMovingAveragePoints(int movingAveragePoints) {
         this.movingAveragePoints = movingAveragePoints;
+    }
+
+    public String getAgent() {
+        return agent;
+    }
+
+    public void setAgent(String agent) {
+        this.agent = agent;
     }
 }

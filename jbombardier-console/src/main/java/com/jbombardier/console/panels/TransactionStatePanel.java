@@ -116,7 +116,7 @@ public class TransactionStatePanel extends JPanel {
         rateControlPanel.add(hideBaseTest, "wrap");
         rateControlPanel.add(scrollPane, "aligny top,grow");
 
-        final String[] columnNames = new String[]{"", "Test", "Transaction", "SLA", "Transactions", "Target", "Successes/s", "Success (ms)", "Tp90", "Stddev", "Time in test (ms)", "MaximumRate"};
+        final String[] columnNames = new String[]{"", "Test", "Transaction", "SLA", "Transactions", "Target", "Successes/s", "Success duration", "Tp90", "Stddev", "Time in test (ms)", "MaximumRate"};
 
         final NumberFormat nf = NumberFormat.getInstance();
         nf.setMaximumFractionDigits(2);

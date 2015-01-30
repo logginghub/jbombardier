@@ -20,6 +20,7 @@ import com.logginghub.utils.observable.Observable;
 import com.logginghub.utils.observable.ObservableDouble;
 import com.logginghub.utils.observable.ObservableInteger;
 import com.logginghub.utils.observable.ObservableLong;
+import com.logginghub.utils.observable.ObservableProperty;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +31,8 @@ public class TestModel extends Observable {
     private ObservableInteger threadStep = createIntProperty("threadStep", 1);
     private ObservableLong threadStepTime = createLongProperty("threadStepTime", 1000);
     private ObservableDouble targetRate = createDoubleProperty("targetRate", 1);
+
+    private ObservableProperty<String> agent = createStringProperty("agent", null);
 
     // TODO : none of the rest of the parameters are observable... they probably should be?
     private String name;
@@ -169,4 +172,7 @@ public class TestModel extends Observable {
         return this.movingAveragePoints;
     }
 
+    public ObservableProperty<String> getAgent() {
+        return agent;
+    }
 }

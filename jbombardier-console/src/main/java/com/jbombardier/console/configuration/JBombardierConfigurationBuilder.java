@@ -55,7 +55,7 @@ public class JBombardierConfigurationBuilder {
     }
 
     public static AgentBuilder embeddedAgent() {
-        return new AgentBuilder().name(Agent.embeddedName);
+        return new AgentBuilder().name(AgentConfiguration.embeddedName);
     }
 
     public JBombardierConfigurationBuilder loggingHubs(String loggingHubs) {
@@ -100,24 +100,24 @@ public class JBombardierConfigurationBuilder {
     }
 
     public JBombardierConfigurationBuilder addAgent(String name, String host, int port) {
-        Agent agent = new Agent();
-        agent.setName(name);
-        agent.setAddress(host);
-        agent.setPort(port);
-        configuration.getAgents().add(agent);
+        AgentConfiguration agentConfiguration = new AgentConfiguration();
+        agentConfiguration.setName(name);
+        agentConfiguration.setAddress(host);
+        agentConfiguration.setPort(port);
+        configuration.getAgents().add(agentConfiguration);
         configuration.setAutostartAgents(configuration.getAgents().size());
         return this;
     }
 
 
     public JBombardierConfigurationBuilder addAgent(String name, String host, int port, int sizes) {
-        Agent agent = new Agent();
-        agent.setName(name);
-        agent.setAddress(host);
-        agent.setPort(port);
-        agent.setObjectBufferSize(sizes);
-        agent.setWriteBufferSize(sizes);
-        configuration.getAgents().add(agent);
+        AgentConfiguration agentConfiguration = new AgentConfiguration();
+        agentConfiguration.setName(name);
+        agentConfiguration.setAddress(host);
+        agentConfiguration.setPort(port);
+        agentConfiguration.setObjectBufferSize(sizes);
+        agentConfiguration.setWriteBufferSize(sizes);
+        configuration.getAgents().add(agentConfiguration);
         configuration.setAutostartAgents(configuration.getAgents().size());
         return this;
     }
@@ -139,28 +139,28 @@ public class JBombardierConfigurationBuilder {
     }
 
     public JBombardierConfigurationBuilder addEmbeddedAgent(int bufferSizes, int pingTimeout) {
-        Agent agent = new Agent();
-        agent.setName(Agent.embeddedName);
-        agent.setObjectBufferSize(bufferSizes);
-        agent.setWriteBufferSize(bufferSizes);
-        agent.setPingTimeout(pingTimeout);
-        configuration.getAgents().add(agent);
+        AgentConfiguration agentConfiguration = new AgentConfiguration();
+        agentConfiguration.setName(AgentConfiguration.embeddedName);
+        agentConfiguration.setObjectBufferSize(bufferSizes);
+        agentConfiguration.setWriteBufferSize(bufferSizes);
+        agentConfiguration.setPingTimeout(pingTimeout);
+        configuration.getAgents().add(agentConfiguration);
         return this;
     }
 
     public JBombardierConfigurationBuilder addEmbeddedAgent(int bufferSizes) {
-        Agent agent = new Agent();
-        agent.setName(Agent.embeddedName);
-        agent.setObjectBufferSize(bufferSizes);
-        agent.setWriteBufferSize(bufferSizes);
-        configuration.getAgents().add(agent);
+        AgentConfiguration agentConfiguration = new AgentConfiguration();
+        agentConfiguration.setName(AgentConfiguration.embeddedName);
+        agentConfiguration.setObjectBufferSize(bufferSizes);
+        agentConfiguration.setWriteBufferSize(bufferSizes);
+        configuration.getAgents().add(agentConfiguration);
         return this;
     }
 
     public JBombardierConfigurationBuilder addEmbeddedAgent() {
-        Agent agent = new Agent();
-        agent.setName(Agent.embeddedName);
-        configuration.getAgents().add(agent);
+        AgentConfiguration agentConfiguration = new AgentConfiguration();
+        agentConfiguration.setName(AgentConfiguration.embeddedName);
+        configuration.getAgents().add(agentConfiguration);
         return this;
     }
 
@@ -298,34 +298,34 @@ public class JBombardierConfigurationBuilder {
 
     public static class AgentBuilder {
 
-        private Agent agent = new Agent();
+        private AgentConfiguration agentConfiguration = new AgentConfiguration();
 
         public AgentBuilder name(String name) {
-            agent.setName(name);
+            agentConfiguration.setName(name);
             return this;
         }
 
-        public Agent toAgent() {
-            return agent;
+        public AgentConfiguration toAgent() {
+            return agentConfiguration;
         }
 
         public AgentBuilder address(String address) {
-            agent.setAddress(address);
+            agentConfiguration.setAddress(address);
             return this;
         }
 
         public AgentBuilder port(int port) {
-            agent.setPort(port);
+            agentConfiguration.setPort(port);
             return this;
         }
 
         public AgentBuilder objectBufferSize(int objectBufferSize) {
-            agent.setObjectBufferSize(objectBufferSize);
+            agentConfiguration.setObjectBufferSize(objectBufferSize);
             return this;
         }
 
         public AgentBuilder writeBufferSize(int writeBufferSize) {
-            agent.setWriteBufferSize(writeBufferSize);
+            agentConfiguration.setWriteBufferSize(writeBufferSize);
             return this;
         }
     }
