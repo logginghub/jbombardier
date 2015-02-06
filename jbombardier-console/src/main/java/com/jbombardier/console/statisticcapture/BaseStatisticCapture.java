@@ -32,7 +32,7 @@ public abstract class BaseStatisticCapture extends Multiplexer<CapturedStatistic
 
     private TimeProvider timeProvider = new SystemTimeProvider();
     private WorkerThread thread;
-    private int delay = 1000;
+    private long delay = 1000;
 
     @Override public void start() {
         stop();
@@ -66,7 +66,7 @@ public abstract class BaseStatisticCapture extends Multiplexer<CapturedStatistic
     }
 
 
-    public void setDelay(int delay) {
+    public void setDelay(long delay) {
         this.delay = delay;
     }
 }

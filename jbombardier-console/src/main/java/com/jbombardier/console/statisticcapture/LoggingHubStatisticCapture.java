@@ -98,6 +98,7 @@ public class LoggingHubStatisticCapture extends BaseStatisticCapture {
                     int index = compiledPattern.getValueStripper().getLabelIndex(s);
                     String value = patternisedLogEvent.getVariable(index);
 
+                    // Do a string replacement on the path if it contains instance key bits
                     LoggingHubStatisticCapture.this.send(new CapturedStatistic(getTimeProvider().getTime(),
                                                                                fullPath + "/" + s,
                                                                                value));

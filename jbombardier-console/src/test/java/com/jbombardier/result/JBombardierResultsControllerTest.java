@@ -143,8 +143,4 @@ public class JBombardierResultsControllerTest {
 
     }
 
-    @Test public void test_multiple_agent_averages() {
-
-    }
-
 }

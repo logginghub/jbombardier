@@ -12,3 +12,5 @@ target/
 jbombardier-integrationtests/reports/
 reports/
 build/
+statistics.Phase 1.sof statistics.Phase 2.sof statistics.sof
+*.sof

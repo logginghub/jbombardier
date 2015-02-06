@@ -119,7 +119,6 @@ import org.apache.velocity.util.introspection.Info;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -150,6 +149,7 @@ public class JBombardierController {
     private Map<ReflectionDispatchMessageListener, KryoClient> dispatchingListeners = new HashMap<ReflectionDispatchMessageListener, KryoClient>();
     private Map<String, DataSource> dataByName = new HashMap<String, DataSource>();
     private ResultsController resultsController;
+    private CapturedStatisticsHelper capturedStatisticsHelper;
     private ExecutorService pool = Executors.newCachedThreadPool(new NamedThreadFactory("JBombardierController-worker-"));
     //    private int autostartAgents;
     //private File reportsPath = new File("reports");
@@ -183,12 +183,14 @@ public class JBombardierController {
         this.configuration = configuration;
 
         model.setNoResultsTimeout((int) (configuration.getNoResultsTimeout() / 1000));
-        model.setTestName(configuration.getTestName());
+        model.getTestName().set(configuration.getTestName());
         model.setFailedTransactionCountFailureThreshold(configuration.getFailedTransactionCountFailureThreshold());
         model.setMaximumConsoleEntries(configuration.getMaximumConsoleEntries());
 
         newResultModel = new JBombardierRunResult(configuration);
         newResultsController = new JBombardierResultsController(newResultModel);
+
+        capturedStatisticsHelper = new CapturedStatisticsHelper(model);
 
         resultsController = new ResultsController(new File(configuration.getReportsFolder()));
         resultsController.setMaximumResultsPerKey(configuration.getMaximumResultToStore());
@@ -257,7 +259,7 @@ public class JBombardierController {
         publishTestInstructionsToAgents(instructions, dataBucketsByAgentName);
         logger.info("Test instruction have been sent...");
 
-        model.setTestStartTime(System.currentTimeMillis());
+        model.getTestStartTime().set(System.currentTimeMillis());
 
         agentPingTimer = TimerUtils.everySecond("Agent ping timer", new Runnable() {
             @Override public void run() {
@@ -478,7 +480,7 @@ public class JBombardierController {
         return response;
     }
 
-    private void assertTestClassesAreValid(List<PhaseModel> phases) {
+    private static void assertTestClassesAreValid(List<PhaseModel> phases) {
 
         Set<String> alreadyChecked = new HashSet<String>();
 
@@ -635,7 +637,7 @@ public class JBombardierController {
     }
 
     private void handleCapturedStatistic(CapturedStatistic statistic) {
-        resultsController.addCapturedStatistic(statistic);
+        capturedStatisticsHelper.addCapturedStatistic(statistic);
     }
 
     protected void handleLowMemory() {
@@ -727,7 +729,7 @@ public class JBombardierController {
         }
     }
 
-    private void initialiseModelFromConfiguration(JBombardierConfiguration configuration, JBombardierModel model) {
+    public static void initialiseModelFromConfiguration(JBombardierConfiguration configuration, JBombardierModel model) {
         logger.debug("Initialising initialiseModelFromConfiguration...");
 
         List<PhaseConfiguration> phases = configuration.getPhases();
@@ -804,7 +806,7 @@ public class JBombardierController {
 
     }
 
-    private List<TestConfiguration> getTestsForPhase(JBombardierConfiguration configuration, String inheritFrom) {
+    private static List<TestConfiguration> getTestsForPhase(JBombardierConfiguration configuration, String inheritFrom) {
 
         List<TestConfiguration> tests = null;
 
@@ -815,11 +817,10 @@ public class JBombardierController {
             }
         }
 
-
         return tests;
     }
 
-    private TestModel createTestModel(TestConfiguration testConfiguration) {
+    private static TestModel createTestModel(TestConfiguration testConfiguration) {
         TestModel testModel = new TestModel();
         testModel.setClassname(testConfiguration.getClassname());
         testModel.setRateStep(testConfiguration.getRateStep());
@@ -848,7 +849,7 @@ public class JBombardierController {
         return testModel;
     }
 
-    private void validateModel(JBombardierModel model) {
+    private static void validateModel(JBombardierModel model) {
         Is.greaterThanZero(model.getPhaseModels().size(), "The test model has no phases; please make sure you have at least one phase or one test in your configuration.");
         assertTestClassesAreValid(model.getPhaseModels());
     }
@@ -1257,13 +1258,14 @@ public class JBombardierController {
     }
 
     public void generateReport(File reportsFolder) {
-        RunResult snapshot = resultsController.createSnapshot(model);
+        RunResultBuilder runResultBuilder = new RunResultBuilder();
+        RunResult snapshot = runResultBuilder.createSnapshot(model, capturedStatisticsHelper);
         ReportGenerator.generateReport(reportsFolder, snapshot, TimeUnit.MILLISECONDS);
     }
 
     public String generateReportOld(boolean openInBrowser, boolean queueCharts) {
 
-        resultsController.flush();
+        capturedStatisticsHelper.flush();
 
         final VelocityEngine ve = new VelocityEngine();
         ve.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
@@ -1324,17 +1326,17 @@ public class JBombardierController {
 
         // Do the json report first
         final List<CapturedStatistic> capturedStatistics = new ArrayList<CapturedStatistic>();
-        resultsController.visitStreamingFile(new Destination<CapturedStatistic>() {
-            @Override public void send(CapturedStatistic statistic) {
-                capturedStatistics.add(statistic);
-            }
-        });
+//        capturedStatisticsHelper.visitStreamingFile(new Destination<CapturedStatistic>() {
+//            @Override public void send(CapturedStatistic statistic) {
+//                capturedStatistics.add(statistic);
+//            }
+//        });
 
         outputJSONResults(results, capturedStatistics);
 
         // Create each of the pages
         File output = new File(reportsFolder, "output.html");
-        process(ve, context, "/velocity/index.vm", output);
+        process(ve, context, "/velocity/index.vm.html", output);
         process(ve, context, "/velocity/csv.vm", new File(reportsFolder, "output.csv"));
 
         // New approach (not using velocity) for the captured statistics
@@ -1385,22 +1387,22 @@ public class JBombardierController {
         HTMLBuilder2.Element div = builder.getBody().div();
         final HTMLBuilder2.TableElement table = div.createTable();
 
-        resultsController.visitStreamingFile(new Destination<CapturedStatistic>() {
-            @Override public void send(CapturedStatistic statistic) {
-                HTMLBuilder2.RowElement row = table.createRow();
-                row.cell(Logger.toDateString(statistic.getTime()).toString());
-                row.cell(statistic.getPath());
-                row.cell(statistic.getValue());
-            }
-        });
+//        capturedStatisticsHelper.visitStreamingFile(new Destination<CapturedStatistic>() {
+//            @Override public void send(CapturedStatistic statistic) {
+//                HTMLBuilder2.RowElement row = table.createRow();
+//                row.cell(Logger.toDateString(statistic.getTime()).toString());
+//                row.cell(statistic.getPath());
+//                row.cell(statistic.getValue());
+//            }
+//        });
 
         builder.toFile(statisticsCaptureOutput);
     }
 
     public void outputJSONResults(ListBackedMap<String, TransactionResultModel> results, List<CapturedStatistic> capturedStatistics) {
         RunResult result = new RunResult();
-        result.setConfigurationName(model.getTestName());
-        result.setStartTime(model.getTestStartTime());
+        result.setConfigurationName(model.getTestName().get());
+        result.setStartTime(model.getTestStartTime().get());
 
         // TODO : refactor fix me
         //        result.setTestResultsFromModel(results.getMap());
@@ -1414,7 +1416,7 @@ public class JBombardierController {
 
         JSONHelper helper = new JSONHelper();
         String json = helper.toJSON(result);
-        File jsonResultFile = getJSONResultsFile(getReportsFolder(), model.getTestName(), model.getTestStartTime());
+        File jsonResultFile = getJSONResultsFile(getReportsFolder(), model.getTestName().get(), model.getTestStartTime().get());
         FileUtils.write(json, jsonResultFile);
         logger.info("JSON results written to '{}'", jsonResultFile.getAbsolutePath());
 
@@ -1531,7 +1533,7 @@ public class JBombardierController {
     }
 
     public void stopStatisticsCapture() {
-        resultsController.closeStreamingFiles();
+        capturedStatisticsHelper.closeStreamingFiles();
         List<StatisticProvider> statisticsProviders = model.getStatisticsProviders();
         for (StatisticProvider statisticsProvider : statisticsProviders) {
             statisticsProvider.stop();
@@ -1582,7 +1584,7 @@ public class JBombardierController {
         killAgentPingTimer();
 
         stopStatisticsCapture();
-        resultsController.closeStreamingFiles();
+        capturedStatisticsHelper.closeStreamingFiles();
         resultsController.stopStatsUpdater();
 
         closeAgentConnections();
@@ -1864,7 +1866,7 @@ public class JBombardierController {
         state = State.TestRunning;
 
         resetState();
-        initialiseResultsStreaming();
+//        initialiseResultsStreaming();
         publishTestInstructions();
         startNextPhase();
     }
@@ -1873,13 +1875,13 @@ public class JBombardierController {
         resultsController.resetStats();
     }
 
-    private void initialiseResultsStreaming() {
-        try {
-            resultsController.openStreamingFiles();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to open streaming files", e);
-        }
-    }
+//    private void initialiseResultsStreaming() {
+//        try {
+//            capturedStatisticsHelper.openStreamingFiles();
+//        } catch (IOException e) {
+//            throw new RuntimeException("Failed to open streaming files", e);
+//        }
+//    }
 
     public void setTimeProvider(TimeProvider timeProvider) {
         this.timeProvider = timeProvider;

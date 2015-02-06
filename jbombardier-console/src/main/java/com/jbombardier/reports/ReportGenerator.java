@@ -16,19 +16,29 @@
 
 package com.jbombardier.reports;
 
+import com.esotericsoftware.minlog.Log;
 import com.jbombardier.common.serialisableobject.CapturedStatistic;
 import com.jbombardier.console.model.result.AgentResult;
 import com.jbombardier.console.model.result.PhaseResult;
 import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.console.model.result.TransactionResult;
-import com.logginghub.utils.HTMLBuilder2;
 import com.logginghub.utils.StringUtils;
 import com.logginghub.utils.TimeUtils;
 import com.logginghub.utils.logging.Logger;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.time.Second;
+import org.jfree.data.time.TimeSeries;
+import org.jfree.data.time.TimeSeriesCollection;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.text.NumberFormat;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -53,27 +63,85 @@ public class ReportGenerator {
 
     private static void generatePhase(File folder, PhaseResult phaseResult, TimeUnit reportTimeUnits) {
         HTMLBuilder2 builder = new HTMLBuilder2();
-        HTMLBuilder2.Element body = builder.getBody();
 
-        HTMLBuilder2.Element testsDiv = body.div();
+        builder.getHead().css("box.css");
+        builder.getHead().css("table.css");
+
+        HTMLBuilder2.Element bodyx = builder.getBody();
+
+        final HTMLBuilder2.Element content = bodyx.div("wide-box");
+
+        HTMLBuilder2.Element testsDiv = content.div();
         testsDiv.h1("Tests");
 
         buildTestsTable(phaseResult.getTransactionResults(), reportTimeUnits, testsDiv);
 
-        HTMLBuilder2.Element statsDiv = body.div();
+        HTMLBuilder2.Element statsDiv = content.div();
         statsDiv.h1("Captured Statistics");
         HTMLBuilder2.TableElement statsTable = statsDiv.table();
+        statsTable.getThead().headerRow().cells("Time", "Path", "Value");
+
+        Set<String> distinctPaths = new HashSet<String>();
 
         List<CapturedStatistic> capturedStatistics = phaseResult.getCapturedStatistics();
         for (CapturedStatistic capturedStatistic : capturedStatistics) {
 
-            HTMLBuilder2.RowElement row = statsTable.row();
+            HTMLBuilder2.RowElement row = statsTable.getTbody().row();
             row.cell(Logger.toLocalDateString(capturedStatistic.getTime()));
             row.cell(capturedStatistic.getPath());
             row.cell(capturedStatistic.getValue());
+
+            distinctPaths.add(capturedStatistic.getPath());
+        }
+
+        HTMLBuilder2.Element pathDiv= content.div();
+        HTMLBuilder2.TableElement pathTable = pathDiv.table();
+        pathTable.getThead().headerRow().cells("Path");
+
+        for (String distinctPath : distinctPaths) {
+            pathTable.getTbody().row().cell().a(StringUtils.format("phase-{}-path-{}.html", phaseResult.getPhaseName(), distinctPath.replace('/','-')), distinctPath);
+            generatePathView(folder, phaseResult.getPhaseName(), distinctPath, capturedStatistics);
         }
 
         builder.toFile(new File(folder, StringUtils.format("phase-{}.html", phaseResult.getPhaseName())));
+
+    }
+
+    private static void generatePathView(File folder, String phase, String distinctPath, List<CapturedStatistic> capturedStatistics) {
+
+        HTMLBuilder2 builder = new HTMLBuilder2();
+
+        builder.getHead().css("box.css");
+        builder.getHead().css("table.css");
+
+        HTMLBuilder2.Element bodyx = builder.getBody();
+
+        final HTMLBuilder2.Element content = bodyx.div("wide-box");
+
+        TimeSeries series = new TimeSeries(distinctPath);
+        TimeSeriesCollection data = new TimeSeriesCollection();
+        data.addSeries(series);
+
+        try {
+            for (CapturedStatistic capturedStatistic : capturedStatistics) {
+                if (capturedStatistic.getPath().equals(distinctPath)) {
+                    series.add(new Second(new Date(capturedStatistic.getTime())), Double.parseDouble(capturedStatistic.getValue()));
+                }
+            }
+        } catch (NumberFormatException nfe) {
+            // Skip this one, its not numeric
+        }
+
+        if (series.getItemCount() > 0) {
+            final String imageName = StringUtils.format("phase-{}-path-{}.png", phase, distinctPath.replace('/','-'));
+            content.image(imageName);
+
+            final File file = new File(folder, imageName);
+            render(StringUtils.format("phase-{}-path-{}.html", phase, distinctPath.replace('/','-')), data, file);
+        }
+
+        builder.toFile(new File(folder, StringUtils.format("phase-{}-path-{}.html", phase, distinctPath.replace('/', '-'))));
+
     }
 
     private static void buildTestsTable(List<TransactionResult> transactionResults, TimeUnit reportTimeUnits, HTMLBuilder2.Element testsDiv) {
@@ -90,12 +158,12 @@ public class ReportGenerator {
             timeUnitDescription = "(s)";
         }
 
-        HTMLBuilder2.RowElement headerRow = testsTable.row();
+        HTMLBuilder2.THeadRow headerRow = testsTable.getThead().headerRow();
         headerRow.cells("Test name").cells("Transaction").cells("Total transaction count");
         headerRow.cell("Successful").setAttribute("colspan", "4");
-        headerRow.cell("Unsuccessful").setAttribute("colspan", "3");
+        headerRow.cell("Unsuccessful").setAttribute("colspan", "4");
 
-        testsTable.row().cells("").cells("").cells("").cells("Transaction count").cells("Mean duration " + timeUnitDescription).cells("SLA").
+        testsTable.getThead().headerRow().cells("").cells("").cells("").cells("Transaction count").cells("Mean duration " + timeUnitDescription).cells("SLA").
                 cells("Mean TPS").cells("Target TPS").cells("Transaction count").cells("Mean duration " + timeUnitDescription).cells("Mean TPS");
 
         for (TransactionResult transactionResult : transactionResults) {
@@ -143,13 +211,24 @@ public class ReportGenerator {
 
     private static void generateIndex(File folder, RunResult runResult, TimeUnit reportTimeUnits) {
         HTMLBuilder2 builder = new HTMLBuilder2();
-        HTMLBuilder2.Element body = builder.getBody();
 
-        HTMLBuilder2.Element phasesDiv = body.div();
-        phasesDiv.h1("Phases");
+        builder.getHead().css("box.css");
+        builder.getHead().css("table.css");
+        builder.associateResource("/velocity/table.css");
+        builder.associateResource("/velocity/box.css");
+
+        HTMLBuilder2.Element bodyx = builder.getBody();
+
+        final HTMLBuilder2.Element content = bodyx.div("wide-box");
+
+        content.h1(runResult.getConfigurationName());
+        content.h2(Logger.toLocalDateString(runResult.getStartTime()).toString());
+
+        HTMLBuilder2.Element phasesDiv = content.div();
+        phasesDiv.h2("Phases");
         HTMLBuilder2.TableElement phasesTable = phasesDiv.table();
         List<PhaseResult> phaseResults = runResult.getPhaseResults();
-        phasesTable.row().cells("Name", "Warm up", "Duration");
+        phasesTable.getThead().headerRow().cells("Name", "Warm up", "Duration");
         for (PhaseResult phaseResult : phaseResults) {
             HTMLBuilder2.RowElement row = phasesTable.row();
             row.cell().a(StringUtils.format("phase-{}.html", phaseResult.getPhaseName()), phaseResult.getPhaseName());
@@ -157,22 +236,43 @@ public class ReportGenerator {
             row.cell(TimeUtils.formatIntervalMilliseconds(phaseResult.getDuration()));
         }
 
-        HTMLBuilder2.Element agentsDiv = body.div();
-        agentsDiv.h1("Agents");
+        HTMLBuilder2.Element agentsDiv = content.div();
+        agentsDiv.h2("Agents");
         HTMLBuilder2.TableElement agentsTable = agentsDiv.table();
-        agentsTable.row().cells("Name", "Address", "Port");
+        agentsTable.getThead().headerRow().cells("Name", "Address", "Port");
         List<AgentResult> agentResults = runResult.getAgentResults();
         for (AgentResult agentResult : agentResults) {
             agentsTable.row().cells(agentResult.getName(), agentResult.getAddress(), Integer.toString(agentResult.getPort()));
         }
 
         for (PhaseResult phaseResult : phaseResults) {
-            HTMLBuilder2.Element phaseResultsDiv = body.div();
+            HTMLBuilder2.Element phaseResultsDiv = content.div();
             phaseResultsDiv.h2(phaseResult.getPhaseName());
             buildTestsTable(phaseResult.getTransactionResults(), reportTimeUnits, phaseResultsDiv);
         }
 
-        builder.toFile(new File(folder, "index.html"));
+        builder.toFilePretty(new File(folder, "index.html"));
+        builder.copyAssociatedResourcesTo(folder);
     }
 
+    private static void render(String title, TimeSeriesCollection timeSeriesCollection, File file) {
+        JFreeChart chart = ChartFactory.createTimeSeriesChart(title,// title
+                "Time",// x-axislabel
+                "Elapsed / ms",// y-axislabel
+                timeSeriesCollection,// data
+                true,// createlegend?
+                true,// generatetooltips?
+                false// generateURLs?
+                                                             );
+
+        try {
+            FileOutputStream fos = new FileOutputStream(file);
+            Log.info("Rendered " + title + " to " + file.getAbsolutePath());
+            ChartUtilities.writeChartAsPNG(fos, chart, 640, 480);
+            fos.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
 }
