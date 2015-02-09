@@ -19,12 +19,8 @@ package com.jbombardier.result;
 import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
 import com.jbombardier.console.sample.SleepTest;
-import com.logginghub.utils.Bucket;
 import com.logginghub.utils.FixedTimeProvider;
-import com.logginghub.utils.Pair;
 import org.junit.Test;
-
-import java.util.Map;
 
 import static com.jbombardier.common.AgentStats.AgentStatsBuilder.build;
 import static com.jbombardier.common.AgentStats.AgentStatsBuilder.test;
@@ -116,31 +112,31 @@ public class JBombardierResultsControllerTest {
 
     }
 
-    @Test public void test_result_buckets() {
-
-        final Bucket<Pair<Long, Map<String, JBombardierTestResult>>> completedBuckets = new Bucket<Pair<Long, Map<String, JBombardierTestResult>>>();
-
-        resultsController.addCompletedBucketListener(new JBombardierResultsController.CompletedBucketListener() {
-            @Override public void onCompletedResultBucket(long bucketTime, Map<String, JBombardierTestResult> result) {
-                completedBuckets.add(new Pair<Long, Map<String, JBombardierTestResult>>(bucketTime, result));
-            }
-        });
-
-        resultsController.onRunStarted();
-        resultsController.onPhaseStarted(JBombardierRunResult.defaultPhase);
-
-        resultsController.onAgentStatsResult(build().agentName("Agent 1")
-                                                    .testStats(test("Test 1").successResult(10, 20))
-                                                    .toStats(), "123.123.123.123/host1");
-
-        assertThat(completedBuckets.size(), is(0));
-
-        resultsController.onAgentStatsResult(build().agentName("Agent 2")
-                                                    .testStats(test("Test 1").successResult(15, 25))
-                                                    .toStats(), "123.123.123.123/host2");
-
-        assertThat(completedBuckets.size(), is(1));
-
-    }
+//    @Test public void test_result_buckets() {
+//
+//        final Bucket<Pair<Long, Map<String, JBombardierTestResult>>> completedBuckets = new Bucket<Pair<Long, Map<String, JBombardierTestResult>>>();
+//
+//        resultsController.addCompletedBucketListener(new JBombardierResultsController.CompletedBucketListener() {
+//            @Override public void onCompletedResultBucket(long bucketTime, Map<String, JBombardierTestResult> result) {
+//                completedBuckets.add(new Pair<Long, Map<String, JBombardierTestResult>>(bucketTime, result));
+//            }
+//        });
+//
+//        resultsController.onRunStarted();
+//        resultsController.onPhaseStarted(JBombardierRunResult.defaultPhase);
+//
+//        resultsController.onAgentStatsResult(build().agentName("Agent 1")
+//                                                    .testStats(test("Test 1").successResult(10, 20))
+//                                                    .toStats(), "123.123.123.123/host1");
+//
+//        assertThat(completedBuckets.size(), is(0));
+//
+//        resultsController.onAgentStatsResult(build().agentName("Agent 2")
+//                                                    .testStats(test("Test 1").successResult(15, 25))
+//                                                    .toStats(), "123.123.123.123/host2");
+//
+//        assertThat(completedBuckets.size(), is(1));
+//
+//    }
 
 }

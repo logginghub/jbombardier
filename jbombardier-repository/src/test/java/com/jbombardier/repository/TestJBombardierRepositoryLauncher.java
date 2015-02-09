@@ -16,20 +16,19 @@
 
 package com.jbombardier.repository;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
-import java.io.File;
-
-import org.junit.Test;
-
+import com.jbombardier.console.model.JSONHelper;
 import com.logginghub.utils.FileUtils;
 import com.logginghub.utils.NetUtils;
 import com.logginghub.utils.Xml;
-import com.jbombardier.console.model.JSONHelper;
-import com.jbombardier.console.model.result.RunResult;
-import com.jbombardier.console.model.result.TestRunResultBuilder;
+import org.junit.Ignore;
+import org.junit.Test;
 
+import java.io.File;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+@Ignore
 public class TestJBombardierRepositoryLauncher {
 
     private File folder = FileUtils.createRandomTestFolderForClass(TestJBombardierRepositoryLauncher.class);

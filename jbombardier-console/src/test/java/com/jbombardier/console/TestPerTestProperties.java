@@ -16,19 +16,17 @@
 
 package com.jbombardier.console;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import com.jbombardier.common.PhaseInstruction;
+import com.jbombardier.common.TestInstruction;
+import com.logginghub.utils.FactoryMap;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.jbombardier.common.PhaseInstruction;
-import com.jbombardier.console.model.PhaseModel;
-import com.logginghub.utils.FactoryMap;
-import org.junit.Test;
-
-import com.jbombardier.common.TestInstruction;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 
 public class TestPerTestProperties {

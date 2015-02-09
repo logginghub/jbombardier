@@ -364,41 +364,46 @@ public class JBombardierModel extends Observable {
         if (transactionResultModel == null) {
 
             final TestModel testModel = getTestModelForTest(currentPhase.get(), testStats.getTestName());
+            if(testModel == null) {
+                logger.warn("No test model found for test '{}' in phase '{}' - is something sending us resuls from a different test or phase?", testStats.getTestName(), currentPhase.get());
+                return;
+            }else {
 
-            Double transactionSLA = testModel.getTransactionSLAs().get(testStats.getTransactionName());
+                Double transactionSLA = testModel.getTransactionSLAs().get(testStats.getTransactionName());
 
-            double tsla;
-            if (transactionSLA != null) {
-                tsla = transactionSLA;
-            } else {
-                tsla = Double.NaN;
-            }
-
-            double targetRate = testModel.getTargetRate().get() * getTransactionRateModifier().get() * testModel.getTargetThreads().get();
-
-            transactionResultModel = new TransactionResultModel();
-
-            transactionResultModel.getTestName().set(testStats.getTestName());
-            transactionResultModel.getTransactionName().set(testStats.getTransactionName());
-            transactionResultModel.getTargetSuccessfulTransactionsPerSecond().set(targetRate);
-            transactionResultModel.getSuccessfulTransactionDurationSLA().set(tsla);
-            transactionResultModel.getSuccessfulTransactionsDurationFailureThreshold().set(testModel.getFailureThreshold());
-            transactionResultModel.getSuccessfulTransactionsDurationFailureType().set(testModel.getFailureThresholdMode());
-            transactionResultModel.getSuccessfulTransactionsTotalFailureResultCountMinimum().set(testModel.getFailureThresholdResultCountMinimum());
-            transactionResultModel.getUnsuccessfulTransactionsTotalFailureThreshold().set(testModel.getFailedTransactionCountThreshold());
-
-            currentPhase.get().getTransactionResultModels().add(transactionResultModel);
-
-            // Wire up the transaction results to listen for changes in the target rate
-            final TransactionResultModel finalPointer = transactionResultModel;
-            ObservablePropertyListener listener = new ObservablePropertyListener() {
-                @Override public void onPropertyChanged(Object o, Object t1) {
-                    finalPointer.getTargetSuccessfulTransactionsPerSecond().set(testModel.getTargetRate().get() * getTransactionRateModifier().get() * testModel.getTargetThreads().get());
+                double tsla;
+                if (transactionSLA != null) {
+                    tsla = transactionSLA;
+                } else {
+                    tsla = Double.NaN;
                 }
-            };
 
-            testModel.getTargetRate().addListener(listener);
-            testModel.getTargetThreads().addListener(listener);
+                double targetRate = testModel.getTargetRate().get() * getTransactionRateModifier().get() * testModel.getTargetThreads().get();
+
+                transactionResultModel = new TransactionResultModel();
+
+                transactionResultModel.getTestName().set(testStats.getTestName());
+                transactionResultModel.getTransactionName().set(testStats.getTransactionName());
+                transactionResultModel.getTargetSuccessfulTransactionsPerSecond().set(targetRate);
+                transactionResultModel.getSuccessfulTransactionDurationSLA().set(tsla);
+                transactionResultModel.getSuccessfulTransactionsDurationFailureThreshold().set(testModel.getFailureThreshold());
+                transactionResultModel.getSuccessfulTransactionsDurationFailureType().set(testModel.getFailureThresholdMode());
+                transactionResultModel.getSuccessfulTransactionsTotalFailureResultCountMinimum().set(testModel.getFailureThresholdResultCountMinimum());
+                transactionResultModel.getUnsuccessfulTransactionsTotalFailureThreshold().set(testModel.getFailedTransactionCountThreshold());
+
+                currentPhase.get().getTransactionResultModels().add(transactionResultModel);
+
+                // Wire up the transaction results to listen for changes in the target rate
+                final TransactionResultModel finalPointer = transactionResultModel;
+                ObservablePropertyListener listener = new ObservablePropertyListener() {
+                    @Override public void onPropertyChanged(Object o, Object t1) {
+                        finalPointer.getTargetSuccessfulTransactionsPerSecond().set(testModel.getTargetRate().get() * getTransactionRateModifier().get() * testModel.getTargetThreads().get());
+                    }
+                };
+
+                testModel.getTargetRate().addListener(listener);
+                testModel.getTargetThreads().addListener(listener);
+            }
         }
 
         double successPerSecondTotal = 0;

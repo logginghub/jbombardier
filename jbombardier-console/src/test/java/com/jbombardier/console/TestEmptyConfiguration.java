@@ -16,15 +16,14 @@
 
 package com.jbombardier.console;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-
+import com.logginghub.utils.TextFileBuilder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.logginghub.utils.TextFileBuilder;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class TestEmptyConfiguration {
     
@@ -35,9 +34,9 @@ public class TestEmptyConfiguration {
         File tempFile = File.createTempFile("testEmptyConfiguration", ".xml");
         TextFileBuilder builder = new TextFileBuilder(new FileWriter(tempFile));        
         builder.appendLine("<jbombardierConfiguration autostartAgents='1'>");
-        builder.appendLine("<agents><agent name='embedded'/></agents>");
-        builder.appendLine("<tests><test name='propertyReader' class='com.jbombardier.console.sample.old.PropertyReader' targetRate='10' rateStep='100' properties='property=empty'/></tests>");
-        builder.appendLine("<data><csvProperty name='empty' csvfile='/com/jbombardier/console/configuration/empty_data.csv' strategy='fixedThread'/></data>");
+        builder.appendLine("<agent name='embedded'/>");
+        builder.appendLine("<test name='propertyReader' class='com.jbombardier.console.sample.old.PropertyReader' targetRate='10' rateStep='100' properties='property=empty'/>");
+        builder.appendLine("<csvProperty name='empty' csvfile='/com/jbombardier/console/configuration/empty_data.csv' strategy='fixedThread'/>");
         builder.appendLine("</jbombardierConfiguration>");
         builder.close();
         

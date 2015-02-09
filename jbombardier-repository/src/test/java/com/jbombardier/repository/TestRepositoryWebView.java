@@ -16,17 +16,18 @@
 
 package com.jbombardier.repository;
 
+import com.jbombardier.console.model.result.RunResult;
+import com.jbombardier.repository.model.RepositoryModel;
+import com.jbombardier.repository.model.RepositoryTestModel;
+import com.logginghub.utils.Xml;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-import com.jbombardier.repository.model.RepositoryModel;
-import com.jbombardier.repository.model.RepositoryTestModel;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.logginghub.utils.Xml;
-import com.jbombardier.console.model.result.RunResult;
-
+@Ignore
 public class TestRepositoryWebView {
 
     private RepositoryWebView repositoryWebView = new RepositoryWebView();

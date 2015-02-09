@@ -172,7 +172,7 @@ public class JBombardierController {
     private JBombardierResultsController newResultsController;
 
     public enum State {
-        Configured, AgentConnectionsRunning, Warmup, TestRunning, Stopped, Completed
+        Configured, AgentConnectionsRunning, TestRunning, Stopped, Completed
     }
 
     private State state;
@@ -226,7 +226,7 @@ public class JBombardierController {
             }
         });
 
-        initialiseAgents(configuration, model);
+        attachMessagingToAgentModels(configuration, model);
 
         state = State.AgentConnectionsRunning;
     }
@@ -449,7 +449,7 @@ public class JBombardierController {
 
     public void handleAgentStatusUpdate(AgentStats agentStats) {
 
-        if (state != State.Warmup && state != State.TestRunning) {
+        if (state != State.TestRunning) {
             throw new IllegalStateException("Unable to handle agent stats whilst the test isn't running - looks like something has gone wrong");
         }
 
@@ -800,6 +800,25 @@ public class JBombardierController {
             }
         }
 
+        List<AgentConfiguration> agentConfigurations = configuration.getAgents();
+        for (AgentConfiguration agentConfiguration : agentConfigurations) {
+
+            final AgentModel agentModel = new AgentModel();
+
+            agentModel.getConnected().set(false);
+            agentModel.getName().set(agentConfiguration.getName());
+
+            if (agentConfiguration.getName().startsWith(AgentConfiguration.embeddedName)) {
+                agentModel.getAddress().set("localhost");
+            } else {
+                agentModel.getAddress().set(agentConfiguration.getAddress());
+                agentModel.getPort().set(agentConfiguration.getPort());
+            }
+
+            model.addAgentModel(agentModel);
+        }
+
+
         model.getTransactionRateModifier().set(configuration.getTransactionRateModifier());
 
         validateModel(model);
@@ -854,73 +873,72 @@ public class JBombardierController {
         assertTestClassesAreValid(model.getPhaseModels());
     }
 
-    private void initialiseAgents(final JBombardierConfiguration configuration, JBombardierModel model) {
+    private void attachMessagingToAgentModels(final JBombardierConfiguration configuration, JBombardierModel model) {
         logger.info("Starting agent connections...");
 
         List<AgentConfiguration> agentConfigurations = configuration.getAgents();
         for (AgentConfiguration agentConfiguration : agentConfigurations) {
 
-            int objectBufferSize = agentConfiguration.getObjectBufferSize();
-            int writeBufferSize = agentConfiguration.getWriteBufferSize();
-            final KryoClient client = new KryoClient("controller", writeBufferSize, objectBufferSize);
+            final List<AgentModel> agentModels = model.getAgentModels();
+            for (final AgentModel agentModel : agentModels) {
 
-            KryoHelper.registerTypes(client.getKryo());
+                if (agentModel.getName().get().equals(agentConfiguration.getName())) {
+                    int objectBufferSize = agentConfiguration.getObjectBufferSize();
+                    int writeBufferSize = agentConfiguration.getWriteBufferSize();
+                    final KryoClient client = new KryoClient("controller", writeBufferSize, objectBufferSize);
 
-            final AgentModel agentModel = new AgentModel();
+                    KryoHelper.registerTypes(client.getKryo());
 
-            agentModel.getConnected().set(false);
-            agentModel.getName().set(agentConfiguration.getName());
+                    if (agentConfiguration.getName().startsWith(AgentConfiguration.embeddedName)) {
+                        Agent2 embeddedAgent = new Agent2();
+                        int freePort = NetUtils.findFreePort();
+                        embeddedAgent.disableSystemExitOnKill();
+                        embeddedAgent.setOutputStats(configuration.isOutputEmbeddedAgentStats());
+                        embeddedAgent.setWriteBufferSize(agentConfiguration.getWriteBufferSize());
+                        embeddedAgent.setObjectBufferSize(agentConfiguration.getObjectBufferSize());
+                        embeddedAgent.setBindPort(freePort);
+                        embeddedAgent.setPingTimeout(agentConfiguration.getPingTimeout());
+                        embeddedAgent.start();
+                        embeddedAgents.add(embeddedAgent);
 
-            if (agentConfiguration.getName().startsWith(AgentConfiguration.embeddedName)) {
-                Agent2 embeddedAgent = new Agent2();
-                int freePort = NetUtils.findFreePort();
-                embeddedAgent.disableSystemExitOnKill();
-                embeddedAgent.setOutputStats(configuration.isOutputEmbeddedAgentStats());
-                embeddedAgent.setWriteBufferSize(agentConfiguration.getWriteBufferSize());
-                embeddedAgent.setObjectBufferSize(agentConfiguration.getObjectBufferSize());
-                embeddedAgent.setBindPort(freePort);
-                embeddedAgent.setPingTimeout(agentConfiguration.getPingTimeout());
-                embeddedAgent.start();
-                embeddedAgents.add(embeddedAgent);
+                        agentModel.getAddress().set("localhost");
+                        agentModel.getPort().set(freePort);
+                    } else {
+                        agentModel.getAddress().set(agentConfiguration.getAddress());
+                        agentModel.getPort().set(agentConfiguration.getPort());
+                    }
 
-                agentModel.getAddress().set("localhost");
-                agentModel.getPort().set(freePort);
-            } else {
-                agentModel.getAddress().set(agentConfiguration.getAddress());
-                agentModel.getPort().set(agentConfiguration.getPort());
-            }
+                    client.addConnectionPoint(new InetSocketAddress(agentModel.getAddress().get(), agentModel.getPort().get()));
+                    agentModel.setKryoClient(client);
 
-            client.addConnectionPoint(new InetSocketAddress(agentModel.getAddress().get(), agentModel.getPort().get()));
-            agentModel.setKryoClient(client);
+                    client.addConnectionListener(new ConnectionListener() {
+                        public void onDisconnected() {
+                            logger.info("Agent has disconnected {}", agentModel);
+                            disconnectionsStat.increment();
+                            connectionsStat.decrement();
+                            agentModel.getConnected().set(false);
+                        }
 
-            model.addAgentModel(agentModel);
+                        public void onConnected() {
+                            connectionsStat.increment();
+                            newConnectionsStat.increment();
+                            logger.info("Agent has connected {}", agentModel);
+                            agentModel.getConnected().set(true);
 
-            client.addConnectionListener(new ConnectionListener() {
-                public void onDisconnected() {
-                    logger.info("Agent has disconnected {}", agentModel);
-                    disconnectionsStat.increment();
-                    connectionsStat.decrement();
-                    agentModel.getConnected().set(false);
-                }
+                            client.sendRequest("agent", new SendTelemetryRequest(NetUtils.getLocalIP(), configuration.getTelemetryHubPort()), new ResponseHandler<String>() {
+                                public void onResponse(String response) {
 
-                public void onConnected() {
-                    connectionsStat.increment();
-                    newConnectionsStat.increment();
-                    logger.info("Agent has connected {}", agentModel);
-                    agentModel.getConnected().set(true);
+                                }
+                            });
 
-                    client.sendRequest("agent", new SendTelemetryRequest(NetUtils.getLocalIP(), configuration.getTelemetryHubPort()), new ResponseHandler<String>() {
-                        public void onResponse(String response) {
-
+                            attachReflectionDispatcher(client);
+                            //                    checkForAutostart();
                         }
                     });
 
-                    attachReflectionDispatcher(client);
-                    //                    checkForAutostart();
+                    client.startBackground();
                 }
-            });
-
-            client.startBackground();
+            }
         }
 
         // James - workaround here, if we have a test already running, we can
@@ -980,11 +998,15 @@ public class JBombardierController {
         request.setValue(transactionRateModifier);
         for (final AgentModel agentModel : model.getAgentModels()) {
             KryoClient client = agentModel.getKryoClient();
-            client.sendRequest("agent", request, new ResponseHandler<String>() {
-                public void onResponse(String response) {
-                    logger.info("Transaction rate modifier successfully applied to client : '{}'", response);
-                }
-            });
+            if (client != null) {
+                client.sendRequest("agent", request, new ResponseHandler<String>() {
+                    public void onResponse(String response) {
+                        logger.info("Transaction rate modifier successfully applied to client : '{}'", response);
+                    }
+                });
+            }else{
+                logger.warn("No messaging attached to agent model '{}', unable to send message '{}'", agentModel, request);
+            }
         }
 
         // Update the target rates for the current transactions
@@ -1326,11 +1348,11 @@ public class JBombardierController {
 
         // Do the json report first
         final List<CapturedStatistic> capturedStatistics = new ArrayList<CapturedStatistic>();
-//        capturedStatisticsHelper.visitStreamingFile(new Destination<CapturedStatistic>() {
-//            @Override public void send(CapturedStatistic statistic) {
-//                capturedStatistics.add(statistic);
-//            }
-//        });
+        //        capturedStatisticsHelper.visitStreamingFile(new Destination<CapturedStatistic>() {
+        //            @Override public void send(CapturedStatistic statistic) {
+        //                capturedStatistics.add(statistic);
+        //            }
+        //        });
 
         outputJSONResults(results, capturedStatistics);
 
@@ -1387,14 +1409,14 @@ public class JBombardierController {
         HTMLBuilder2.Element div = builder.getBody().div();
         final HTMLBuilder2.TableElement table = div.createTable();
 
-//        capturedStatisticsHelper.visitStreamingFile(new Destination<CapturedStatistic>() {
-//            @Override public void send(CapturedStatistic statistic) {
-//                HTMLBuilder2.RowElement row = table.createRow();
-//                row.cell(Logger.toDateString(statistic.getTime()).toString());
-//                row.cell(statistic.getPath());
-//                row.cell(statistic.getValue());
-//            }
-//        });
+        //        capturedStatisticsHelper.visitStreamingFile(new Destination<CapturedStatistic>() {
+        //            @Override public void send(CapturedStatistic statistic) {
+        //                HTMLBuilder2.RowElement row = table.createRow();
+        //                row.cell(Logger.toDateString(statistic.getTime()).toString());
+        //                row.cell(statistic.getPath());
+        //                row.cell(statistic.getValue());
+        //            }
+        //        });
 
         builder.toFile(statisticsCaptureOutput);
     }
@@ -1515,7 +1537,7 @@ public class JBombardierController {
     public void waitForEmbeddedIfNeeded() {
         List<AgentModel> agentModels = model.getAgentModels();
         for (final AgentModel agentModel : agentModels) {
-            if (agentModel.getName().equals(AgentConfiguration.embeddedName)) {
+            if (agentModel.getName().get().startsWith(AgentConfiguration.embeddedName)) {
                 ThreadUtils.repeatUntilTrue(new Callable<Boolean>() {
                     @Override public Boolean call() throws Exception {
                         return agentModel.getConnected().get();
@@ -1682,10 +1704,6 @@ public class JBombardierController {
 
     }
 
-    public void startWarmUp() {
-        state = State.Warmup;
-    }
-
     //    public String getCurrentPhaseName() {
     //        String phaseName;
     //        if (currentPhase != null) {
@@ -1697,30 +1715,29 @@ public class JBombardierController {
     //        return phaseName;
     //    }
 
-    public void phaseComplete() {
-
-        logger.info("Phase '{}' complete, progressing test...", getCurrentPhaseName());
-
-        // TODO : not sure this should be moving to the next phase or just finishing the current phase
-
-        PhaseModel currentPhase = model.getCurrentPhase().get();
-        if (currentPhase == null) {
-            throw new IllegalStateException(StringUtils.format("Unable to complete phase, no phase has been started"));
-        }
-
-        int currentPhaseIndex = model.getPhaseModels().indexOf(currentPhase);
-
-        if (currentPhaseIndex < model.getPhaseModels().size()) {
-            currentPhase = model.getPhaseModels().get(currentPhaseIndex + 1);
-            model.getCurrentPhase().set(currentPhase);
-
-            logger.info("Starting new phase '{}'", getCurrentPhaseName());
-
-        } else {
-            logger.info("All phases completed, ending test normally");
-            endTestNormally();
-        }
-    }
+    //    public void phaseComplete() {
+    //
+    //        logger.info("Phase '{}' complete, progressing test...", getCurrentPhaseName());
+    //
+    //        // TODO : not sure this should be moving to the next phase or just finishing the current phase
+    //
+    //        PhaseModel currentPhase = model.getCurrentPhase().get();
+    //        if (currentPhase == null) {
+    //            throw new IllegalStateException(StringUtils.format("Unable to complete phase, no phase has been started"));
+    //        }
+    //
+    //        if (hasNextPhase()) {
+    //
+    //            PhaseModel nextPhase = currentPhase = getNextPhase();
+    //            model.getCurrentPhase().set(nextPhase);
+    //
+    //            logger.info("Starting new phase '{}'", getCurrentPhaseName());
+    //
+    //        } else {
+    //            logger.info("All phases completed, ending test normally");
+    //            endTestNormally();
+    //        }
+    //    }
 
     public String getCurrentPhaseName() {
         PhaseModel phaseModel = model.getCurrentPhase().get();
@@ -1866,7 +1883,7 @@ public class JBombardierController {
         state = State.TestRunning;
 
         resetState();
-//        initialiseResultsStreaming();
+        //        initialiseResultsStreaming();
         publishTestInstructions();
         startNextPhase();
     }
@@ -1875,13 +1892,13 @@ public class JBombardierController {
         resultsController.resetStats();
     }
 
-//    private void initialiseResultsStreaming() {
-//        try {
-//            capturedStatisticsHelper.openStreamingFiles();
-//        } catch (IOException e) {
-//            throw new RuntimeException("Failed to open streaming files", e);
-//        }
-//    }
+    //    private void initialiseResultsStreaming() {
+    //        try {
+    //            capturedStatisticsHelper.openStreamingFiles();
+    //        } catch (IOException e) {
+    //            throw new RuntimeException("Failed to open streaming files", e);
+    //        }
+    //    }
 
     public void setTimeProvider(TimeProvider timeProvider) {
         this.timeProvider = timeProvider;

@@ -33,16 +33,10 @@ public class JBombardierConfigurationTest {
         FileUtilsWriter writer = FileUtils.createWriter(file);
 
         writer.appendLine("<jbombardierConfiguration>");
-        writer.appendLine("  <tests>");
-        writer.appendLine("     <test name='Test1' class='test class'/>");
-        writer.appendLine("  </tests>");
-        writer.appendLine("  <phases>");
-        writer.appendLine("     <phase name='Phase 1' duration='10 minutes'>");
-        writer.appendLine("        <tests>");
-        writer.appendLine("           <test name='Test1' class='test class'/>");
-        writer.appendLine("        </tests>");
-        writer.appendLine("     </phase>");
-        writer.appendLine("  </phases>");
+        writer.appendLine("   <test name='Test1' class='test class'/>");
+        writer.appendLine("   <phase name='Phase 1' duration='10 minutes'>");
+        writer.appendLine("       <test name='Test1' class='test class'/>");
+        writer.appendLine("   </phase>");
         writer.appendLine("</jbombardierConfiguration>");
         writer.close();
 

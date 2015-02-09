@@ -22,8 +22,6 @@ import com.logginghub.utils.SystemTimeProvider;
 import com.logginghub.utils.TimeProvider;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Results structure:
@@ -125,17 +123,17 @@ public class JBombardierResultsController {
     }
 
 
-    public interface CompletedBucketListener {
-        void onCompletedResultBucket(long bucketTime, Map<String, JBombardierTestResult> result);
-    }
-
-    private List<CompletedBucketListener> completedBucketListeners = new CopyOnWriteArrayList<CompletedBucketListener>();
-
-    public void addCompletedBucketListener(CompletedBucketListener listener) {
-        completedBucketListeners.add(listener);
-    }
-
-    public void removeCompletedBucketListener(CompletedBucketListener listener) {
-        completedBucketListeners.remove(listener);
-    }
+//    public interface CompletedBucketListener {
+//        void onCompletedResultBucket(long bucketTime, Map<String, JBombardierTestResult> result);
+//    }
+//
+//    private List<CompletedBucketListener> completedBucketListeners = new CopyOnWriteArrayList<CompletedBucketListener>();
+//
+//    public void addCompletedBucketListener(CompletedBucketListener listener) {
+//        completedBucketListeners.add(listener);
+//    }
+//
+//    public void removeCompletedBucketListener(CompletedBucketListener listener) {
+//        completedBucketListeners.remove(listener);
+//    }
 }

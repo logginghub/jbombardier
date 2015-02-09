@@ -16,13 +16,10 @@
 
 package com.jbombardier.console;
 
-import com.jbombardier.common.AgentStats;
 import com.jbombardier.common.DataBucket;
 import com.jbombardier.common.DataStrategy;
 import com.jbombardier.console.configuration.JBombardierConfiguration;
-import com.jbombardier.console.configuration.JBombardierConfigurationBuilder;
 import com.jbombardier.console.model.AgentModel;
-import com.jbombardier.console.sample.SleepTest;
 import com.jbombardier.xml.CsvProperty;
 import com.logginghub.messaging2.kryo.KryoClient;
 import com.logginghub.messaging2.kryo.ResponseHandler;
@@ -36,7 +33,6 @@ import org.mockito.stubbing.Answer;
 import java.util.List;
 
 import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.configurationBuilder;
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -46,79 +42,25 @@ import static org.hamcrest.Matchers.nullValue;
 
     @Test public void test_controller_lifecycle() {
         JBombardierModel model = new JBombardierModel();
-        JBombardierConfiguration configuration = new JBombardierConfiguration();
+        JBombardierConfiguration configuration =
+                configurationBuilder().addEmbeddedAgent()
+                                      .toConfiguration();
+
 
         JBombardierController controller = new JBombardierController(model, configuration);
 
         assertThat(controller.getState(), is(JBombardierController.State.Configured));
 
         controller.startAgentConnections();
+        controller.waitForEmbeddedIfNeeded();
 
         assertThat(controller.getState(), is(JBombardierController.State.AgentConnectionsRunning));
 
-        controller.startWarmUp();
-
-        assertThat(controller.getState(), is(JBombardierController.State.Warmup));
-
-        // TODO : refactor fix me
-//        controller.endWarmup();
         controller.startTest();
 
         assertThat(controller.getState(), is(JBombardierController.State.TestRunning));
 
         controller.endTestNormally();
-
-        assertThat(controller.getState(), is(JBombardierController.State.Completed));
-    }
-
-    @Test public void test_controller_lifecycle_with_phases() {
-        JBombardierModel model = new JBombardierModel();
-        JBombardierConfiguration configuration =
-                configurationBuilder().addPhase(configurationBuilder().phase("Phase 1")
-                                                                      .duration("1 second")
-                                                                      .addTest(JBombardierConfigurationBuilder.TestBuilder
-                                                                                       .start(SleepTest.class)))
-                                      .addPhase(configurationBuilder().phase("Phase 2")
-                                                                      .duration("1 second")
-                                                                      .addTest(JBombardierConfigurationBuilder.TestBuilder
-                                                                                       .start(SleepTest.class)))
-                                      .toConfiguration();
-
-        JBombardierController controller = new JBombardierController(model, configuration);
-
-        assertThat(controller.getState(), is(JBombardierController.State.Configured));
-
-        try {
-            controller.handleAgentStatusUpdate(AgentStats.agentStats()
-                                                         .agentName("agent1")
-                                                         .testStats(AgentStats.testStats("test1", 1, 2, 3))
-                                                         .toStats());
-            fail("The test isn't running, we can't process results");
-        }catch(IllegalStateException e){
-            assertThat(e.getMessage(), is("Unable to handle agent stats whilst the test isn't running - looks like something has gone wrong"));
-        }
-
-        controller.startAgentConnections();
-
-        assertThat(controller.getState(), is(JBombardierController.State.AgentConnectionsRunning));
-
-        controller.startWarmUp();
-
-        assertThat(controller.getState(), is(JBombardierController.State.Warmup));
-
-        // TODO : refactor fix me
-//        controller.endWarmup();
-        controller.startTest();
-
-        assertThat(controller.getState(), is(JBombardierController.State.TestRunning));
-        assertThat(controller.getCurrentPhaseName(), is("Phase 1"));
-
-        controller.phaseComplete();
-
-        assertThat(controller.getState(), is(JBombardierController.State.TestRunning));
-        assertThat(controller.getCurrentPhaseName(), is("Phase 2"));
-
-        controller.phaseComplete();
 
         assertThat(controller.getState(), is(JBombardierController.State.Completed));
     }

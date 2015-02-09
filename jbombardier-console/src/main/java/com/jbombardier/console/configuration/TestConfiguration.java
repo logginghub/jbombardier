@@ -16,18 +16,16 @@
 
 package com.jbombardier.console.configuration;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.jbombardier.console.model.TransactionResultModel;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
-
-import com.jbombardier.console.model.TransactionResultModel;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @SuppressWarnings("restriction") @XmlAccessorType(XmlAccessType.FIELD) public class TestConfiguration {
 
@@ -50,8 +48,8 @@ import com.jbombardier.console.model.TransactionResultModel;
     @XmlAttribute private int movingAveragePoints = 5;
     @XmlAttribute private String agent = null;
     
-    @XmlElementWrapper(name = "properties") @XmlElement(name = "property") private List<Property> propertiesList = new ArrayList<Property>();
-    @XmlElementWrapper(name = "transactionSLAs") @XmlElement(name = "transactionSLA") private List<TransactionSLA> transactionSLAs = new ArrayList<TransactionSLA>();
+    @XmlElement(name = "property") private List<Property> propertiesList = new ArrayList<Property>();
+    @XmlElement(name = "transactionSLA") private List<TransactionSLA> transactionSLAs = new ArrayList<TransactionSLA>();
     
     public String getProperties() {
         return properties;

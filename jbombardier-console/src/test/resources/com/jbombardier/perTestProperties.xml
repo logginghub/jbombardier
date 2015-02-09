@@ -17,33 +17,21 @@
 
 <jbombardierConfiguration telemetryHubPort="-1" visualErrorMessages="false">
  
-	<agents>
-	   <agent name="embedded"/>
-	</agents>
- 
-	<tests>
-	
-	    <test name='test1' class='com.jbombardier.console.sample.old.Test1' targetThreads='5' threadStep='1' threadStepTime='1000' targetRate='1' rateStep='1' rateStepTime='1000'>
-	  	  	<properties>
-	  	  	<property name='property' value='firstInstance'/>
-	  	  	</properties>	
-	    </test>
-	    
-	    <test name='test2' class='com.jbombardier.console.sample.old.Test1' targetThreads='2' threadStep='1' threadStepTime='100' targetRate='1' rateStep='1' rateStepTime='1000'>
-	    	<properties>
-	    	<property name='property' value='secondInstance'/>
-	    	</properties>
-	    </test>	     
-	    
-	    <test name='test3' class='com.jbombardier.console.sample.old.Test1' targetThreads='2' threadStep='1' threadStepTime='100' targetRate='1' rateStep='1' rateStepTime='1000'>
-	    	<!-- deliberately missing -->
-	    </test>
-		
-	</tests>
-	
-	<properties>		
-		<property name='property' value='default'/>			
-	</properties>
-	
+   <agent name="embedded"/>
+
+    <test name='test1' class='com.jbombardier.console.sample.old.Test1' targetThreads='5' threadStep='1' threadStepTime='1000' targetRate='1' rateStep='1' rateStepTime='1000'>
+        <property name='property' value='firstInstance'/>
+    </test>
+
+    <test name='test2' class='com.jbombardier.console.sample.old.Test1' targetThreads='2' threadStep='1' threadStepTime='100' targetRate='1' rateStep='1' rateStepTime='1000'>
+        <property name='property' value='secondInstance'/>
+    </test>
+
+    <test name='test3' class='com.jbombardier.console.sample.old.Test1' targetThreads='2' threadStep='1' threadStepTime='100' targetRate='1' rateStep='1' rateStepTime='1000'>
+        <!-- deliberately missing -->
+    </test>
+
+	<property name='property' value='default'/>
+
 	
 </jbombardierConfiguration>
