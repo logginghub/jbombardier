@@ -228,7 +228,7 @@ public class TransactionStatePanel extends JPanel {
     public void bind(JBombardierModel model) {
 
         final ObservableListListener<TransactionResultModel> listener = new ObservableListListener<TransactionResultModel>() {
-            @Override public void onRemoved(TransactionResultModel t) {}
+            @Override public void onRemoved(TransactionResultModel t, int index) {}
 
             @Override public void onCleared() {
                 table.clear();
@@ -252,7 +252,7 @@ public class TransactionStatePanel extends JPanel {
                     rateChartPanel.clearChartData();
                     elapsedChartPanel.clearChartData();
                     table.clear();
-                    newModel.getTransactionResultModels().addListenerAndNotifyExisting(listener);
+                    newModel.getTransactionResultModels().addListenerAndNotifyCurrent(listener);
                 }
             }
         });
@@ -344,8 +344,8 @@ public class TransactionStatePanel extends JPanel {
             }
         });
 
-        testModel.getChartEvents().addListenerAndNotifyExisting(new ObservableListListener<ChartEvent>() {
-            @Override public void onRemoved(ChartEvent t) {}
+        testModel.getChartEvents().addListenerAndNotifyCurrent(new ObservableListListener<ChartEvent>() {
+            @Override public void onRemoved(ChartEvent t, int index) {}
 
             @Override public void onCleared() {}
 

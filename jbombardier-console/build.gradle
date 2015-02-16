@@ -14,44 +14,16 @@
  * limitations under the License.
  */
 
-apply plugin: 'java'
-
-buildscript {
-    repositories {
-        jcenter()
-    }
-    dependencies {
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.0'
-    }
-}
-
-apply plugin: 'com.jfrog.bintray'
-apply plugin: 'maven'
-
-group = 'com.jbombardier'
-version = '1.4.4-b2'
-
-repositories {
-    mavenCentral()
-    jcenter()
-    mavenLocal()
-}
-
 dependencies {
-
-    compile 'com.logginghub:vl-utils:1.4.4-1'
 
     compile project(':jbombardier-common')
     compile project(':jbombardier-agent')
 
-    compile 'com.logginghub:vl-logging:1.4.4'
-
-    compile 'com.logginghub:vl-swing-utils:1.4.4'
-    compile 'com.logginghub:vl-logging-frontend:1.4.4'
-    compile 'com.logginghub:vl-analytics:1.4.4'
-
-    // TODO : move to this
-    // compile 'com.logginghub:logginghub-utils:1.4.4-b2'
+    compile 'com.logginghub:logginghub-utils:1.4.7'
+    compile 'com.logginghub:logginghub-server:1.4.7'
+    compile 'com.logginghub:logginghub-swingutils:1.4.7'
+    compile 'com.logginghub:logginghub-frontend:1.4.7'
+    compile 'com.logginghub:logginghub-analytics:1.4.7'
 
     compile 'org.apache.velocity:velocity:1.7'
     compile 'com.seaglasslookandfeel:seaglasslookandfeel:0.1.7.3'

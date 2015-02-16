@@ -16,11 +16,10 @@
 
 package com.jbombardier.console.micro;
 
-import javax.swing.JPanel;
-
+import com.logginghub.utils.observable.ObservableListListener;
 import net.miginfocom.swing.MigLayout;
 
-import com.logginghub.utils.observable.ObservableListListener;
+import javax.swing.*;
 
 public class ControlPanel extends JPanel {
     private static final long serialVersionUID = 1L;
@@ -34,8 +33,8 @@ public class ControlPanel extends JPanel {
     
     public void bind(MicroBenchmarkModel model) {
         removeAll();
-        model.getModels().addListenerAndNotifyExisting(new ObservableListListener<MicroBenchmarkTestModel>() {
-            @Override public void onRemoved(MicroBenchmarkTestModel t) {}
+        model.getModels().addListenerAndNotifyCurrent(new ObservableListListener<MicroBenchmarkTestModel>() {
+            @Override public void onRemoved(MicroBenchmarkTestModel t, int index) {}
             @Override public void onCleared() {}
             @Override public void onAdded(MicroBenchmarkTestModel t) {
                 TestControlPanel panel = new TestControlPanel();

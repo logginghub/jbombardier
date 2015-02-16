@@ -22,6 +22,7 @@ import com.jbombardier.console.model.result.AgentResult;
 import com.jbombardier.console.model.result.PhaseResult;
 import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.console.model.result.TransactionResult;
+import com.logginghub.utils.HTMLBuilder2;
 import com.logginghub.utils.StringUtils;
 import com.logginghub.utils.TimeUtils;
 import com.logginghub.utils.logging.Logger;
