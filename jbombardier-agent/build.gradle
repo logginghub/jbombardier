@@ -14,31 +14,10 @@
  * limitations under the License.
  */
 
-buildscript {
-    repositories {
-        jcenter()
-    }
-    dependencies {
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.0'
-    }
-}
-
-apply plugin: 'com.jfrog.bintray'
-apply plugin: 'maven'
-
-group = 'com.jbombardier'
-version = '1.4.4-b2'
-
-repositories {
-    mavenCentral()
-    jcenter()
-    mavenLocal()
-}
-
 dependencies {
 
     compile project(':jbombardier-common')
-    compile 'com.logginghub:vl-logging:1.4.4'
+    compile 'com.logginghub:logginghub-client:1.4.6'
 
     testCompile 'junit:junit:4.11'
     testCompile 'org.hamcrest:hamcrest-all:1.3'

@@ -138,12 +138,12 @@ public class RateControlPanel extends JPanel {
             @Override public void onPropertyChanged(PhaseModel phaseModel, PhaseModel t1) {
                 if (t1 != null) {
                     table.clear();
-                    t1.getTestModels().addListenerAndNotifyExisting(new ObservableListListener<TestModel>() {
+                    t1.getTestModels().addListenerAndNotifyCurrent(new ObservableListListener<TestModel>() {
                         @Override public void onAdded(TestModel testModel) {
                             table.addItem(testModel);
                         }
 
-                        @Override public void onRemoved(TestModel testModel) {
+                        @Override public void onRemoved(TestModel testModel, int index) {
                         }
 
                         @Override public void onCleared() {

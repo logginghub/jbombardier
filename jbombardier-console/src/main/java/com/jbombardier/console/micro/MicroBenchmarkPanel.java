@@ -16,15 +16,14 @@
 
 package com.jbombardier.console.micro;
 
-import javax.swing.JPanel;
-import javax.swing.border.TitledBorder;
-
-import net.miginfocom.swing.MigLayout;
-
-import com.logginghub.utils.observable.ObservableListListener;
-import com.logginghub.utils.observable.ObservablePropertyListener;
 import com.jbombardier.common.BasicTestStats;
 import com.jbombardier.console.charts.XYTimeChartPanel;
+import com.logginghub.utils.observable.ObservableListListener;
+import com.logginghub.utils.observable.ObservablePropertyListener;
+import net.miginfocom.swing.MigLayout;
+
+import javax.swing.*;
+import javax.swing.border.TitledBorder;
 
 public class MicroBenchmarkPanel extends JPanel {
     private static final long serialVersionUID = 1L;
@@ -58,8 +57,8 @@ public class MicroBenchmarkPanel extends JPanel {
     public void bind(MicroBenchmarkModel model) {
         controlPanel.bind(model);
         
-        model.getModels().addListenerAndNotifyExisting(new ObservableListListener<MicroBenchmarkTestModel>() {
-            @Override public void onRemoved(MicroBenchmarkTestModel t) {}
+        model.getModels().addListenerAndNotifyCurrent(new ObservableListListener<MicroBenchmarkTestModel>() {
+            @Override public void onRemoved(MicroBenchmarkTestModel t, int index) {}
             @Override public void onCleared() {}
             @Override public void onAdded(final MicroBenchmarkTestModel t) {
                 t.getStats().addListener(new ObservablePropertyListener<BasicTestStats>() {

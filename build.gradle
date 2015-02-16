@@ -16,17 +16,21 @@
 
 apply plugin: 'java'
 
-version = '1.0'
-
-repositories {
-    mavenCentral()
-    jcenter()
-}
+group = 'com.jbombardier'
+version = '1.4.4-b2'
 
 subprojects {
 
     apply plugin: 'java'
     apply plugin: 'distribution'
+
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven {
+            url "http://www.vertexlabs.co.uk/repository"
+        }
+    }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
