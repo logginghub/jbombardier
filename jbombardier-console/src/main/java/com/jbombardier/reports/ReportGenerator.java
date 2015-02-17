@@ -35,6 +35,7 @@ import org.jfree.data.time.TimeSeriesCollection;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -125,13 +126,16 @@ public class ReportGenerator {
         TimeSeriesCollection data = new TimeSeriesCollection();
         data.addSeries(series);
 
+        NumberFormat nf = NumberFormat.getInstance();
+
         try {
             for (CapturedStatistic capturedStatistic : capturedStatistics) {
                 if (capturedStatistic.getPath().equals(distinctPath)) {
-                    series.add(new Second(new Date(capturedStatistic.getTime())), Double.parseDouble(capturedStatistic.getValue()));
+                    series.addOrUpdate(new Second(new Date(capturedStatistic.getTime())),
+                            nf.parse(capturedStatistic.getValue()));
                 }
             }
-        } catch (NumberFormatException nfe) {
+        } catch (ParseException nfe) {
             // Skip this one, its not numeric
         }
 

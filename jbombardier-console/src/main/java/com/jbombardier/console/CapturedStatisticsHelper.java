@@ -66,10 +66,10 @@ public class CapturedStatisticsHelper {
     }
 
     public void addCapturedStatistic(CapturedStatistic statistic) {
-        logger.info("Captured stat : {}", statistic);
+        logger.debug("Captured stat : {}", statistic);
         try {
             SofStreamSerialiser.write(statisticsStream, statistic, sofConfig);
-        } catch (SofException e) {
+        } catch (Throwable e) {
             logger.warn(e, "Failed to serialise captured statistic '{}'", statistic);
         }
     }
