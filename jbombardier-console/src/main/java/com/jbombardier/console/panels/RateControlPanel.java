@@ -17,8 +17,8 @@
 package com.jbombardier.console.panels;
 
 import com.jbombardier.common.TestField;
-import com.jbombardier.console.JBombardierController;
-import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.JBombardierController;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.console.charts.XYTimeChartPanel;
 import com.jbombardier.console.components.ReflectiveTable;
 import com.jbombardier.console.model.AgentModel;

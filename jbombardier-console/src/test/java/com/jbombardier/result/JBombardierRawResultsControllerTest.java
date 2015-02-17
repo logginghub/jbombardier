@@ -22,14 +22,14 @@ import com.jbombardier.console.sample.SleepTest;
 import com.logginghub.utils.FixedTimeProvider;
 import org.junit.Test;
 
-import static com.jbombardier.common.AgentStats.AgentStatsBuilder.build;
+import static com.jbombardier.common.AgentStats.AgentStatsBuilder.agentStats;
 import static com.jbombardier.common.AgentStats.AgentStatsBuilder.test;
 import static com.jbombardier.result.JBombardierRunResult.unknown_state;
 import static com.jbombardier.result.JBombardierRunResult.unknown_time;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-public class JBombardierResultsControllerTest {
+public class JBombardierRawResultsControllerTest {
 
     private JBombardierConfiguration configuration1 = JBombardierConfigurationBuilder.start()
                                                                                      .addTest(
@@ -92,7 +92,7 @@ public class JBombardierResultsControllerTest {
         assertThat(firstPhase.getPhaseName(), is(JBombardierRunResult.defaultPhase));
         assertThat(firstPhase.getPhaseStartTime(), is(1L));
 
-        resultsController.onAgentStatsResult(build().agentName("Agent 1")
+        resultsController.onAgentStatsResult(agentStats().agentName("Agent 1")
                                                     .testStats(test("Test 1").successResult(10, 20))
                                                     .toStats(), "123.123.123.123/host1");
 

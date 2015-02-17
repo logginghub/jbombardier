@@ -54,7 +54,7 @@ public class AgentStats {
             return this;
         }
 
-        public static AgentStatsBuilder build() {
+        public static AgentStatsBuilder agentStats() {
             return new AgentStatsBuilder();
         }
 
@@ -118,9 +118,33 @@ public class AgentStats {
         }
 
         public TestStatsBuilder successResult(long... result) {
+            long total =0;
             for (long l : result) {
                 stats.successResults.add(l);
+                total += l;
             }
+
+            stats.setTransactionsSuccess(result.length);
+            stats.setTotalDurationSuccess(total);
+
+            // If the total duration (test + pre-iteration setup/teardown) isn't set, set it as a short cut
+            if(stats.getTotalDurationTotalSuccess() == 0) {
+                stats.setTotalDurationTotalSuccess(result.length);
+                stats.setTotalDurationTotalSuccess(total);
+            }
+
+            return this;
+        }
+
+        public TestStatsBuilder totalDurationSuccessResult(long... result) {
+            long total =0;
+            for (long l : result) {
+                total += l;
+            }
+
+            stats.setTotalDurationTotalSuccess(result.length);
+            stats.setTotalDurationTotalSuccess(total);
+
             return this;
         }
 
@@ -128,11 +152,20 @@ public class AgentStats {
             for (long l : result) {
                 stats.failResults.add(l);
             }
+
+            stats.setTransactionsFailed(result.length);
+
             return this;
         }
 
         public TestStats toStats() {
             return stats;
+        }
+
+        public static TestStatsBuilder testStats(String name) {
+            TestStatsBuilder testStatsBuilder = new TestStatsBuilder();
+            testStatsBuilder.testName(name);
+            return testStatsBuilder;
         }
     }
 
@@ -210,6 +243,54 @@ public class AgentStats {
             this.sampleDuration = System.currentTimeMillis() - basicTestStats.sampleTimeStart;
             this.successResults.addAll(basicTestStats.switchOutSuccessResults());
             this.failResults.addAll(basicTestStats.switchOutFailResults());
+        }
+
+        public void setTotalDurationTotalSuccess(long totalDurationTotalSuccess) {
+            this.totalDurationTotalSuccess = totalDurationTotalSuccess;
+        }
+
+        public long getTotalDurationTotalSuccess() {
+            return totalDurationTotalSuccess;
+        }
+
+        public long getSampleDuration() {
+            return sampleDuration;
+        }
+
+        public void setSampleDuration(long sampleDuration) {
+            this.sampleDuration = sampleDuration;
+        }
+
+        public long getTotalDurationFailed() {
+            return totalDurationFailed;
+        }
+
+        public void setTotalDurationFailed(long totalDurationFailed) {
+            this.totalDurationFailed = totalDurationFailed;
+        }
+
+        public long getTotalDurationSuccess() {
+            return totalDurationSuccess;
+        }
+
+        public void setTotalDurationSuccess(long totalDurationSuccess) {
+            this.totalDurationSuccess = totalDurationSuccess;
+        }
+
+        public long getTransactionsFailed() {
+            return transactionsFailed;
+        }
+
+        public void setTransactionsFailed(long transactionsFailed) {
+            this.transactionsFailed = transactionsFailed;
+        }
+
+        public long getTransactionsSuccess() {
+            return transactionsSuccess;
+        }
+
+        public void setTransactionsSuccess(long transactionsSuccess) {
+            this.transactionsSuccess = transactionsSuccess;
         }
 
         public void setTransaction(boolean isTransaction) {

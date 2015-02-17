@@ -31,16 +31,28 @@ public class DiskWritePerformance extends PerformanceTestAdaptor {
 
     private FileOutputStream fos;
     private byte[] data;
+    private File file;
 
-    @Override public void setup(TestContext pti) throws Exception {
-        File file = new File("/hd1/build/tmp/fos/fos" + Thread.currentThread().getName() + ".dat");
+    @Override
+    public void setup(TestContext pti) throws Exception {
+        file = new File("/tmp/fos" + Thread.currentThread().getName() + ".dat");
         FileUtils.ensurePathExists(file);
-        fos = new FileOutputStream(file);
         data = StringUtils.randomString(1 * 1024 * 1024).getBytes();
     }
 
-    @Override public void runIteration(TestContext pti) throws Exception {
+    @Override
+    public void beforeIteration(TestContext pti) throws Exception {
+        fos = new FileOutputStream(file);
+    }
+
+    @Override
+    public void runIteration(TestContext pti) throws Exception {
         fos.write(data);
     }
 
+    @Override
+    public void afterIteration(TestContext pti, long nanos) throws Exception {
+        fos.close();
+        file.delete();
+    }
 }

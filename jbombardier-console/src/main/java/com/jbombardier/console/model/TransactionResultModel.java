@@ -16,14 +16,8 @@
 
 package com.jbombardier.console.model;
 
-import com.logginghub.utils.observable.Observable;
-import com.logginghub.utils.observable.ObservableDouble;
-import com.logginghub.utils.observable.ObservableList;
-import com.logginghub.utils.observable.ObservableLong;
-import com.logginghub.utils.observable.ObservableProperty;
+import com.logginghub.utils.observable.*;
 import org.codehaus.jackson.annotate.JsonIgnore;
-
-import java.nio.DoubleBuffer;
 
 /**
  * Represents the summary values for a single test or transaction.
@@ -66,6 +60,7 @@ public class TransactionResultModel extends Observable {
     private ObservableLong unsuccessfulTransactionsCountTotal = createLongProperty("unsuccessfulTransactionsCountTotal", 0);
 
     private ObservableLong successfulTransactionsDurationTotal = createLongProperty("successfulTransactionsDurationTotal", 0);
+    private ObservableLong successfulTransactionsIncludingPreandPostDurationTotal = createLongProperty("successfulTransactionsIncludingPreandPostDurationTotal", 0);
     private ObservableLong unsuccessfulTransactionsDurationTotal = createLongProperty("unsuccessfulTransactionsDurationTotal", 0);
 
     /**
@@ -96,6 +91,7 @@ public class TransactionResultModel extends Observable {
     private ObservableDouble successfulTransactionTotalDuration = createDoubleProperty("successfulTransactionTotalDuration", Double.NaN);
     private ObservableDouble unsuccessfulTransactionDuration = createDoubleProperty("successfulTransactionDuration", Double.NaN);
 
+    private ObservableInteger threadCount = createIntProperty("threadCount", -1);
 
     @JsonIgnore private ObservableProperty<ChartLineFormat> chartLineFormat = new ObservableProperty<ChartLineFormat>(null, this);
 
@@ -477,5 +473,13 @@ public class TransactionResultModel extends Observable {
 
     public ObservableLong getUnsuccessfulTransactionsDurationTotal() {
         return unsuccessfulTransactionsDurationTotal;
+    }
+
+    public ObservableInteger getThreadCount() {
+        return threadCount;
+    }
+
+    public ObservableLong getSuccessfulTransactionsIncludingPreandPostDurationTotal() {
+        return successfulTransactionsIncludingPreandPostDurationTotal;
     }
 }

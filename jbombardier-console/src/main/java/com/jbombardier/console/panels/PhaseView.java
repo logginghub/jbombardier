@@ -16,8 +16,8 @@
 
 package com.jbombardier.console.panels;
 
-import com.jbombardier.console.JBombardierController;
-import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.JBombardierController;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.console.model.PhaseModel;
 import com.logginghub.utils.TimeUtils;
 import com.logginghub.utils.observable.ObservablePropertyListener;

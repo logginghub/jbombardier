@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.jbombardier.console;
+package com.jbombardier;
 
 import com.jbombardier.common.serialisableobject.CapturedStatistic;
+import com.jbombardier.console.CapturedStatisticsHelper;
 import com.jbombardier.console.model.AgentModel;
 import com.jbombardier.console.model.PhaseModel;
 import com.jbombardier.console.model.TransactionResultModel;
@@ -25,6 +26,7 @@ import com.jbombardier.console.model.result.PhaseResult;
 import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.console.model.result.TransactionResult;
 import com.logginghub.utils.Destination;
+import com.logginghub.utils.SinglePassStatisticsLongPrecisionCircular;
 import com.logginghub.utils.observable.ObservableList;
 
 import java.util.List;
@@ -33,7 +35,8 @@ import java.util.List;
  * Created by james on 06/02/15.
  */
 public class RunResultBuilder {
-    public RunResult createSnapshot(JBombardierModel model, CapturedStatisticsHelper helper) {
+
+    public RunResult createSnapshot(JBombardierModel model, CapturedStatisticsHelper helper, RawResultsController rawResultsController) {
 
         RunResult result = new RunResult();
 
@@ -43,7 +46,7 @@ public class RunResultBuilder {
 
         ObservableList<PhaseModel> phaseModels = model.getPhaseModels();
         for (PhaseModel phaseModel : phaseModels) {
-            PhaseResult phaseResult = capturePhaseResults(phaseModel);
+            PhaseResult phaseResult = capturePhaseResults(phaseModel, model.getAgentsInTest(), rawResultsController);
             captureStatistics(phaseResult, helper);
             result.getPhaseResults().add(phaseResult);
         }
@@ -65,13 +68,14 @@ public class RunResultBuilder {
 
     private void captureStatistics(final PhaseResult phaseResult, CapturedStatisticsHelper helper) {
         helper.visitStreamingFile(phaseResult.getPhaseName(), new Destination<CapturedStatistic>() {
-            @Override public void send(CapturedStatistic capturedStatistic) {
+            @Override
+            public void send(CapturedStatistic capturedStatistic) {
                 phaseResult.getCapturedStatistics().add(capturedStatistic);
             }
         });
     }
 
-    private PhaseResult capturePhaseResults(PhaseModel phaseModel) {
+    private PhaseResult capturePhaseResults(PhaseModel phaseModel, int agents, RawResultsController rawResultsController) {
         PhaseResult phaseResult = new PhaseResult();
         phaseResult.setDuration(phaseModel.getPhaseDuration().get());
         phaseResult.setWarmup(phaseModel.getWarmupDuration().get());
@@ -84,32 +88,57 @@ public class RunResultBuilder {
 
             tr.setTestName(trm.getTestName().get());
             tr.setTransactionName(trm.getTransactionName().get());
-            tr.setTotalTransactionCount(trm.getSuccessfulTransactionsCountTotal().get());
+            tr.setTotalTransactionCount(trm.getSuccessfulTransactionsCountTotal().get() + trm.getUnsuccessfulTransactionsCountTotal().get());
 
             tr.setSuccessfulTransactionCount(trm.getSuccessfulTransactionsCountTotal().get());
 
             long totalTransactions = trm.getSuccessfulTransactionsCountTotal().get();
             long totalTransactionTime = trm.getSuccessfulTransactionsDurationTotal().get();
             long testDuration = trm.getTestDuration().get();
+            double totalDurationIncludingPreAndPost = trm.getSuccessfulTransactionsIncludingPreandPostDurationTotal().get();
 
-            double meanTPS = totalTransactions / (testDuration/1000d);
-
+            double meanTPS = totalTransactions / (testDuration / 1000d);
             double meanTransactionTimeNS;
-            if(totalTransactions > 0) {
-                meanTransactionTimeNS = totalTransactionTime / totalTransactions;
-            }else{
+            double meanTransactionTimeIncludingPreAndPostNS;
+
+            if (totalTransactions > 0) {
+                meanTransactionTimeNS = totalTransactionTime / (double) totalTransactions;
+                meanTransactionTimeIncludingPreAndPostNS = totalDurationIncludingPreAndPost / (double)totalTransactions;
+            } else {
                 meanTransactionTimeNS = Double.NaN;
+                meanTransactionTimeIncludingPreAndPostNS = Double.NaN;
             }
 
             tr.setSuccessfulTransactionMeanTransactionsPerSecond(meanTPS);
             tr.setSuccessfulTransactionMeanDuration(meanTransactionTimeNS);
-            tr.setSuccessfulTransactionMeanTotalDuration(trm.getSuccessfulTransactionTotalDuration().get());
+            tr.setSuccessfulTransactionMeanTotalDuration(meanTransactionTimeIncludingPreAndPostNS);
             tr.setSuccessfulTransactionMeanTransactionsPerSecondTarget(trm.getTargetSuccessfulTransactionsPerSecond().get());
+
+            tr.setSuccessfulMaximumTransactionsPerSecond(1000 / meanTransactionTimeIncludingPreAndPostNS);
 
             tr.setUnsuccessfulTransactionCount(trm.getUnsuccessfulTransactionsCountTotal().get());
             tr.setUnsuccessfulTransactionMeanDuration(trm.getUnsuccessfulTransactionDuration().get());
 
             tr.setSla(trm.getSuccessfulTransactionDurationSLA().get());
+
+            tr.setAgents(agents);
+            tr.setThreads(trm.getThreadCount().get());
+            tr.setSampleTime(trm.getTestDuration().get());
+
+            // Now for the more complex statistics stuff
+            SinglePassStatisticsLongPrecisionCircular stats = rawResultsController.getSuccessStatsByTest().get(trm.getKey());
+            if (stats != null) {
+                stats.doCalculations();
+
+                tr.setSuccessfulStandardDeviation(stats.getStandardDeviationPopulationDistrubution());
+                tr.setSuccessfulMedian(stats.getMedian());
+                tr.setSuccessfulSlowestResult(stats.getMaximum());
+                tr.setSuccessfulFastestResult(stats.getMinimum());
+                tr.setSuccessfulAbsoluteDeviation(stats.getAbsoluteDeviation());
+                tr.setSuccessfulAbsoluteDeviationAsPercentage(stats.getPercentageAbsoluteDeviation());
+                tr.setSuccessfulPercentiles(stats.getPercentiles());
+            }
+
 
             phaseResult.getTransactionResults().add(tr);
 

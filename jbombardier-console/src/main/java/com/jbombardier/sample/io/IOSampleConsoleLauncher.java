@@ -16,9 +16,9 @@
 
 package com.jbombardier.sample.io;
 
-import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.configurationBuilder;
-import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.phase;
-import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.test;
+import com.logginghub.utils.VLPorts;
+
+import static com.jbombardier.console.configuration.JBombardierConfigurationBuilder.*;
 
 /**
  * Created by james on 30/01/15.
@@ -27,33 +27,34 @@ public class IOSampleConsoleLauncher {
     public static void main(String[] args) {
 
         String warmupDuration = "1 seconds";
-        String phaseDuration = "2 seconds";
+        String phaseDuration = "5 seconds";
 
         configurationBuilder().testName("IO Performance Sample")
-                              .addEmbeddedAgent()
-                              .addPhase(phase("Phase 1").duration(phaseDuration)
-                                                        .warmup(warmupDuration)
-                                                        .addTest(test(DiskWritePerformance.class).name(
-                                                                "File output stream")
-                                                                                                 .targetRate(-1)
-                                                                                                 .threads(1)))
-                              .addPhase(phase("Phase 2").duration(phaseDuration).warmup(warmupDuration).addTest(test(
-                                      DiskWritePerformance.class).name("File output stream")
-                                                                 .targetRate(-1)
-                                                                 .threads(2)
-                                                                 .threadStep(2)))
-                              .addPhase(phase("Phase 3").duration(phaseDuration).warmup(warmupDuration).addTest(test(
-                                      DiskWritePerformance.class).name("File output stream")
-                                                                 .targetRate(-1)
-                                                                 .threads(5)
-                                                                 .threadStep(5)))
-                              .addPhase(phase("Phase 4").duration(phaseDuration).warmup(warmupDuration).addTest(test(
-                                      DiskWritePerformance.class).name("File output stream")
-                                                                 .targetRate(-1)
-                                                                 .threads(10)
-                                                                 .threadStep(10)))
-                              .autostart(1)
-                              .execute();
+                .addEmbeddedAgent()
+                .addPhase(phase("Phase 1").duration(phaseDuration)
+                        .warmup(warmupDuration)
+                        .addTest(test(DiskWritePerformance.class).name(
+                                "File output stream")
+                                .targetRate(-1)
+                                .threads(1)))
+//                .addPhase(phase("Phase 2").duration(phaseDuration).warmup(warmupDuration).addTest(test(
+//                        DiskWritePerformance.class).name("File output stream")
+//                        .targetRate(-1)
+//                        .threads(2)
+//                        .threadStep(2)))
+//                .addPhase(phase("Phase 3").duration(phaseDuration).warmup(warmupDuration).addTest(test(
+//                        DiskWritePerformance.class).name("File output stream")
+//                        .targetRate(-1)
+//                        .threads(5)
+//                        .threadStep(5)))
+//                .addPhase(phase("Phase 4").duration(phaseDuration).warmup(warmupDuration).addTest(test(
+//                        DiskWritePerformance.class).name("File output stream")
+//                        .targetRate(-1)
+//                        .threads(10)
+//                        .threadStep(10)))
+                .resultRepository("localhost", VLPorts.getRepositoryDefaultPort())
+                .autostart(1)
+                .execute();
 
     }
 }

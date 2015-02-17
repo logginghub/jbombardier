@@ -23,7 +23,7 @@ import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JButton;
 
-import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.console.components.JDynamicStateButton;
 import com.jbombardier.console.model.AgentModel;
 

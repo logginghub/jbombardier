@@ -16,7 +16,6 @@
 
 package com.jbombardier;
 
-import com.jbombardier.console.JBombardierController;
 import com.jbombardier.console.model.PhaseModel;
 import com.logginghub.utils.Asynchronous;
 import com.logginghub.utils.SystemTimeProvider;
@@ -135,6 +134,7 @@ public class JBombardierTemporalController implements Asynchronous {
 
                 controller.stopPhase();
                 controller.endTestNormally();
+                controller.doPostTestTasks();
 
                 logger.info("Temporal controller test execution complete - ending control thread");
                 workerThread.dontRunAgain();

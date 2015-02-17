@@ -24,7 +24,7 @@ import com.jbombardier.common.AgentStats.TestStats;
 import com.jbombardier.common.BasicTestStats;
 import com.jbombardier.common.TestFactory;
 import com.jbombardier.common.TestInstruction;
-import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.JBombardierModel;
 
 public class EmbeddedRunner {
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.jbombardier.console;
+package com.jbombardier;
 
 import com.jbombardier.common.AgentStats;
 import com.jbombardier.common.AgentStats.TestStats;
@@ -36,9 +36,9 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 
-public class ResultsController {
+public class RawResultsController {
 
-    private static final Logger logger = Logger.getLoggerFor(ResultsController.class);
+    private static final Logger logger = Logger.getLoggerFor(RawResultsController.class);
     private File resultsFolder;
     private BufferedOutputStream statisticsStream;
 
@@ -60,9 +60,13 @@ public class ResultsController {
     };
     private Timer statsUpdater;
 
-    public ResultsController(File resultsFolder) {
+    public RawResultsController(File resultsFolder) {
         this.resultsFolder = resultsFolder;
         resultsFolder.mkdirs();
+    }
+
+    public RawResultsController() {
+
     }
 
     public void handleAgentStatusUpdate(AgentStats agentStats) {

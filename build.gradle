@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-apply plugin: 'java'
-
-group = 'com.jbombardier'
-version = '1.4.4-b2'
+plugins {
+    id 'org.hidetake.ssh' version '1.0.1'
+}
 
 subprojects {
+
+    group = 'com.jbombardier'
+    version = '1.4.5'
 
     apply plugin: 'java'
     apply plugin: 'distribution'
@@ -88,7 +90,7 @@ subprojects {
 
     remotes {
         hosting {
-            host = 'hosting'
+            host = 'www.vertexlabs.co.uk'
             user = 'mavenrepo'
             identity = file(System.properties['user.home'] + "/.ssh/id_rsa")
         }
@@ -105,7 +107,7 @@ subprojects {
     uploadArchives {
         repositories.mavenDeployer {
             configuration = configurations.deployerJars
-            repository(url: "scp://mavenrepo@hosting:/var/www/repository") {
+            repository(url: "scp://mavenrepo@www.vertexlabs.co.uk:/var/www/repository") {
                 authentication(userName: "mavenrepo", privateKey: System.properties['user.home'] + "/.ssh/id_rsa")
             }
         }

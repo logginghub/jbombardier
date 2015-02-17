@@ -21,9 +21,9 @@ dependencies {
     compile 'org.slf4j:slf4j-api:1.6.4'
     compile 'org.slf4j:slf4j-log4j12:1.6.4'
 
-    compile 'com.logginghub:vl-messaging2:1.4.7'
-    compile 'com.logginghub:vl-messaging3:1.4.7'
-    compile 'com.logginghub:vl-web:1.4.7'
+    compile 'com.logginghub:logginghub-messaging2:1.4.7'
+    compile 'com.logginghub:logginghub-messaging3:1.4.7'
+    compile 'com.logginghub:logginghub-web:1.4.7'
     compile 'com.logginghub.thirdparty:jnotify:0.94'
 
     testCompile 'junit:junit:4.11'

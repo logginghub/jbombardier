@@ -16,7 +16,6 @@
 
 package com.jbombardier.result;
 
-import com.logginghub.utils.CollectionUtils;
 import com.logginghub.utils.StringUtils;
 
 import java.util.ArrayList;
@@ -63,12 +62,12 @@ public class JBombardierAgentTestResult {
         builder.appendLine("AgentTestResult : agentName='{}'",
                        agentName);
 
-        builder.indent();
+//        builder.indent();
 
         for (JBombardierTestElement testElement : testElements) {
             testElement.toStringDeep(builder);
         }
 
-        builder.outdent();
+//        builder.outdent();
     }
 }

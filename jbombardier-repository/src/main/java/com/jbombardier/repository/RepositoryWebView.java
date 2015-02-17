@@ -16,14 +16,13 @@
 
 package com.jbombardier.repository;
 
-import com.jbombardier.common.serialisableobject.CapturedStatistic;
 import com.jbombardier.console.VelocityUtils;
 import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.console.model.result.TransactionResult;
 import com.jbombardier.repository.model.RepositoryModel;
-import com.jbombardier.repository.model.ResultDeltasForRun;
 import com.jbombardier.repository.model.RepositoryTestModel;
 import com.jbombardier.repository.model.ResultDelta;
+import com.jbombardier.repository.model.ResultDeltasForRun;
 import com.logginghub.utils.*;
 import com.logginghub.utils.logging.Logger;
 import com.logginghub.utils.observable.ObservableList;
@@ -75,7 +74,7 @@ import java.util.*;
         for (TransactionResult transactionResult : results) {
             builder.append(div);
             builder.append("[");
-            builder.append(transactionResult.getTestTime())
+            builder.append(transactionResult.getSampleTime())
                    .append(",")
                    .append(transactionResult.getSuccessfulTransactionCount());
             builder.append("]");
@@ -99,7 +98,7 @@ import java.util.*;
         for (TransactionResult transactionResult : results) {
             builder.append(div);
             builder.append("[");
-            builder.append(transactionResult.getTestTime())
+            builder.append(transactionResult.getSampleTime())
                    .append(",")
                    .append(transactionResult.getSuccessfulTransactionMeanDuration());
             builder.append("]");
@@ -115,7 +114,7 @@ import java.util.*;
             builder.append("[");
             double sla = transactionResult.getSla();
             if (!Double.isNaN(sla)) {
-                builder.append(transactionResult.getTestTime())
+                builder.append(transactionResult.getSampleTime())
                        .append(",")
                        .append(transactionResult.getSla());
             }
@@ -322,7 +321,7 @@ import java.util.*;
 
         Collections.sort(results, new Comparator<TransactionResult>() {
             @Override public int compare(TransactionResult o1, TransactionResult o2) {
-                return CompareUtils.compareLongs(o2.getTestTime(), o1.getTestTime());
+                return CompareUtils.compareLongs(o2.getSampleTime(), o1.getSampleTime());
             }
         });
 
@@ -407,7 +406,7 @@ import java.util.*;
         List<TransactionResult> results = getResultsForTest(testName, resultName);
         Collections.sort(results, new Comparator<TransactionResult>() {
             @Override public int compare(TransactionResult o1, TransactionResult o2) {
-                return CompareUtils.compareLongs(o2.getTestTime(), o1.getTestTime());
+                return CompareUtils.compareLongs(o2.getSampleTime(), o1.getSampleTime());
             }
         });
         return results;

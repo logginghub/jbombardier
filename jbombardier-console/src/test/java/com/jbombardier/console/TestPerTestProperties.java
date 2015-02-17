@@ -16,6 +16,7 @@
 
 package com.jbombardier.console;
 
+import com.jbombardier.JBombardierController;
 import com.jbombardier.common.PhaseInstruction;
 import com.jbombardier.common.TestInstruction;
 import com.logginghub.utils.FactoryMap;

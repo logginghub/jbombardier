@@ -16,8 +16,8 @@
 
 package com.jbombardier.console.panels;
 
-import com.jbombardier.console.JBombardierController;
-import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.JBombardierController;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.console.charts.LineFormatController;
 import com.jbombardier.console.charts.XYTimeChartPanel;
 import com.jbombardier.console.components.ReflectiveTable;

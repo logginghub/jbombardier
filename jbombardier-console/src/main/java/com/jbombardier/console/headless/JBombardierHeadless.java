@@ -17,8 +17,8 @@
 package com.jbombardier.console.headless;
 
 import com.jbombardier.JBombardierTemporalController;
-import com.jbombardier.console.JBombardierController;
-import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.JBombardierController;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.console.configuration.ConfigurationValidator;
 import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.model.AgentModel;
@@ -123,7 +123,7 @@ public class JBombardierHeadless {
 
         temporalController.waitForTestToComplete();
 
-        controller.generateReport(configuration.isOpenReport());
+        controller.doPostTestTasks();
 
 //        long warmupTime = TimeUtils.parseInterval(configuration.getWarmupTime());
 //        long testDuration = TimeUtils.parseInterval(configuration.getDuration());

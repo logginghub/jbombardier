@@ -18,7 +18,7 @@ package com.jbombardier.console.configuration;
 
 import com.jbombardier.common.PerformanceTest;
 import com.jbombardier.common.StatisticProvider;
-import com.jbombardier.console.JBombardierController;
+import com.jbombardier.JBombardierController;
 import com.jbombardier.console.JBombardierSwingConsole;
 import com.jbombardier.console.headless.JBombardierHeadless;
 import com.jbombardier.console.model.TransactionResultModel;

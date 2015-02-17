@@ -65,6 +65,17 @@ public class TransactionResult {
     private double unsuccessfulTransactionMeanTransactionsPerSecond;
     private double successfulTransactionMeanTotalDuration;
     private double successfulTransactionMeanTransactionsPerSecondTarget;
+    private int threads;
+    private int agents;
+    private long sampleTime;
+    private double successfulMaximumTransactionsPerSecond;
+    private double successfulAbsoluteDeviation;
+    private double successfulAbsoluteDeviationAsPercentage;
+    private double[] successfulPercentiles;
+    private double successfulMedian;
+    private double successfulFastestResult;
+    private double successfulSlowestResult;
+    private double successfulStandardDeviation;
 
     //    public static TransactionResult fromModel(TransactionResultModel value) {
 //
@@ -125,9 +136,9 @@ public class TransactionResult {
         this.testTime = testTime;
     }
 
-    public long getTestTime() {
-        return testTime;
-    }
+//    public long getTestTime() {
+//        return testTime;
+//    }
 
     public long getSuccessfulTransactionCount() {
         return successfulTransactionCount;
@@ -193,6 +204,93 @@ public class TransactionResult {
         return successfulTransactionMeanTransactionsPerSecondTarget;
     }
 
+    public int getThreads() {
+        return threads;
+    }
+
+    public void setThreads(int threads) {
+        this.threads = threads;
+    }
+
+    public int getAgents() {
+        return agents;
+    }
+
+    public void setAgents(int agents) {
+        this.agents = agents;
+    }
+
+    public void setSampleTime(long sampleTime) {
+        this.sampleTime = sampleTime;
+    }
+
+    public long getSampleTime() {
+        return sampleTime;
+    }
+
+    public double getSuccessfulMaximumTransactionsPerSecond() {
+        return successfulMaximumTransactionsPerSecond;
+    }
+
+    public void setSuccessfulMaximumTransactionsPerSecond(double successfulMaximumTransactionsPerSecond) {
+        this.successfulMaximumTransactionsPerSecond = successfulMaximumTransactionsPerSecond;
+    }
+
+    public double getSuccessfulAbsoluteDeviation() {
+        return successfulAbsoluteDeviation;
+    }
+
+    public void setSuccessfulAbsoluteDeviation(double successfulAbsoluteDeviation) {
+        this.successfulAbsoluteDeviation = successfulAbsoluteDeviation;
+    }
+
+    public double getSuccessfulAbsoluteDeviationAsPercentage() {
+        return successfulAbsoluteDeviationAsPercentage;
+    }
+
+    public double[] getSuccessfulPercentiles() {
+        return successfulPercentiles;
+    }
+
+    public double getSuccessfulMedian() {
+        return successfulMedian;
+    }
+
+    public void setSuccessfulMedian(double successfulMedian) {
+        this.successfulMedian = successfulMedian;
+    }
+
+    public double getSuccessfulFastestResult() {
+        return successfulFastestResult;
+    }
+
+    public double getSuccessfulSlowestResult() {
+        return successfulSlowestResult;
+    }
+
+    public void setSuccessfulSlowestResult(double successfulSlowestResult) {
+        this.successfulSlowestResult = successfulSlowestResult;
+    }
+
+    public double getSuccessfulStandardDeviation() {
+        return successfulStandardDeviation;
+    }
+
+    public void setSuccessfulStandardDeviation(double successfulStandardDeviation) {
+        this.successfulStandardDeviation = successfulStandardDeviation;
+    }
+
+    public void setSuccessfulFastestResult(double successfulFastestResult) {
+        this.successfulFastestResult = successfulFastestResult;
+    }
+
+    public void setSuccessfulAbsoluteDeviationAsPercentage(double successfulAbsoluteDeviationAsPercentage) {
+        this.successfulAbsoluteDeviationAsPercentage = successfulAbsoluteDeviationAsPercentage;
+    }
+
+    public void setSuccessfulPercentiles(double[] successfulPercentiles) {
+        this.successfulPercentiles = successfulPercentiles;
+    }
 
     // private long totalTransactions = 0;
     // private boolean isTransaction;

@@ -25,14 +25,14 @@ import javax.swing.UIManager;
 
 import com.jbombardier.JBombardierTemporalController;
 import com.jbombardier.console.JBombardierSwingConsole;
-import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.model.TestModel;
 import com.jbombardier.console.panels.SwingConsoleMainPanel;
 import com.logginghub.utils.Pair;
 import com.logginghub.utils.swing.MainFrame;
 import com.jbombardier.common.TestFactory;
-import com.jbombardier.console.JBombardierController;
+import com.jbombardier.JBombardierController;
 
 public class EmbeddedPerformanceTest {
 

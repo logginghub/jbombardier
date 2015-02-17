@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-rootProject.name = 'jbombardier'
-
 include 'jbombardier-common'
 include 'jbombardier-agent'
 include 'jbombardier-console'

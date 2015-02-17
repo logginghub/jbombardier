@@ -14,58 +14,17 @@
  * limitations under the License.
  */
 
-package com.jbombardier.console;
+package com.jbombardier;
 
 import com.jbombardier.agent.Agent2;
-import com.jbombardier.common.AgentClassRequest;
-import com.jbombardier.common.AgentClassResponse;
-import com.jbombardier.common.AgentFailedInstruction;
-import com.jbombardier.common.AgentKillInstruction;
-import com.jbombardier.common.AgentLogMessage;
-import com.jbombardier.common.AgentPropertyEntryRequest;
-import com.jbombardier.common.AgentPropertyEntryResponse;
-import com.jbombardier.common.AgentPropertyRequest;
-import com.jbombardier.common.AgentPropertyResponse;
-import com.jbombardier.common.AgentStats;
-import com.jbombardier.common.CsvPropertiesProvider;
-import com.jbombardier.common.DataBucket;
-import com.jbombardier.common.DataStrategy;
-import com.jbombardier.common.KryoHelper;
-import com.jbombardier.common.PerformanceTest;
-import com.jbombardier.common.PhaseInstruction;
-import com.jbombardier.common.PhaseStartInstruction;
-import com.jbombardier.common.PhaseStopInstruction;
-import com.jbombardier.common.PingMessage;
-import com.jbombardier.common.PropertyEntry;
-import com.jbombardier.common.SendTelemetryRequest;
-import com.jbombardier.common.StatisticProvider;
-import com.jbombardier.common.StopTelemetryRequest;
-import com.jbombardier.common.StopTestRequest;
-import com.jbombardier.common.StopTestResponse;
-import com.jbombardier.common.TestField;
-import com.jbombardier.common.TestInstruction;
-import com.jbombardier.common.TestPackage;
-import com.jbombardier.common.TestVariableUpdateRequest;
-import com.jbombardier.common.ThreadsChangedMessage;
+import com.jbombardier.common.*;
 import com.jbombardier.common.serialisableobject.CapturedStatistic;
+import com.jbombardier.console.CapturedStatisticsHelper;
+import com.jbombardier.console.RepositoryMessagingClient;
+import com.jbombardier.console.VelocityUtils;
 import com.jbombardier.console.charts.FrequencyChart;
-import com.jbombardier.console.configuration.AgentConfiguration;
-import com.jbombardier.console.configuration.HubCapture;
-import com.jbombardier.console.configuration.HubCapturePattern;
-import com.jbombardier.console.configuration.JBombardierConfiguration;
-import com.jbombardier.console.configuration.JmxCapture;
-import com.jbombardier.console.configuration.JmxTarget;
-import com.jbombardier.console.configuration.PhaseConfiguration;
-import com.jbombardier.console.configuration.Property;
-import com.jbombardier.console.configuration.StatisticsCapture;
-import com.jbombardier.console.configuration.TestConfiguration;
-import com.jbombardier.console.model.AgentModel;
-import com.jbombardier.console.model.ConsoleEventModel;
-import com.jbombardier.console.model.DataSource;
-import com.jbombardier.console.model.JSONHelper;
-import com.jbombardier.console.model.PhaseModel;
-import com.jbombardier.console.model.TestModel;
-import com.jbombardier.console.model.TransactionResultModel;
+import com.jbombardier.console.configuration.*;
+import com.jbombardier.console.model.*;
 import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.console.statisticcapture.JMXStatisticCapture;
 import com.jbombardier.console.statisticcapture.LoggingHubStatisticCapture;
@@ -77,33 +36,9 @@ import com.logginghub.messaging2.ReflectionDispatchMessageListener;
 import com.logginghub.messaging2.api.ConnectionListener;
 import com.logginghub.messaging2.kryo.KryoClient;
 import com.logginghub.messaging2.kryo.ResponseHandler;
-import com.logginghub.utils.BrowserUtils;
-import com.logginghub.utils.Destination;
-import com.logginghub.utils.FactoryMap;
-import com.logginghub.utils.FileUtils;
-import com.logginghub.utils.HTMLBuilder2;
-import com.logginghub.utils.IntegerStat;
-import com.logginghub.utils.Is;
-import com.logginghub.utils.ListBackedMap;
-import com.logginghub.utils.MemorySnapshot;
+import com.logginghub.utils.*;
 import com.logginghub.utils.MemorySnapshot.LowMemoryNotificationHandler;
-import com.logginghub.utils.Metadata;
-import com.logginghub.utils.NamedThreadFactory;
-import com.logginghub.utils.NetUtils;
-import com.logginghub.utils.QuietLatch;
-import com.logginghub.utils.ReflectionUtils;
-import com.logginghub.utils.ResourceUtils;
-import com.logginghub.utils.SinglePassStatisticsLongPrecisionCircular;
-import com.logginghub.utils.StatBundle;
-import com.logginghub.utils.Stream;
-import com.logginghub.utils.StringUtils;
 import com.logginghub.utils.StringUtils.StringUtilsBuilder;
-import com.logginghub.utils.SystemTimeProvider;
-import com.logginghub.utils.ThreadUtils;
-import com.logginghub.utils.TimeProvider;
-import com.logginghub.utils.TimeUtils;
-import com.logginghub.utils.TimerUtils;
-import com.logginghub.utils.WorkerThread;
 import com.logginghub.utils.logging.Logger;
 import com.logginghub.utils.observable.ObservableList;
 import com.logginghub.utils.observable.ObservablePropertyListener;
@@ -120,21 +55,8 @@ import org.apache.velocity.util.introspection.Info;
 import java.io.File;
 import java.io.FileWriter;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Timer;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class JBombardierController {
 
@@ -148,7 +70,7 @@ public class JBombardierController {
     private Map<String, CsvPropertiesProvider> csvPropertyProviders = new HashMap<String, CsvPropertiesProvider>();
     private Map<ReflectionDispatchMessageListener, KryoClient> dispatchingListeners = new HashMap<ReflectionDispatchMessageListener, KryoClient>();
     private Map<String, DataSource> dataByName = new HashMap<String, DataSource>();
-    private ResultsController resultsController;
+    private RawResultsController rawResultsController;
     private CapturedStatisticsHelper capturedStatisticsHelper;
     private ExecutorService pool = Executors.newCachedThreadPool(new NamedThreadFactory("JBombardierController-worker-"));
     //    private int autostartAgents;
@@ -171,6 +93,7 @@ public class JBombardierController {
     private JBombardierRunResult newResultModel;
     private JBombardierResultsController newResultsController;
 
+
     public enum State {
         Configured, AgentConnectionsRunning, TestRunning, Stopped, Completed
     }
@@ -192,14 +115,15 @@ public class JBombardierController {
 
         capturedStatisticsHelper = new CapturedStatisticsHelper(model);
 
-        resultsController = new ResultsController(new File(configuration.getReportsFolder()));
-        resultsController.setMaximumResultsPerKey(configuration.getMaximumResultToStore());
+        rawResultsController = new RawResultsController(new File(configuration.getReportsFolder()));
+        rawResultsController.setMaximumResultsPerKey(configuration.getMaximumResultToStore());
 
         initialiseStats();
 
         // Attach a listener to pickup changes to the transaction rate modifier changer
         model.getTransactionRateModifier().addListenerAndNotifyCurrent(new ObservablePropertyListener<Double>() {
-            @Override public void onPropertyChanged(Double aDouble, Double t1) {
+            @Override
+            public void onPropertyChanged(Double aDouble, Double t1) {
                 updateTransactionRateModifier(model.getTransactionRateModifier().get());
             }
         });
@@ -219,7 +143,8 @@ public class JBombardierController {
     public void startAgentConnections() {
 
         memoryMonitorWorkerThread = MemorySnapshot.runMonitorToLogging(90, new LowMemoryNotificationHandler() {
-            @Override public void onLowMemory(float percentage, int consecutive) {
+            @Override
+            public void onLowMemory(float percentage, int consecutive) {
                 if (consecutive >= 2) {
                     handleLowMemory();
                 }
@@ -250,7 +175,8 @@ public class JBombardierController {
         FactoryMap<String, FactoryMap<String, DataBucket>> dataBucketsByAgentName = divideDataIntoBuckets(connectedAgentModels);
 
         Map<String, List<PhaseInstruction>> instructions = new FactoryMap<String, List<PhaseInstruction>>() {
-            @Override protected List<PhaseInstruction> createEmptyValue(String s) {
+            @Override
+            protected List<PhaseInstruction> createEmptyValue(String s) {
                 return new ArrayList<PhaseInstruction>();
             }
         };
@@ -262,12 +188,13 @@ public class JBombardierController {
         model.getTestStartTime().set(System.currentTimeMillis());
 
         agentPingTimer = TimerUtils.everySecond("Agent ping timer", new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 sendPings();
             }
         });
 
-        resultsController.startStatsUpdater(model);
+        rawResultsController.startStatsUpdater(model);
     }
 
     protected void sendPings() {
@@ -288,14 +215,17 @@ public class JBombardierController {
     //        this.model = model;
     //    }
 
-    @SuppressWarnings("serial") public FactoryMap<String, FactoryMap<String, DataBucket>> divideDataIntoBuckets(List<AgentModel> connectedAgentModels) {
+    @SuppressWarnings("serial")
+    public FactoryMap<String, FactoryMap<String, DataBucket>> divideDataIntoBuckets(List<AgentModel> connectedAgentModels) {
 
         Is.greaterThanZero(connectedAgentModels.size(), "You must have at least one connected agent to start the test");
 
         FactoryMap<String, FactoryMap<String, DataBucket>> dataBuckets = new FactoryMap<String, FactoryMap<String, DataBucket>>() {
-            @Override protected FactoryMap<String, DataBucket> createEmptyValue(String key) {
+            @Override
+            protected FactoryMap<String, DataBucket> createEmptyValue(String key) {
                 return new FactoryMap<String, DataBucket>() {
-                    @Override protected DataBucket createEmptyValue(String key) {
+                    @Override
+                    protected DataBucket createEmptyValue(String key) {
                         return new DataBucket(key);
                     }
                 };
@@ -456,7 +386,7 @@ public class JBombardierController {
         agentStatusUpdatesStat.increment();
 
         model.onAgentStatusUpdate(agentStats);
-        resultsController.handleAgentStatusUpdate(agentStats);
+        rawResultsController.handleAgentStatusUpdate(agentStats);
     }
 
     public void handleThreadsChangedMessage(ThreadsChangedMessage message) {
@@ -573,7 +503,8 @@ public class JBombardierController {
             capturePlugin.configure(properties);
 
             capturePlugin.addDestination(new Destination<CapturedStatistic>() {
-                @Override public void send(CapturedStatistic statistic) {
+                @Override
+                public void send(CapturedStatistic statistic) {
                     handleCapturedStatistic(statistic);
                 }
             });
@@ -600,7 +531,8 @@ public class JBombardierController {
             }
 
             loggingHubStatisticCapture.addDestination(new Destination<CapturedStatistic>() {
-                @Override public void send(CapturedStatistic statistic) {
+                @Override
+                public void send(CapturedStatistic statistic) {
                     handleCapturedStatistic(statistic);
                 }
             });
@@ -627,7 +559,8 @@ public class JBombardierController {
 
             jmxStatisticCapture.setDelay(1000);
             jmxStatisticCapture.addDestination(new Destination<CapturedStatistic>() {
-                @Override public void send(CapturedStatistic statistic) {
+                @Override
+                public void send(CapturedStatistic statistic) {
                     handleCapturedStatistic(statistic);
                 }
             });
@@ -641,7 +574,7 @@ public class JBombardierController {
     }
 
     protected void handleLowMemory() {
-        resultsController.reduceResultStorage();
+        rawResultsController.reduceResultStorage();
         System.gc();
         // System.gc();
         // System.gc();
@@ -1004,7 +937,7 @@ public class JBombardierController {
                         logger.info("Transaction rate modifier successfully applied to client : '{}'", response);
                     }
                 });
-            }else{
+            } else {
                 logger.warn("No messaging attached to agent model '{}', unable to send message '{}'", agentModel, request);
             }
         }
@@ -1260,30 +1193,23 @@ public class JBombardierController {
         return instruction;
     }
 
-    public void generateReportAsync() {
+    public void generateReportInBackgroundAndShowInBrowser() {
         pool.execute(new Runnable() {
             public void run() {
-                generateReport(true);
+                RunResultBuilder runResultBuilder = new RunResultBuilder();
+                RunResult snapshot = runResultBuilder.createSnapshot(model, capturedStatisticsHelper, rawResultsController);
+                generateReport(snapshot);
+                BrowserUtils.browseTo(new File(getReportsFolder(), "index.html").toURI());
             }
         });
     }
 
-    public void generateReport(boolean openInBrowser) {
-
+    public void generateReport(RunResult snapshot) {
         final File reportsFolder = getReportsFolder();
         reportsFolder.mkdirs();
-
-        generateReport(reportsFolder);
-        if (openInBrowser) {
-            BrowserUtils.browseTo(new File(reportsFolder, "index.html").toURI());
-        }
-    }
-
-    public void generateReport(File reportsFolder) {
-        RunResultBuilder runResultBuilder = new RunResultBuilder();
-        RunResult snapshot = runResultBuilder.createSnapshot(model, capturedStatisticsHelper);
         ReportGenerator.generateReport(reportsFolder, snapshot, TimeUnit.MILLISECONDS);
     }
+
 
     public String generateReportOld(boolean openInBrowser, boolean queueCharts) {
 
@@ -1298,7 +1224,8 @@ public class JBombardierController {
         EventCartridge eventCartridge = new EventCartridge();
         eventCartridge.addInvalidReferenceEventHandler(new InvalidReferenceEventHandler() {
 
-            @Override public Object invalidGetMethod(Context context, String reference, Object object, String property, Info info) {
+            @Override
+            public Object invalidGetMethod(Context context, String reference, Object object, String property, Info info) {
                 // This mean quiet references dont trigger errors - this is used
                 // for things like null checks
                 if (!reference.startsWith("$!")) {
@@ -1307,13 +1234,15 @@ public class JBombardierController {
                 return null;
             }
 
-            @Override public boolean invalidSetMethod(Context context, String leftreference, String rightreference, Info info) {
+            @Override
+            public boolean invalidSetMethod(Context context, String leftreference, String rightreference, Info info) {
                 errors.appendLine("Invalid set method : leftReference {} rightReference {} info {}", leftreference, rightreference, info);
                 return false;
 
             }
 
-            @Override public Object invalidMethod(Context context, String reference, Object object, String method, Info info) {
+            @Override
+            public Object invalidMethod(Context context, String reference, Object object, String method, Info info) {
                 // This mean quiet references dont trigger errors - this is used
                 // for things like null checks
                 if (!reference.startsWith("$!")) {
@@ -1324,7 +1253,7 @@ public class JBombardierController {
         });
 
         ListBackedMap<String, TransactionResultModel> results = null; // = model.getTotalTransactionModelsByTestName();
-        resultsController.generateStats();
+        rawResultsController.generateStats();
 
         // Replaced velocity tools with this to save a bit of jar space
         VelocityUtils utils = new VelocityUtils();
@@ -1336,7 +1265,7 @@ public class JBombardierController {
         context.put("model", model);
         context.put("agents", model.getAgentModels());
         context.put("phases", model.getPhaseModels());
-        context.put("resultsController", resultsController);
+        context.put("resultsController", rawResultsController);
         context.put("results", results);
         context.put("number", utils);
         context.put("math", utils);
@@ -1363,7 +1292,7 @@ public class JBombardierController {
 
         // New approach (not using velocity) for the captured statistics
         File statisticsCaptureOutput = new File(reportsFolder, "capture.html");
-        createStatisticsCaptureFile(statisticsCaptureOutput, resultsController);
+        createStatisticsCaptureFile(statisticsCaptureOutput, rawResultsController);
 
         ExecutorService pool = Executors.newFixedThreadPool(1);
 
@@ -1378,11 +1307,11 @@ public class JBombardierController {
             if (queueCharts) {
                 pool.execute(new Runnable() {
                     public void run() {
-                        saveFrequencyChart(transactionResultModel, resultsController, reportsFolder);
+                        saveFrequencyChart(transactionResultModel, rawResultsController, reportsFolder);
                     }
                 });
             } else {
-                saveFrequencyChart(transactionResultModel, resultsController, reportsFolder);
+                saveFrequencyChart(transactionResultModel, rawResultsController, reportsFolder);
             }
         }
 
@@ -1401,9 +1330,11 @@ public class JBombardierController {
         return errors.toString();
     }
 
-    private File getReportsFolder() {return new File(configuration.getReportsFolder());}
+    private File getReportsFolder() {
+        return new File(configuration.getReportsFolder());
+    }
 
-    private void createStatisticsCaptureFile(File statisticsCaptureOutput, ResultsController resultsController) {
+    private void createStatisticsCaptureFile(File statisticsCaptureOutput, RawResultsController rawResultsController) {
         HTMLBuilder2 builder = new HTMLBuilder2();
 
         HTMLBuilder2.Element div = builder.getBody().div();
@@ -1442,19 +1373,8 @@ public class JBombardierController {
         FileUtils.write(json, jsonResultFile);
         logger.info("JSON results written to '{}'", jsonResultFile.getAbsolutePath());
 
-        if (configuration.getResultRepositoryHost() != null) {
-            RepositoryMessagingClient client = new RepositoryMessagingClient();
+        if(configuration.getResultRepositoryHost() != null) {
 
-            try {
-                logger.info("Attempting to connect to the results repository on {}:{}", configuration.getResultRepositoryHost(), configuration.getResultRepositoryPort());
-                client.connect(configuration.getResultRepositoryHost(), configuration.getResultRepositoryPort());
-                client.postResult(json);
-                logger.info("Sent results to remote repository at {}", configuration.getResultRepositoryHost());
-            } catch (Exception e) {
-                logger.warning(e, "Failed to send results to remote repository at {}", configuration.getResultRepositoryHost());
-            } finally {
-                client.close();
-            }
         }
 
     }
@@ -1464,12 +1384,12 @@ public class JBombardierController {
         return jsonResultFile;
     }
 
-    protected void saveFrequencyChart(TransactionResultModel transactionResultModel, ResultsController resultsController, File reportsPath) {
+    protected void saveFrequencyChart(TransactionResultModel transactionResultModel, RawResultsController rawResultsController, File reportsPath) {
 
         File file = new File(reportsPath, transactionResultModel.getKey() + ".frequency.png");
         FrequencyChart chart = new FrequencyChart();
 
-        SinglePassStatisticsLongPrecisionCircular singlePassStatisticsLongPrecision = resultsController.getSuccessStatsByTest().get(transactionResultModel.getKey());
+        SinglePassStatisticsLongPrecisionCircular singlePassStatisticsLongPrecision = rawResultsController.getSuccessStatsByTest().get(transactionResultModel.getKey());
         SinglePassStatisticsLongPrecisionCircular copy = singlePassStatisticsLongPrecision.copy();
         chart.generateChart(transactionResultModel, copy, file);
 
@@ -1490,8 +1410,11 @@ public class JBombardierController {
 
     public void resetStats() {
         logger.info("Reseting stats...");
-        resultsController.resetStats();
+        rawResultsController.resetStats();
         model.resetStats();
+
+        // Reset the phase start time
+        model.setPhaseStartTime(timeProvider.getTime());
     }
 
     //    public List<TestInstruction> getTestInstructionsList() {
@@ -1512,8 +1435,8 @@ public class JBombardierController {
     //        this.autostartAgents = autostartAgents;
     //    }
 
-    public ResultsController getResultsController() {
-        return resultsController;
+    public RawResultsController getRawResultsController() {
+        return rawResultsController;
     }
 
     public void startStats() {
@@ -1539,7 +1462,8 @@ public class JBombardierController {
         for (final AgentModel agentModel : agentModels) {
             if (agentModel.getName().get().startsWith(AgentConfiguration.embeddedName)) {
                 ThreadUtils.repeatUntilTrue(new Callable<Boolean>() {
-                    @Override public Boolean call() throws Exception {
+                    @Override
+                    public Boolean call() throws Exception {
                         return agentModel.getConnected().get();
                     }
                 });
@@ -1607,7 +1531,7 @@ public class JBombardierController {
 
         stopStatisticsCapture();
         capturedStatisticsHelper.closeStreamingFiles();
-        resultsController.stopStatsUpdater();
+        rawResultsController.stopStatsUpdater();
 
         closeAgentConnections();
         killEmbeddedAgents();
@@ -1822,7 +1746,7 @@ public class JBombardierController {
     }
 
     public void startNextPhase() {
-        resultsController.resetStats();
+        rawResultsController.resetStats();
 
         PhaseModel nextPhase = getNextPhase();
         startPhase(nextPhase);
@@ -1889,7 +1813,7 @@ public class JBombardierController {
     }
 
     private void resetState() {
-        resultsController.resetStats();
+        rawResultsController.resetStats();
     }
 
     //    private void initialiseResultsStreaming() {
@@ -1903,4 +1827,46 @@ public class JBombardierController {
     public void setTimeProvider(TimeProvider timeProvider) {
         this.timeProvider = timeProvider;
     }
+
+
+    public void doPostTestTasks() {
+
+        RunResultBuilder runResultBuilder = new RunResultBuilder();
+        RunResult snapshot = runResultBuilder.createSnapshot(model, capturedStatisticsHelper, rawResultsController);
+
+        JSONHelper helper = new JSONHelper();
+        String json = helper.toJSON(snapshot);
+
+        writeJSONResults(json);
+
+        generateReport(snapshot);
+
+        if (configuration.isOpenReport()) {
+            BrowserUtils.browseTo(new File(getReportsFolder(), "index.html").toURI());
+        }
+
+        if(StringUtils.isNotNullOrEmpty(configuration.getResultRepositoryHost())) {
+
+            RepositoryMessagingClient client = new RepositoryMessagingClient();
+
+            try {
+                logger.info("Attempting to connect to the results repository on {}:{}", configuration.getResultRepositoryHost(), configuration.getResultRepositoryPort());
+                client.connect(configuration.getResultRepositoryHost(), configuration.getResultRepositoryPort());
+                client.postResult(json);
+                logger.info("Sent results to remote repository at {}", configuration.getResultRepositoryHost());
+            } catch (Exception e) {
+                logger.warning(e, "Failed to send results to remote repository at {}", configuration.getResultRepositoryHost());
+            } finally {
+                client.close();
+            }
+        }
+
+    }
+
+    private void writeJSONResults(String json) {
+        File jsonResultFile = getJSONResultsFile(getReportsFolder(), model.getTestName().get(), model.getTestStartTime().get());
+        FileUtils.write(json, jsonResultFile);
+        logger.info("JSON results written to '{}'", jsonResultFile.getAbsolutePath());
+    }
+
 }

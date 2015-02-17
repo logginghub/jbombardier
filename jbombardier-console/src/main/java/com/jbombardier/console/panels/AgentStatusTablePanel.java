@@ -21,7 +21,7 @@ import javax.swing.JScrollPane;
 
 import net.miginfocom.swing.MigLayout;
 
-import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.console.components.ReflectiveTable;
 import com.jbombardier.console.model.AgentModel;
 

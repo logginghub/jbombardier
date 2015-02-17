@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.JBombardierModel;
 import com.logginghub.utils.FactoryMap;
 import com.logginghub.utils.logging.Logger;
 import com.jbombardier.common.AgentStats;

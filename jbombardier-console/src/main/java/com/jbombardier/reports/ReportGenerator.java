@@ -22,7 +22,6 @@ import com.jbombardier.console.model.result.AgentResult;
 import com.jbombardier.console.model.result.PhaseResult;
 import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.console.model.result.TransactionResult;
-import com.logginghub.utils.HTMLBuilder2;
 import com.logginghub.utils.StringUtils;
 import com.logginghub.utils.TimeUtils;
 import com.logginghub.utils.logging.Logger;
@@ -77,31 +76,34 @@ public class ReportGenerator {
 
         buildTestsTable(phaseResult.getTransactionResults(), reportTimeUnits, testsDiv);
 
-        HTMLBuilder2.Element statsDiv = content.div();
-        statsDiv.h1("Captured Statistics");
-        HTMLBuilder2.TableElement statsTable = statsDiv.table();
-        statsTable.getThead().headerRow().cells("Time", "Path", "Value");
-
-        Set<String> distinctPaths = new HashSet<String>();
-
         List<CapturedStatistic> capturedStatistics = phaseResult.getCapturedStatistics();
-        for (CapturedStatistic capturedStatistic : capturedStatistics) {
+        if(!capturedStatistics.isEmpty()) {
 
-            HTMLBuilder2.RowElement row = statsTable.getTbody().row();
-            row.cell(Logger.toLocalDateString(capturedStatistic.getTime()));
-            row.cell(capturedStatistic.getPath());
-            row.cell(capturedStatistic.getValue());
+            HTMLBuilder2.Element statsDiv = content.div();
+            statsDiv.h1("Captured Statistics");
+            HTMLBuilder2.TableElement statsTable = statsDiv.table();
+            statsTable.getThead().headerRow().cells("Time", "Path", "Value");
 
-            distinctPaths.add(capturedStatistic.getPath());
-        }
+            Set<String> distinctPaths = new HashSet<String>();
 
-        HTMLBuilder2.Element pathDiv= content.div();
-        HTMLBuilder2.TableElement pathTable = pathDiv.table();
-        pathTable.getThead().headerRow().cells("Path");
+            for (CapturedStatistic capturedStatistic : capturedStatistics) {
 
-        for (String distinctPath : distinctPaths) {
-            pathTable.getTbody().row().cell().a(StringUtils.format("phase-{}-path-{}.html", phaseResult.getPhaseName(), distinctPath.replace('/','-')), distinctPath);
-            generatePathView(folder, phaseResult.getPhaseName(), distinctPath, capturedStatistics);
+                HTMLBuilder2.RowElement row = statsTable.getTbody().row();
+                row.cell(Logger.toLocalDateString(capturedStatistic.getTime()));
+                row.cell(capturedStatistic.getPath());
+                row.cell(capturedStatistic.getValue());
+
+                distinctPaths.add(capturedStatistic.getPath());
+            }
+
+            HTMLBuilder2.Element pathDiv = content.div();
+            HTMLBuilder2.TableElement pathTable = pathDiv.table();
+            pathTable.getThead().headerRow().cells("Path");
+
+            for (String distinctPath : distinctPaths) {
+                pathTable.getTbody().row().cell().a(StringUtils.format("phase-{}-path-{}.html", phaseResult.getPhaseName(), distinctPath.replace('/', '-')), distinctPath);
+                generatePathView(folder, phaseResult.getPhaseName(), distinctPath, capturedStatistics);
+            }
         }
 
         builder.toFile(new File(folder, StringUtils.format("phase-{}.html", phaseResult.getPhaseName())));
@@ -148,6 +150,10 @@ public class ReportGenerator {
     private static void buildTestsTable(List<TransactionResult> transactionResults, TimeUnit reportTimeUnits, HTMLBuilder2.Element testsDiv) {
         HTMLBuilder2.TableElement testsTable = testsDiv.table();
 
+        testsTable.addClass("table");
+        testsTable.addClass("table-striped");
+        testsTable.addClass("table-header-rotated");
+
         String timeUnitDescription;
         if (reportTimeUnits == TimeUnit.NANOSECONDS) {
             timeUnitDescription = "(ns)";
@@ -160,12 +166,35 @@ public class ReportGenerator {
         }
 
         HTMLBuilder2.THeadRow headerRow = testsTable.getThead().headerRow();
-        headerRow.cells("Test name").cells("Transaction").cells("Total transaction count");
-        headerRow.cell("Successful").setAttribute("colspan", "4");
-        headerRow.cell("Unsuccessful").setAttribute("colspan", "4");
 
-        testsTable.getThead().headerRow().cells("").cells("").cells("").cells("Transaction count").cells("Mean duration " + timeUnitDescription).cells("SLA").
-                cells("Mean TPS").cells("Target TPS").cells("Transaction count").cells("Mean duration " + timeUnitDescription).cells("Mean TPS");
+        headerRow.cell("Test name").addClass("rotate-45");
+        headerRow.cell("Transaction").addClass("rotate-45");
+        headerRow.cell("Total transaction count").addClass("rotate-45");
+
+        headerRow.cell("Agents").addClass("rotate-45");
+        headerRow.cell("Threads").addClass("rotate-45");
+//        headerRow.cell("Sample Time") .addClass("rotate-45");
+
+        headerRow.cell("Successful transactions").addClass("rotate-45");
+        headerRow.cell("Unsuccessful transactions").addClass("rotate-45");
+
+        headerRow.cell("Mean duration " + timeUnitDescription).addClass("rotate-45");
+        headerRow.cell("SLA").addClass("rotate-45");
+        headerRow.cell("Mean TPS").addClass("rotate-45");
+        headerRow.cell("Target TPS").addClass("rotate-45");
+        headerRow.cell("Maximum TPS").addClass("rotate-45");
+
+        headerRow.cell("Abs dev").addClass("rotate-45");
+        headerRow.cell("%").addClass("rotate-45");
+        headerRow.cell("stdevp").addClass("rotate-45");
+        headerRow.cell("TP90").addClass("rotate-45");
+        headerRow.cell("TP99").addClass("rotate-45");
+        headerRow.cell("Median").addClass("rotate-45");
+        headerRow.cell("Fastest").addClass("rotate-45");
+        headerRow.cell("Slowest").addClass("rotate-45");
+
+        headerRow.cell("Unsuccessful mean duration " + timeUnitDescription).addClass("rotate-45");
+        headerRow.cell("Unsuccessful Mean TPS").addClass("rotate-45");
 
         for (TransactionResult transactionResult : transactionResults) {
 
@@ -175,13 +204,28 @@ public class ReportGenerator {
             row.cell(transactionResult.getTransactionName());
             row.cell(format(transactionResult.getTotalTransactionCount()));
 
+            row.cell(format(transactionResult.getAgents()));
+            row.cell(format(transactionResult.getThreads()));
+//            row.cell(TimeUtils.formatIntervalMilliseconds(transactionResult.getSampleTime()));
+
             row.cell(format(transactionResult.getSuccessfulTransactionCount()));
+            row.cell(format(transactionResult.getUnsuccessfulTransactionCount()));
+
             row.cell(formatTime(transactionResult.getSuccessfulTransactionMeanDuration(), reportTimeUnits));
             row.cell(formatTime(transactionResult.getSla(), reportTimeUnits));
             row.cell(format(transactionResult.getSuccessfulTransactionMeanTransactionsPerSecond()));
             row.cell(format(transactionResult.getSuccessfulTransactionMeanTransactionsPerSecondTarget()));
+            row.cell(format(transactionResult.getSuccessfulMaximumTransactionsPerSecond()));
 
-            row.cell(format(transactionResult.getUnsuccessfulTransactionCount()));
+            row.cell(formatTime(transactionResult.getSuccessfulAbsoluteDeviation(), reportTimeUnits));
+            row.cell(format(transactionResult.getSuccessfulAbsoluteDeviationAsPercentage()));
+            row.cell(formatTime(transactionResult.getSuccessfulStandardDeviation(), reportTimeUnits));
+            row.cell(formatTime(transactionResult.getSuccessfulPercentiles()[90], reportTimeUnits));
+            row.cell(formatTime(transactionResult.getSuccessfulPercentiles()[99], reportTimeUnits));
+            row.cell(formatTime(transactionResult.getSuccessfulMedian(), reportTimeUnits));
+            row.cell(formatTime(transactionResult.getSuccessfulFastestResult(), reportTimeUnits));
+            row.cell(formatTime(transactionResult.getSuccessfulSlowestResult(), reportTimeUnits));
+
             row.cell(formatTime(transactionResult.getUnsuccessfulTransactionMeanDuration(), reportTimeUnits));
             row.cell(format(transactionResult.getUnsuccessfulTransactionMeanTransactionsPerSecond()));
         }
@@ -252,8 +296,12 @@ public class ReportGenerator {
             buildTestsTable(phaseResult.getTransactionResults(), reportTimeUnits, phaseResultsDiv);
         }
 
-        builder.toFilePretty(new File(folder, "index.html"));
+        File indexFile = new File(folder, "index.html");
+        builder.toFilePretty(indexFile);
         builder.copyAssociatedResourcesTo(folder);
+
+        logger.info("Generated index '{}'", indexFile.getAbsolutePath());
+
     }
 
     private static void render(String title, TimeSeriesCollection timeSeriesCollection, File file) {

@@ -16,6 +16,7 @@
 
 package com.jbombardier.console;
 
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.common.serialisableobject.CapturedStatistic;
 import com.jbombardier.console.model.PhaseModel;
 import com.logginghub.utils.Destination;

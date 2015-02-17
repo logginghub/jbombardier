@@ -2,8 +2,8 @@ package com.jbombardier.integration.controller;
 
 import com.jbombardier.JBombardierTemporalController;
 import com.jbombardier.agent.Agent2;
-import com.jbombardier.console.JBombardierController;
-import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.JBombardierController;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.sample.SleepTest;
 import com.jbombardier.integration.JBombardierTestBase;

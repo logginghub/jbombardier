@@ -25,13 +25,9 @@ import java.util.List;
 
 /**
  * Results structure:
- * <p/>
- * Run results -> Phase results -> Test results -> Per Agent Results -> Time periods containing results // TODO : this
- * current supports aggregated results, it would be nice if the raw results was just x/y ie non-aggregated at its root
- * Transaction Results -> Per agent transaction results -> Time periods containing results
- * <p/>
+ * Run results : Phase results : Test results : Per Agent Results : Time periods containing results
+ * Transaction Results : Per agent transaction results : Time periods containing results
  * You can view aggregations as you move higher up towards the Test results level.
- * <p/>
  * Created by james on 10/01/15.
  */
 public class JBombardierResultsController {

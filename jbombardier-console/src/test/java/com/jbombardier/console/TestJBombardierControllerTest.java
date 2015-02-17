@@ -16,6 +16,8 @@
 
 package com.jbombardier.console;
 
+import com.jbombardier.JBombardierController;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.common.DataBucket;
 import com.jbombardier.common.DataStrategy;
 import com.jbombardier.console.configuration.JBombardierConfiguration;

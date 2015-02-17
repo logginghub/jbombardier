@@ -14,39 +14,29 @@
  * limitations under the License.
  */
 
-package com.jbombardier.console;
+package com.jbombardier;
 
 import com.jbombardier.common.AgentFailedInstruction;
 import com.jbombardier.common.AgentStats;
 import com.jbombardier.common.AgentStats.TestStats;
 import com.jbombardier.common.StatisticProvider;
-import com.jbombardier.console.model.AgentModel;
-import com.jbombardier.console.model.ConsoleEventModel;
+import com.jbombardier.console.TransactionMovingAverages;
+import com.jbombardier.console.model.*;
 import com.jbombardier.console.model.ConsoleEventModel.Severity;
-import com.jbombardier.console.model.PhaseModel;
-import com.jbombardier.console.model.TestModel;
-import com.jbombardier.console.model.TransactionResultModel;
 import com.logginghub.utils.FactoryMap;
+import com.logginghub.utils.SystemTimeProvider;
+import com.logginghub.utils.TimeProvider;
 import com.logginghub.utils.data.DataStructure;
 import com.logginghub.utils.logging.Logger;
 import com.logginghub.utils.observable.Observable;
-import com.logginghub.utils.observable.ObservableDouble;
-import com.logginghub.utils.observable.ObservableList;
-import com.logginghub.utils.observable.ObservableLong;
-import com.logginghub.utils.observable.ObservableProperty;
-import com.logginghub.utils.observable.ObservablePropertyListener;
+import com.logginghub.utils.observable.*;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class JBombardierModel extends Observable {
+
+    private TimeProvider timeProvider = new SystemTimeProvider();
 
     private List<AgentModel> agentModels = new CopyOnWriteArrayList<AgentModel>();
 
@@ -63,7 +53,8 @@ public class JBombardierModel extends Observable {
 
     private String failureReason = null;
     private Map<String, Map<String, TestStats>> latestTestStatsByTestThenAgentName = new FactoryMap<String, Map<String, TestStats>>() {
-        @Override protected Map<String, TestStats> createEmptyValue(String key) {
+        @Override
+        protected Map<String, TestStats> createEmptyValue(String key) {
             return new HashMap<String, AgentStats.TestStats>();
         }
     };
@@ -85,7 +76,8 @@ public class JBombardierModel extends Observable {
     private ObservableLong testStartTime = createLongProperty("testStartTime", -1);
 
     private Map<String, TransactionMovingAverages> movingAveragesByTestName = new FactoryMap<String, TransactionMovingAverages>() {
-        @Override protected TransactionMovingAverages createEmptyValue(String s) {
+        @Override
+        protected TransactionMovingAverages createEmptyValue(String s) {
             return new TransactionMovingAverages();
         }
     };
@@ -165,23 +157,32 @@ public class JBombardierModel extends Observable {
     }
 
     public static class InteractiveModelListenerAdaptor implements InteractiveModelListener {
-        public void onConsoleEvent(ConsoleEventModel event) {}
+        public void onConsoleEvent(ConsoleEventModel event) {
+        }
 
-        public void onModelReset() {}
+        public void onModelReset() {
+        }
 
         // public void onNewTestResult(TransactionResultModel testModel) {}
 
-        public void onNewAgent(AgentModel model) {}
+        public void onNewAgent(AgentModel model) {
+        }
 
-        public void onNewTest(TestModel testModel) {}
+        public void onNewTest(TestModel testModel) {
+        }
 
-        public void onTelemetryData(DataStructure data) {}
+        public void onTelemetryData(DataStructure data) {
+        }
 
-        @Override public void onTestAbandoned(String reason, AgentFailedInstruction afi) {}
+        @Override
+        public void onTestAbandoned(String reason, AgentFailedInstruction afi) {
+        }
 
-        public void onTestEnded() {}
+        public void onTestEnded() {
+        }
 
-        public void onTestStarted() {}
+        public void onTestStarted() {
+        }
     }
 
     private static final Logger logger = Logger.getLoggerFor(JBombardierModel.class);
@@ -189,7 +190,8 @@ public class JBombardierModel extends Observable {
     public JBombardierModel() {
 
         getTestRunning().addListener(new ObservablePropertyListener<Boolean>() {
-            @Override public void onPropertyChanged(Boolean oldValue, Boolean newValue) {
+            @Override
+            public void onPropertyChanged(Boolean oldValue, Boolean newValue) {
                 if (newValue) {
                     for (InteractiveModelListener listener : listeners) {
                         listener.onTestStarted();
@@ -346,30 +348,30 @@ public class JBombardierModel extends Observable {
             int size = latestTestStatsByTestThenAgentName.get(testTransactionKey).size();
             if (size == agentsInTest) {
                 // We have all of the values we need to put up an all agents total
-                aggregateAgentResponses(testStats, testTransactionKey, size);
+                aggregateAgentResponses(latestTestStatsByTestThenAgentName.get(testTransactionKey), testStats.getTestName(),
+                        testStats.getTransactionName(), testTransactionKey, size);
             }
         }
     }
 
-    private void aggregateAgentResponses(TestStats testStats, String testTransactionKey, int size) {
+    private void aggregateAgentResponses(Map<String, TestStats> map, String testName, String transactionName, String transactionKey, int size) {
 
-        logger.debug("{} results have been received for test '{}', this is enough to add a new data point", size, testTransactionKey);
+        logger.debug("{} results have been received for test '{}', this is enough to add a new data point", size, transactionKey);
 
-        Map<String, TestStats> map = latestTestStatsByTestThenAgentName.get(testTransactionKey);
         Collection<TestStats> values = map.values();
 
-        TransactionMovingAverages transactionMovingAverages = movingAveragesByTestName.get(testTransactionKey);
+        TransactionMovingAverages transactionMovingAverages = movingAveragesByTestName.get(transactionKey);
 
-        TransactionResultModel transactionResultModel = currentPhase.get().getTransactionResultModelForTransaction(testTransactionKey);
+        TransactionResultModel transactionResultModel = currentPhase.get().getTransactionResultModelForTransaction(transactionKey);
         if (transactionResultModel == null) {
 
-            final TestModel testModel = getTestModelForTest(currentPhase.get(), testStats.getTestName());
-            if(testModel == null) {
-                logger.warn("No test model found for test '{}' in phase '{}' - is something sending us resuls from a different test or phase?", testStats.getTestName(), currentPhase.get());
+            final TestModel testModel = getTestModelForTest(currentPhase.get(), testName);
+            if (testModel == null) {
+                logger.warn("No test model found for test '{}' in phase '{}' - is something sending us resuls from a different test or phase?", testName, currentPhase.get());
                 return;
-            }else {
+            } else {
 
-                Double transactionSLA = testModel.getTransactionSLAs().get(testStats.getTransactionName());
+                Double transactionSLA = testModel.getTransactionSLAs().get(transactionName);
 
                 double tsla;
                 if (transactionSLA != null) {
@@ -382,21 +384,23 @@ public class JBombardierModel extends Observable {
 
                 transactionResultModel = new TransactionResultModel();
 
-                transactionResultModel.getTestName().set(testStats.getTestName());
-                transactionResultModel.getTransactionName().set(testStats.getTransactionName());
+                transactionResultModel.getTestName().set(testName);
+                transactionResultModel.getTransactionName().set(transactionName);
                 transactionResultModel.getTargetSuccessfulTransactionsPerSecond().set(targetRate);
                 transactionResultModel.getSuccessfulTransactionDurationSLA().set(tsla);
                 transactionResultModel.getSuccessfulTransactionsDurationFailureThreshold().set(testModel.getFailureThreshold());
                 transactionResultModel.getSuccessfulTransactionsDurationFailureType().set(testModel.getFailureThresholdMode());
                 transactionResultModel.getSuccessfulTransactionsTotalFailureResultCountMinimum().set(testModel.getFailureThresholdResultCountMinimum());
                 transactionResultModel.getUnsuccessfulTransactionsTotalFailureThreshold().set(testModel.getFailedTransactionCountThreshold());
+                transactionResultModel.getThreadCount().set(testModel.getTargetThreads().get());
 
                 currentPhase.get().getTransactionResultModels().add(transactionResultModel);
 
                 // Wire up the transaction results to listen for changes in the target rate
                 final TransactionResultModel finalPointer = transactionResultModel;
                 ObservablePropertyListener listener = new ObservablePropertyListener() {
-                    @Override public void onPropertyChanged(Object o, Object t1) {
+                    @Override
+                    public void onPropertyChanged(Object o, Object t1) {
                         finalPointer.getTargetSuccessfulTransactionsPerSecond().set(testModel.getTargetRate().get() * getTransactionRateModifier().get() * testModel.getTargetThreads().get());
                     }
                 };
@@ -411,7 +415,9 @@ public class JBombardierModel extends Observable {
         double sumSuccessDuration = 0;
         double sumSuccessTotalDuration = 0;
         double sumFailureDuration = 0;
+
         long totalSuccessDuration = 0;
+        long totalSuccessIncludingPreAndPostDuration = 0;
         long totalFailureDuration = 0;
 
         long successes = 0;
@@ -443,13 +449,16 @@ public class JBombardierModel extends Observable {
             successPerSecondTotal += successRatePerSecond;
             failurePerSecondTotal += failRatePerSecond;
             sumSuccessDuration += averageSuccess;
+
             sumSuccessTotalDuration += averageTotalSuccess;
             sumFailureDuration += averageFailures;
-            successes += testStats.transactionsSuccess;
-            failures += testStats.transactionsFailed;
-            totalSuccessDuration += testStats.totalDurationSuccess;
-            totalFailureDuration += testStats.totalDurationFailed;
 
+            successes += perAgentTestStats.transactionsSuccess;
+            failures += perAgentTestStats.transactionsFailed;
+
+            totalSuccessDuration += perAgentTestStats.totalDurationSuccess;
+            totalSuccessIncludingPreAndPostDuration += perAgentTestStats.getTotalDurationTotalSuccess();
+            totalFailureDuration += perAgentTestStats.totalDurationFailed;
         }
 
         double averageSuccessDuration = sumSuccessDuration / agentsInTest;
@@ -460,6 +469,7 @@ public class JBombardierModel extends Observable {
         transactionResultModel.getUnsuccessfulTransactionsCountTotal().increment(failures);
 
         transactionResultModel.getSuccessfulTransactionsDurationTotal().increment(totalSuccessDuration);
+        transactionResultModel.getSuccessfulTransactionsIncludingPreandPostDurationTotal().increment(totalSuccessIncludingPreAndPostDuration);
         transactionResultModel.getUnsuccessfulTransactionsDurationTotal().increment(totalFailureDuration);
 
         // Update the moving averages
@@ -485,19 +495,23 @@ public class JBombardierModel extends Observable {
 
         transactionResultModel.getSuccessfulTransactionTotalDuration().set(transactionMovingAverages.getSuccessfulTransactionTotalDuration().calculateMovingAverage());
 
+
+        // Keep a view of how long each transaction has been running, in case someone requests a report mid-test
+        transactionResultModel.getTestDuration().set(timeProvider.getTime() - currentPhaseStart);
+
         // jshaw - this simulates an atomic update trigger to model listeners who want a coherent picture
         // after the full update has been applied
         transactionResultModel.getModelUpdates().increment(1);
 
         logger.debug("Transaction {} successes {} failures {} success per second {} success mean {}",
-                testStats.getKey().toString(),
+                transactionKey,
                 successes,
                 failures,
                 successPerSecondTotal,
                 averageSuccessDuration);
 
         // Reset the values for this test
-        latestTestStatsByTestThenAgentName.get(testTransactionKey).clear();
+        latestTestStatsByTestThenAgentName.get(transactionKey).clear();
     }
 
     public void reset() {
@@ -567,10 +581,20 @@ public class JBombardierModel extends Observable {
         return connectedModels;
     }
 
-    public int getConnectionAgentCount() {return getConnectedAgents().size();}
+    public int getConnectionAgentCount() {
+        return getConnectedAgents().size();
+    }
 
 
     public ObservableProperty<PhaseModel> getCurrentPhase() {
         return currentPhase;
+    }
+
+    public TimeProvider getTimeProvider() {
+        return timeProvider;
+    }
+
+    public void setTimeProvider(TimeProvider timeProvider) {
+        this.timeProvider = timeProvider;
     }
 }

@@ -16,6 +16,8 @@
 
 package com.jbombardier.console;
 
+import com.jbombardier.JBombardierController;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.JBombardierTemporalController;
 import com.jbombardier.console.configuration.JBombardierConfiguration;
 import com.jbombardier.console.panels.SwingConsoleMainPanel;

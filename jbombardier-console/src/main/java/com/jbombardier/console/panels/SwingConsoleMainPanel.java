@@ -17,8 +17,8 @@
 package com.jbombardier.console.panels;
 
 import com.jbombardier.JBombardierTemporalController;
-import com.jbombardier.console.JBombardierController;
-import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.JBombardierController;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.console.components.JDynamicStateButton;
 import com.logginghub.utils.data.DataStructure;
 import com.logginghub.utils.observable.ObservablePropertyListener;
@@ -120,7 +120,7 @@ public class SwingConsoleMainPanel extends JPanel {
         generateReportButton = new JButton("Report");
         generateReportButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                controller.generateReportAsync();
+                controller.generateReportInBackgroundAndShowInBrowser();
             }
         });
         agentControlPanel.add(generateReportButton, "cell 0 0");

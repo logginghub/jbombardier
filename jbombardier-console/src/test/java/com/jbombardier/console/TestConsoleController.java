@@ -16,6 +16,8 @@
 
 package com.jbombardier.console;
 
+import com.jbombardier.JBombardierController;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.common.AgentStats;
 import com.jbombardier.common.AgentStats.TestStats;
 import com.jbombardier.console.configuration.JBombardierConfiguration;
@@ -119,7 +121,7 @@ public class TestConsoleController {
 //        ListBackedMap<String, TransactionResultModel> results = controller.getModel().getTotalTransactionModelsByTestName();
 //        assertThat(results.get("test1"), is(not(nullValue())));
 
-        controller.generateReport(new File(configuration.getReportsFolder()));
+        controller.doPostTestTasks();
 
         File reportFile = new File(reports, "index.html");
         assertThat(reportFile.exists(), is(true));

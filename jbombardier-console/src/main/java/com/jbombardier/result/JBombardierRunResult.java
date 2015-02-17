@@ -107,13 +107,13 @@ public class JBombardierRunResult {
                            Logger.toDateString(startTime),
                            TimeUtils.formatIntervalMilliseconds(duration));
 
-        builder.indent();
+//        builder.indent();
         for (String phase : phaseOrder) {
             JBombardierPhaseResult phaseResult = phaseResults.get(phase);
             phaseResult.toStringDeep(builder);
             builder.newline();
         }
-        builder.outdent();
+//        builder.outdent();
 
         return builder.toString();
     }

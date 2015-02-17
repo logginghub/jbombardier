@@ -16,6 +16,8 @@
 
 package com.jbombardier.console;
 
+import com.jbombardier.JBombardierController;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.console.headless.JBombardierHeadless;
 import com.logginghub.utils.TextFileBuilder;
 import org.junit.Rule;

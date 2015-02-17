@@ -81,7 +81,7 @@ public class JBombardierPhaseResult {
                        phaseStartTime,
                        phaseDuration);
 
-        builder.indent();
+//        builder.indent();
 
         List<String> testNames = CollectionUtils.toSortedList(getTestResults().keySet());
 
@@ -90,6 +90,6 @@ public class JBombardierPhaseResult {
             testResult.toStringDeep(builder);
         }
 
-        builder.outdent();
+//        builder.outdent();
     }
 }

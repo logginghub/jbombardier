@@ -27,7 +27,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 
-import com.jbombardier.console.JBombardierModel;
+import com.jbombardier.JBombardierModel;
 import com.jbombardier.console.components.ReflectiveTable;
 import com.jbombardier.console.model.ConsoleEventModel;
 import net.miginfocom.swing.MigLayout;

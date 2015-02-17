@@ -68,7 +68,7 @@ public class JBombardierTestResult {
     public void toStringDeep(StringUtils.StringUtilsBuilder builder) {
         builder.appendLine("TestResult : testName='{}'", testName);
 
-        builder.indent();
+//        builder.indent();
 
         List<String> agents = CollectionUtils.toSortedList(perAgentResults.keySet());
 
@@ -77,6 +77,6 @@ public class JBombardierTestResult {
             agentResult.toStringDeep(builder);
         }
 
-        builder.outdent();
+//        builder.outdent();
     }
 }

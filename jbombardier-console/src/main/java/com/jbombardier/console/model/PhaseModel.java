@@ -47,7 +47,7 @@ public class PhaseModel extends Observable {
                 transactionResultModelByTransactionKey.put(transactionResultModel.getKey(), transactionResultModel);
             }
 
-            @Override public void onRemoved(TransactionResultModel transactionResultModel) {
+            @Override public void onRemoved(TransactionResultModel transactionResultModel, int index) {
                 transactionResultModelByTransactionKey.remove(transactionResultModel.getKey());
             }
 
