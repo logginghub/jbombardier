@@ -16,7 +16,6 @@
 
 package com.jbombardier.repository;
 
-import com.jbombardier.console.model.JSONHelper;
 import com.logginghub.utils.FileUtils;
 import com.logginghub.utils.NetUtils;
 import com.logginghub.utils.Xml;
@@ -32,7 +31,7 @@ import static org.hamcrest.Matchers.is;
 public class TestJBombardierRepositoryLauncher {
 
     private File folder = FileUtils.createRandomTestFolderForClass(TestJBombardierRepositoryLauncher.class);
-    private JSONHelper helper = new JSONHelper();
+
     
     @Test public void test_posting_saves_file() {
 

@@ -20,6 +20,8 @@ import com.jbombardier.common.PerformanceTest;
 import com.jbombardier.common.StatisticProvider;
 import com.jbombardier.JBombardierController;
 import com.jbombardier.console.JBombardierSwingConsole;
+import com.jbombardier.console.PhaseController;
+import com.jbombardier.console.StateEstablisher;
 import com.jbombardier.console.headless.JBombardierHeadless;
 import com.jbombardier.console.model.TransactionResultModel;
 import com.logginghub.utils.JAXBConfiguration;
@@ -268,6 +270,14 @@ public class JBombardierConfigurationBuilder {
         return  this;
     }
 
+    public JBombardierConfigurationBuilder establishState(Class<? extends StateEstablisher> stateEstablisher, String configurationString) {
+        StateEstablisherConfiguration stateEstablisherConfiguration = new StateEstablisherConfiguration();
+        stateEstablisherConfiguration.setClassName(stateEstablisher.getName());
+        stateEstablisherConfiguration.setConfiguration(configurationString);
+        configuration.getStateEstablishers().add(stateEstablisherConfiguration);
+        return this;
+    }
+
     public final static class PhaseBuilder {
         private PhaseConfiguration phaseConfiguration = new PhaseConfiguration();
 
@@ -287,6 +297,41 @@ public class JBombardierConfigurationBuilder {
 
         public PhaseBuilder warmup(String duration) {
             phaseConfiguration.setWarmupDuration(duration);
+            return this;
+        }
+
+        public PhaseBuilder establishState(Class<? extends StateEstablisher> stateEstablisher, String configuration) {
+            StateEstablisherConfiguration stateEstablisherConfiguration = new StateEstablisherConfiguration();
+            stateEstablisherConfiguration.setClassName(stateEstablisher.getName());
+            stateEstablisherConfiguration.setConfiguration(configuration);
+            phaseConfiguration.getStateEstablishers().add(stateEstablisherConfiguration);
+            return this;
+        }
+
+        public PhaseBuilder establishState(Class<? extends StateEstablisher> stateEstablisher) {
+            StateEstablisherConfiguration stateEstablisherConfiguration = new StateEstablisherConfiguration();
+            stateEstablisherConfiguration.setClassName(stateEstablisher.getName());
+            phaseConfiguration.getStateEstablishers().add(stateEstablisherConfiguration);
+            return this;
+        }
+
+        public PhaseBuilder controller(Class<? extends PhaseController> controllerClass) {
+            PhaseControllerConfiguration phaseControllerConfiguration = new PhaseControllerConfiguration();
+            phaseControllerConfiguration.setClassName(controllerClass.getName());
+            phaseConfiguration.getPhaseControllers().add(phaseControllerConfiguration);
+            return this;
+        }
+
+        public PhaseBuilder controller(Class<? extends PhaseController> controllerClass, String configuration) {
+            PhaseControllerConfiguration phaseControllerConfiguration = new PhaseControllerConfiguration();
+            phaseControllerConfiguration.setClassName(controllerClass.getName());
+            phaseControllerConfiguration.setConfiguration(configuration);
+            phaseConfiguration.getPhaseControllers().add(phaseControllerConfiguration);
+            return this;
+        }
+
+        public PhaseBuilder enabled(boolean enabled) {
+            phaseConfiguration.setEnabled(enabled);
             return this;
         }
     }

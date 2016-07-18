@@ -696,7 +696,7 @@ public class Agent2 implements Asynchronous {
                     threadController.setRateStepTime((Long) newValue);
                     break;
                 case targetRate:
-                    threadController.setTargetRate((Float) newValue);
+                    threadController.setTargetRate(((Double)newValue).floatValue());
                     break;
                 case targetThreads:
                     threadController.setTargetThreads((Integer) newValue);

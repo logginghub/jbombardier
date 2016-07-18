@@ -17,6 +17,9 @@
 package com.jbombardier.reports;
 
 import com.esotericsoftware.minlog.Log;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.jbombardier.ControllerResultSnapshot;
 import com.jbombardier.common.serialisableobject.CapturedStatistic;
 import com.jbombardier.console.model.result.AgentResult;
 import com.jbombardier.console.model.result.PhaseResult;
@@ -35,10 +38,7 @@ import org.jfree.data.time.TimeSeriesCollection;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.text.NumberFormat;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -67,6 +67,8 @@ public class ReportGenerator {
         builder.getHead().css("box.css");
         builder.getHead().css("table.css");
 
+        builder.getHead().addJavascript("Chart.min.js");
+
         HTMLBuilder2.Element bodyx = builder.getBody();
 
         final HTMLBuilder2.Element content = bodyx.div("wide-box");
@@ -77,7 +79,7 @@ public class ReportGenerator {
         buildTestsTable(phaseResult.getTransactionResults(), reportTimeUnits, testsDiv);
 
         List<CapturedStatistic> capturedStatistics = phaseResult.getCapturedStatistics();
-        if(!capturedStatistics.isEmpty()) {
+        if (!capturedStatistics.isEmpty()) {
 
             HTMLBuilder2.Element statsDiv = content.div();
             statsDiv.h1("Captured Statistics");
@@ -101,10 +103,134 @@ public class ReportGenerator {
             pathTable.getThead().headerRow().cells("Path");
 
             for (String distinctPath : distinctPaths) {
-                pathTable.getTbody().row().cell().a(StringUtils.format("phase-{}-path-{}.html", phaseResult.getPhaseName(), distinctPath.replace('/', '-')), distinctPath);
+                pathTable.getTbody()
+                         .row()
+                         .cell()
+                         .a(StringUtils.format("phase-{}-path-{}.html", phaseResult.getPhaseName(), distinctPath.replace('/', '-')), distinctPath);
                 generatePathView(folder, phaseResult.getPhaseName(), distinctPath, capturedStatistics);
             }
         }
+
+        List<ControllerResultSnapshot> controllerResultSnapshots = phaseResult.getControllerResults();
+        if (!controllerResultSnapshots.isEmpty()) {
+
+            HTMLBuilder2.Element controllerResultsDiv = content.div();
+            controllerResultsDiv.h1("Controller Results");
+
+            // Get a sorted list of the controllers that have provided results
+            Set<String> controllersSet = new HashSet<String>();
+            for (ControllerResultSnapshot controllerResultSnapshot : controllerResultSnapshots) {
+                controllersSet.add(controllerResultSnapshot.getSource());
+            }
+            List<String> sortedControllers = new ArrayList<String>(controllersSet);
+            Collections.sort(sortedControllers);
+
+            // Iterate through the sorted list and show the results from each
+            for (String sortedController : sortedControllers) {
+
+                controllerResultsDiv.h2(sortedController);
+
+                for (ControllerResultSnapshot controllerResultSnapshot : controllerResultSnapshots) {
+
+                    if (controllerResultSnapshot.getSource().equals(sortedController)) {
+
+                        controllerResultsDiv.h3(controllerResultSnapshot.getName());
+
+                        // Get the unique list of headers from each column in the results
+                        List<String> headers = new ArrayList<String>();
+                        List<JsonObject> results = controllerResultSnapshot.getResults();
+                        for (JsonObject result : results) {
+                            Set<Map.Entry<String, JsonElement>> entries = result.entrySet();
+                            for (Map.Entry<String, JsonElement> entry : entries) {
+                                if (!headers.contains(entry.getKey())) {
+                                    headers.add(entry.getKey());
+                                }
+                            }
+                        }
+
+                        // Build the header row
+                        HTMLBuilder2.TableElement table = controllerResultsDiv.table();
+                        HTMLBuilder2.THeadRow tableHeaderRow = table.getThead().headerRow();
+                        for (String sortedHeader : headers) {
+                            tableHeaderRow.createChild("th").setText(sortedHeader);
+                        }
+
+
+                        List<String> labels = new ArrayList<String>();
+                        List<String> data = new ArrayList<String>();
+
+                        // Fill out the table
+                        for (JsonObject result : results) {
+                            HTMLBuilder2.RowElement row = table.getTbody().row();
+                            int index = 0;
+                            for (String header : headers) {
+
+                                JsonElement jsonElement = result.get(header);
+                                String formatted = jsonElement.getAsString();
+
+                                // Quick hack to see if this is a badly formatted double
+                                if (formatted.indexOf('.') < formatted.length() - 2) {
+                                    formatted = NumberFormat.getInstance().format(jsonElement.getAsDouble());
+                                }
+
+                                row.cell(formatted);
+
+                                if(index == 0) {
+                                    labels.add(formatted);
+                                } else if(index == 1) {
+                                    // TODO : support multiple series!
+                                    data.add(formatted.replace(",",""));
+                                }
+
+                                index++;
+                            }
+                        }
+
+                        // Add a chart
+                        String uuid = UUID.randomUUID().toString();
+
+                        HTMLBuilder2.Element canvas = controllerResultsDiv.createChild("canvas");
+                        canvas.setAttribute("id", uuid);
+                        canvas.setAttribute("width", "400");
+                        canvas.setAttribute("height", "400");
+
+                        HTMLBuilder2.Element script = controllerResultsDiv.createChild("script");
+                        StringUtils.StringUtilsBuilder scriptBuilder = new StringUtils.StringUtilsBuilder();
+
+                        scriptBuilder.appendLine("var options = { ");
+                        scriptBuilder.appendLine("     scaleBeginAtZero: true");
+                        scriptBuilder.appendLine("}");
+
+                        scriptBuilder.appendLine("var data = { ");
+                        scriptBuilder.appendLine("       labels: [");
+                        for (String label : labels) {
+                            scriptBuilder.append("'{}',",label);
+                        }
+                        scriptBuilder.appendLine("       ],");
+
+                        scriptBuilder.appendLine("       datasets: [ ");
+                        scriptBuilder.appendLine("             { label: 'First dataset', fillColor: 'rgba(151, 187, 205, 0.2)',");
+                        scriptBuilder.appendLine("               data: [");
+                        for (String dataItem : data) {
+                            scriptBuilder.append("'{}',",dataItem);
+                        }
+                        scriptBuilder.appendLine("              ]");
+                        scriptBuilder.appendLine("             } ");
+                        scriptBuilder.appendLine("       ] ");
+                        scriptBuilder.appendLine("}");
+
+                        scriptBuilder.appendLine("var ctx = document.getElementById('{}').getContext('2d');", uuid);
+                        scriptBuilder.appendLine("var myLineChart = new Chart(ctx).Line(data, options);");
+                        script.setText(scriptBuilder.toString());
+
+                    }
+                }
+
+
+            }
+
+        }
+
 
         builder.toFile(new File(folder, StringUtils.format("phase-{}.html", phaseResult.getPhaseName())));
 
@@ -136,11 +262,11 @@ public class ReportGenerator {
         }
 
         if (series.getItemCount() > 0) {
-            final String imageName = StringUtils.format("phase-{}-path-{}.png", phase, distinctPath.replace('/','-'));
+            final String imageName = StringUtils.format("phase-{}-path-{}.png", phase, distinctPath.replace('/', '-'));
             content.image(imageName);
 
             final File file = new File(folder, imageName);
-            render(StringUtils.format("phase-{}-path-{}.html", phase, distinctPath.replace('/','-')), data, file);
+            render(StringUtils.format("phase-{}-path-{}.html", phase, distinctPath.replace('/', '-')), data, file);
         }
 
         builder.toFile(new File(folder, StringUtils.format("phase-{}-path-{}.html", phase, distinctPath.replace('/', '-'))));
@@ -173,7 +299,7 @@ public class ReportGenerator {
 
         headerRow.cell("Agents").addClass("rotate-45");
         headerRow.cell("Threads").addClass("rotate-45");
-//        headerRow.cell("Sample Time") .addClass("rotate-45");
+        //        headerRow.cell("Sample Time") .addClass("rotate-45");
 
         headerRow.cell("Successful transactions").addClass("rotate-45");
         headerRow.cell("Unsuccessful transactions").addClass("rotate-45");
@@ -206,7 +332,7 @@ public class ReportGenerator {
 
             row.cell(format(transactionResult.getAgents()));
             row.cell(format(transactionResult.getThreads()));
-//            row.cell(TimeUtils.formatIntervalMilliseconds(transactionResult.getSampleTime()));
+            //            row.cell(TimeUtils.formatIntervalMilliseconds(transactionResult.getSampleTime()));
 
             row.cell(format(transactionResult.getSuccessfulTransactionCount()));
             row.cell(format(transactionResult.getUnsuccessfulTransactionCount()));
@@ -306,13 +432,13 @@ public class ReportGenerator {
 
     private static void render(String title, TimeSeriesCollection timeSeriesCollection, File file) {
         JFreeChart chart = ChartFactory.createTimeSeriesChart(title,// title
-                "Time",// x-axislabel
-                "Elapsed / ms",// y-axislabel
-                timeSeriesCollection,// data
-                true,// createlegend?
-                true,// generatetooltips?
-                false// generateURLs?
-                                                             );
+                                                              "Time",// x-axislabel
+                                                              "Elapsed / ms",// y-axislabel
+                                                              timeSeriesCollection,// data
+                                                              true,// createlegend?
+                                                              true,// generatetooltips?
+                                                              false// generateURLs?
+        );
 
         try {
             FileOutputStream fos = new FileOutputStream(file);

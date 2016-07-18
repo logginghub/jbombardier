@@ -21,7 +21,7 @@ plugins {
 subprojects {
 
     group = 'com.jbombardier'
-    version = '1.4.5'
+    version = '1.4.6'
 
     apply plugin: 'java'
     apply plugin: 'distribution'
@@ -64,6 +64,7 @@ subprojects {
         classpath.append("wrapper.java.classpath.${counter++}=../lib/wrapper.jar\n")
 
         ant.replace(file: "build/dist_temp/${getProject().name}/conf/wrapper.conf", token: 'wrapper.java.classpath.1=../lib/*', value: classpath)
+        ant.replace(file: "build/dist_temp/${getProject().name}/conf/wrapper.conf", token: 'wrapper.logfile=', value: 'wrapper.logfile=../logs/agent.wrapper.log')
     }
 
     if (!distribution.exists()) {
@@ -72,6 +73,8 @@ subprojects {
     } else {
         distZip.dependsOn("updateWrapperClasspath")
     }
+
+    build.dependsOn("distZip")
 
     task sourceJar(type: Jar) {
         from sourceSets.main.allSource

@@ -24,11 +24,7 @@ import com.logginghub.utils.VLPorts;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.ValidationEvent;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.*;
 import javax.xml.bind.helpers.DefaultValidationEventHandler;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -76,6 +72,8 @@ public class JBombardierConfiguration {
     @XmlAttribute private String warmupTime = "0";
     @XmlAttribute private String duration = "1 minute";
     @XmlAttribute private boolean openReport = false;
+
+    @XmlElement private List<StateEstablisherConfiguration> stateEstablishers = new ArrayList<StateEstablisherConfiguration>();
 
     public String getResultRepositoryHost() {
         return resultRepositoryHost;
@@ -325,5 +323,13 @@ public class JBombardierConfiguration {
 
     public void setOpenReport(boolean openReport) {
         this.openReport = openReport;
+    }
+
+    public List<StateEstablisherConfiguration> getStateEstablishers() {
+        return stateEstablishers;
+    }
+
+    public void setStateEstablishers(List<StateEstablisherConfiguration> stateEstablishers) {
+        this.stateEstablishers = stateEstablishers;
     }
 }

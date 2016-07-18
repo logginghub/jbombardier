@@ -60,6 +60,7 @@ public class JBombardierTemporalController implements Asynchronous {
 
         logger.info("Temporal controller starting...");
 
+        controller.establishInitialState();
         controller.publishTestInstructions();
 
         phase = controller.getNextPhase();

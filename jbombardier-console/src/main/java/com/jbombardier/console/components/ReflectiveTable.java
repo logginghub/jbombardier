@@ -16,11 +16,7 @@
 
 package com.jbombardier.console.components;
 
-import com.logginghub.utils.observable.Observable;
-import com.logginghub.utils.observable.ObservableDouble;
-import com.logginghub.utils.observable.ObservableInteger;
-import com.logginghub.utils.observable.ObservableItemContainer;
-import com.logginghub.utils.observable.ObservableListener;
+import com.logginghub.utils.observable.*;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -414,6 +410,10 @@ public class ReflectiveTable<T> extends JTable {
             converted = Byte.parseByte(aValue.toString());
         } else if (class1 == ObservableInteger.class) {
             converted = Integer.parseInt(aValue.toString());
+        } else if (class1 == ObservableLong.class) {
+            converted = Long.parseLong(aValue.toString());
+        } else if (class1 == ObservableDouble.class) {
+            converted = Double.parseDouble(aValue.toString());
         } else {
             converted = aValue;
         }

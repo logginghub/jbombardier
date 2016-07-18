@@ -16,13 +16,17 @@
 
 package com.jbombardier.console.model;
 
+import com.jbombardier.console.PhaseController;
+import com.jbombardier.console.configuration.StateEstablisherConfiguration;
 import com.logginghub.utils.observable.Observable;
 import com.logginghub.utils.observable.ObservableList;
 import com.logginghub.utils.observable.ObservableListListener;
 import com.logginghub.utils.observable.ObservableLong;
 import com.logginghub.utils.observable.ObservableProperty;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class PhaseModel extends Observable {
@@ -39,6 +43,11 @@ public class PhaseModel extends Observable {
             TransactionResultModel.class);
 
     private Map<String, TransactionResultModel> transactionResultModelByTransactionKey = new HashMap<String, TransactionResultModel>();
+
+    private List<StateEstablisherConfiguration> stateEstablishers = new ArrayList<StateEstablisherConfiguration>();
+
+    private List<PhaseController> phaseControllers = new ArrayList<PhaseController>();
+
 
     public PhaseModel() {
         // Bind the lookup map for TRMs to the list
@@ -88,5 +97,17 @@ public class PhaseModel extends Observable {
 
     public void resetStats() {
         transactionResultModels.clear();
+    }
+
+    public void setStateEstablishers(List<StateEstablisherConfiguration> stateEstablishers) {
+        this.stateEstablishers = stateEstablishers;
+    }
+
+    public List<StateEstablisherConfiguration> getStateEstablishers() {
+        return stateEstablishers;
+    }
+
+    public List<PhaseController> getPhaseControllers() {
+        return phaseControllers;
     }
 }

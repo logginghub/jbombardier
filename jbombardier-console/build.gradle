@@ -25,6 +25,8 @@ dependencies {
     compile 'com.logginghub:logginghub-frontend:1.4.7'
     compile 'com.logginghub:logginghub-analytics:1.4.7'
 
+    compile 'com.google.code.gson:gson:2.2.4'
+
     compile 'org.apache.velocity:velocity:1.7'
     compile 'com.seaglasslookandfeel:seaglasslookandfeel:0.1.7.3'
     compile 'jfree:jfreechart:1.0.13'
@@ -33,7 +35,7 @@ dependencies {
     compile 'org.slf4j:slf4j-api:1.6.1'
 
     compile 'org.apache.ant:ant:1.8.2'
-    compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.7'
+
     compile 'com.j256.simplejmx:simplejmx:1.9'
 
     testCompile 'junit:junit:4.11'

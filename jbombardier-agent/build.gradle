@@ -37,3 +37,16 @@ distributions {
         }
     }
 }
+
+task deployDistribution << {
+    def targetDir = '/var/www/repository/com/jbombardier/archives/' + version;
+    ssh.run {
+        session(remotes.hosting) {
+            execute 'mkdir -p ' + targetDir
+            put buildDir.getAbsolutePath() + '/distributions/jbombardier-agent-' + version + '.zip', targetDir
+        }
+    }
+}
+
+deployDistribution.dependsOn("distZip")
+uploadArchives.dependsOn("deployDistribution")

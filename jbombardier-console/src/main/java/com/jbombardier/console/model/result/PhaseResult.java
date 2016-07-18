@@ -16,6 +16,7 @@
 
 package com.jbombardier.console.model.result;
 
+import com.jbombardier.ControllerResultSnapshot;
 import com.jbombardier.common.serialisableobject.CapturedStatistic;
 
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ import java.util.List;
 public class PhaseResult {
     private List<CapturedStatistic> capturedStatistics = new ArrayList<CapturedStatistic>();
     private List<TransactionResult> transactionResults = new ArrayList<TransactionResult>();
+    private List<ControllerResultSnapshot> controllerResults = new ArrayList<ControllerResultSnapshot>();
     private String phaseName;
     private long duration;
     private long warmup;
@@ -39,6 +41,9 @@ public class PhaseResult {
         return capturedStatistics;
     }
 
+    public List<ControllerResultSnapshot> getControllerResults() {
+        return controllerResults;
+    }
 
     public String getPhaseName() {
         return phaseName;

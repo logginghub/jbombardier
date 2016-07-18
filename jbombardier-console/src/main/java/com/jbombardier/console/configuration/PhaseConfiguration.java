@@ -20,7 +20,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +34,9 @@ import java.util.List;
     @XmlAttribute private String warmupDuration;
     @XmlAttribute private String inheritFrom;
     @XmlAttribute private double rateMultiplier = 1;
+    @XmlElement private List<StateEstablisherConfiguration> stateEstablishers = new ArrayList<StateEstablisherConfiguration>();
+    @XmlElement private List<PhaseControllerConfiguration> phaseControllers = new ArrayList<PhaseControllerConfiguration>();
+    @XmlAttribute private boolean enabled = true;
 
     public void setRateMultiplier(double rateMultiplier) {
         this.rateMultiplier = rateMultiplier;
@@ -79,4 +81,31 @@ import java.util.List;
     public void setWarmupDuration(String warmupDuration) {
         this.warmupDuration = warmupDuration;
     }
+
+    public List<StateEstablisherConfiguration> getStateEstablishers() {
+        return stateEstablishers;
+    }
+
+    public void setStateEstablishers(List<StateEstablisherConfiguration> stateEstablishers) {
+        this.stateEstablishers = stateEstablishers;
+    }
+
+
+    public List<PhaseControllerConfiguration> getPhaseControllers() {
+        return phaseControllers;
+    }
+
+    public void setPhaseControllers(List<PhaseControllerConfiguration> phaseControllers) {
+        this.phaseControllers = phaseControllers;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
 }
+
+

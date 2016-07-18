@@ -19,3 +19,4 @@ include 'jbombardier-agent'
 include 'jbombardier-console'
 include 'jbombardier-integrationtests'
 include 'jbombardier-repository'
+

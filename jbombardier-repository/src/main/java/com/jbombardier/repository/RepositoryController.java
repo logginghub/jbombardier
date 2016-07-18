@@ -16,8 +16,8 @@
 
 package com.jbombardier.repository;
 
+import com.google.gson.Gson;
 import com.jbombardier.JBombardierController;
-import com.jbombardier.console.model.JSONHelper;
 import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.repository.model.RepositoryModel;
 import com.jbombardier.repository.model.RepositoryTestModel;
@@ -32,7 +32,6 @@ public class RepositoryController {
     
     private static final Logger logger = Logger.getLoggerFor(RepositoryController.class);
     private RepositoryModel model;
-    private JSONHelper helper = new JSONHelper();
 
     public RepositoryController(RepositoryModel model) {
         this.model = model;
@@ -44,7 +43,8 @@ public class RepositoryController {
 
     public void postResult(String jsonResult) {
 
-        RunResult runResult = helper.fromJSON(jsonResult);
+        Gson gson = new Gson();
+        RunResult runResult = gson.fromJson(jsonResult, RunResult.class);
         addResult(runResult);
 
         File jsonResultsFile = getFile(runResult);
@@ -57,7 +57,8 @@ public class RepositoryController {
                 runResult.getStartTime()), jsonResultsFile.getAbsolutePath());
         addResult(runResult);
 
-        String jsonResult = helper.toJSON(runResult);
+        Gson gson = new Gson();
+        String jsonResult = gson.toJson(runResult);
         FileUtils.write(jsonResult, jsonResultsFile);
     }
 

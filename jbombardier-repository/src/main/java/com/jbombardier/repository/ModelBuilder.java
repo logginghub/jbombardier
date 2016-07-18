@@ -16,21 +16,20 @@
 
 package com.jbombardier.repository;
 
+import com.google.gson.Gson;
+import com.jbombardier.console.model.result.RunResult;
+import com.jbombardier.repository.model.RepositoryModel;
+import com.jbombardier.repository.model.RepositoryTestModel;
+import com.logginghub.utils.FileUtils;
+import com.logginghub.utils.logging.Logger;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.util.List;
 
-import com.logginghub.utils.FileUtils;
-import com.logginghub.utils.logging.Logger;
-import com.jbombardier.console.model.JSONHelper;
-import com.jbombardier.console.model.result.RunResult;
-import com.jbombardier.repository.model.RepositoryModel;
-import com.jbombardier.repository.model.RepositoryTestModel;
-
 public class ModelBuilder {
 
     private static final Logger logger = Logger.getLoggerFor(ModelBuilder.class);
-    private JSONHelper helper = new JSONHelper();
 
     public void buildFrom(File resultsFolder, RepositoryModel model) {
         logger.info("Scanning path file {} for results", resultsFolder.getAbsolutePath());
@@ -50,7 +49,8 @@ public class ModelBuilder {
     public void buildFromFile(File file, RepositoryModel model) {
         logger.debug("Loading file {}", file.getName());
         try {
-            RunResult runResult = helper.fromJSON(FileUtils.read(file));
+            Gson gson = new Gson();
+            RunResult runResult = gson.fromJson(FileUtils.read(file), RunResult.class);
             RepositoryTestModel testModel = model.getRepositoryTestModelForTest(runResult.getConfigurationName());
             testModel.add(runResult);
         }

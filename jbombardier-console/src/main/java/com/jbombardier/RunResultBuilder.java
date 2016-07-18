@@ -18,6 +18,7 @@ package com.jbombardier;
 
 import com.jbombardier.common.serialisableobject.CapturedStatistic;
 import com.jbombardier.console.CapturedStatisticsHelper;
+import com.jbombardier.console.PhaseController;
 import com.jbombardier.console.model.AgentModel;
 import com.jbombardier.console.model.PhaseModel;
 import com.jbombardier.console.model.TransactionResultModel;
@@ -143,6 +144,16 @@ public class RunResultBuilder {
             phaseResult.getTransactionResults().add(tr);
 
         }
+
+        List<PhaseController> phaseControllers = phaseModel.getPhaseControllers();
+        for (PhaseController phaseController : phaseControllers) {
+            if(phaseController instanceof ResultsSnapshotAware) {
+                ResultsSnapshotAware rsa = (ResultsSnapshotAware)phaseController;
+                List<ControllerResultSnapshot> results = rsa.getResultsVsBaselineEfficiency();
+                phaseResult.getControllerResults().addAll(results);
+            }
+        }
+
         return phaseResult;
     }
 }
