@@ -39,6 +39,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.text.NumberFormat;
 import java.util.*;
+import java.text.ParseException;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -251,13 +256,16 @@ public class ReportGenerator {
         TimeSeriesCollection data = new TimeSeriesCollection();
         data.addSeries(series);
 
+        NumberFormat nf = NumberFormat.getInstance();
+
         try {
             for (CapturedStatistic capturedStatistic : capturedStatistics) {
                 if (capturedStatistic.getPath().equals(distinctPath)) {
-                    series.add(new Second(new Date(capturedStatistic.getTime())), Double.parseDouble(capturedStatistic.getValue()));
+                    series.addOrUpdate(new Second(new Date(capturedStatistic.getTime())),
+                            nf.parse(capturedStatistic.getValue()));
                 }
             }
-        } catch (NumberFormatException nfe) {
+        } catch (ParseException nfe) {
             // Skip this one, its not numeric
         }
 
@@ -432,13 +440,13 @@ public class ReportGenerator {
 
     private static void render(String title, TimeSeriesCollection timeSeriesCollection, File file) {
         JFreeChart chart = ChartFactory.createTimeSeriesChart(title,// title
-                                                              "Time",// x-axislabel
-                                                              "Elapsed / ms",// y-axislabel
-                                                              timeSeriesCollection,// data
-                                                              true,// createlegend?
-                                                              true,// generatetooltips?
-                                                              false// generateURLs?
-        );
+                "Time",// x-axislabel
+                "Elapsed / ms",// y-axislabel
+                timeSeriesCollection,// data
+                true,// createlegend?
+                true,// generatetooltips?
+                false// generateURLs?
+                                                             );
 
         try {
             FileOutputStream fos = new FileOutputStream(file);

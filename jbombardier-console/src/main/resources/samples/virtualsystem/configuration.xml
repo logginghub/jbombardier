@@ -14,19 +14,23 @@
   ~ limitations under the License.
   -->
 
-<jbombardierConfiguration openReport="true" autostartAgents="3">
+<jbombardierConfiguration testName="Virtual System Test" openReport="true" autostartAgents="1">
 
     <agent name="embedded1"/>
-    <agent name="embedded2"/>
-    <agent name="embedded3"/>
 
-    <phase name="Phase 7" duration="10 seconds" >
-        <test name="100"
-              class="com.jbombardier.console.sample.old.NoopTest"
+    <phase name="Phase 1" duration="1 minute" warmup="10 seconds" >
+
+        <test name="Virtual System Client"
+              class="com.jbombardier.sample.virtualsystem.VirtualSystemClientTest"
               targetRate="100"
-              rateStep="500"
-              threads="1"
-              agent="embedded2, embedded3"/>
+              rateStep="100"/>
+
     </phase>
+
+    <hubCapture hub="localhost:15000">
+        <pattern path="/virtualsystem/logginghub/gc/{event.sourceHost}/{event.sourceApplication}"
+                 pattern="GC pause {time} ms collected {size} kb - [what]"
+                 values="time,size"/>
+    </hubCapture>
 
 </jbombardierConfiguration>
