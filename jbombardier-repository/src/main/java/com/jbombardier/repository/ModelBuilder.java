@@ -19,7 +19,7 @@ package com.jbombardier.repository;
 import com.google.gson.Gson;
 import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.repository.model.RepositoryModel;
-import com.jbombardier.repository.model.RepositoryTestModel;
+import com.jbombardier.repository.model.RepositoryConfigurationModel;
 import com.logginghub.utils.FileUtils;
 import com.logginghub.utils.logging.Logger;
 
@@ -51,8 +51,8 @@ public class ModelBuilder {
         try {
             Gson gson = new Gson();
             RunResult runResult = gson.fromJson(FileUtils.read(file), RunResult.class);
-            RepositoryTestModel testModel = model.getRepositoryTestModelForTest(runResult.getConfigurationName());
-            testModel.add(runResult);
+            RepositoryConfigurationModel repositoryConfigurationModel = model.getRepositoryConfigurationModel(runResult.getConfigurationName());
+            repositoryConfigurationModel.add(runResult);
         }
         catch (RuntimeException e) {
             logger.warn(e, "Failed to load file '{}', skipping", file.getAbsolutePath());

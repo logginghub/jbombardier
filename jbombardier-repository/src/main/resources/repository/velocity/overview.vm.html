@@ -78,10 +78,10 @@
 			<a href='/'><img src="/images/black-flask-hi.png" width='32'
 				height='32' /></a> JBombardier Results Browser
 		</h1>
-		<h2>Test name : $repositoryTestModel.name</h2>
+		<h2>Test name : $repositoryConfigurationModel.name</h2>
 
-		<div><a href="/runs/$repositoryTestModel.name">$repositoryTestModel.name run overview</a></div>
-		<div><a href="/detail/$repositoryTestModel.name">$repositoryTestModel.name detailed view</a></div>
+		<div><a href="/runs/$repositoryConfigurationModel.name">$repositoryConfigurationModel.name run overview</a></div>
+		<div><a href="/detail/$repositoryConfigurationModel.name">$repositoryConfigurationModel.name detailed view</a></div>
 
 		<table id="rounded-corner" class="smallFont" border="1">
 			<thead>
@@ -89,7 +89,7 @@
 					<th nowrap="nowrap" rowspan="2">Test time</th> 
 					
 					#foreach($testName in $testNames)
-					  <th colspan="1" class="vertical"><a href="$repositoryTestModel.name/$testName">$testName </a></th> 
+					  <th colspan="1" class="vertical"><a href="$repositoryConfigurationModel.name/$testName">$testName </a></th>
 					#end
 
 					<th nowrap="nowrap" rowspan="1">Status</th>

@@ -18,13 +18,15 @@
 dependencies {
     compile project(':jbombardier-console')
 
-    compile 'org.slf4j:slf4j-api:1.6.4'
-    compile 'org.slf4j:slf4j-log4j12:1.6.4'
+//    compile 'org.slf4j:slf4j-api:1.6.4'
+//    compile 'org.slf4j:slf4j-log4j12:1.6.4'
 
     compile 'com.logginghub:logginghub-messaging2:1.4.7'
     compile 'com.logginghub:logginghub-messaging3:1.4.7'
     compile 'com.logginghub:logginghub-web:1.4.7'
     compile 'com.logginghub.thirdparty:jnotify:0.94'
+
+    compile 'org.rapidoid:rapidoid-quick:5.1.9'
 
     testCompile 'junit:junit:4.11'
     testCompile 'org.hamcrest:hamcrest-all:1.3'
@@ -33,15 +35,11 @@ dependencies {
 
 distributions {
     main {
-        baseName = archivesBaseName
+        baseName = "jbombardier-repository"
         contents {
-            from { "build/dist_temp" }
-            from(jar) {
-                into "${getProject().name}/lib"
-            }
-            from(configurations.runtime) {
-                into "${getProject().name}/lib"
-            }
+            from { "dist/jbombardier-repository" }
+            from(jar) { into "lib" }
+            from(configurations.runtime) { into "lib" }
         }
     }
 }

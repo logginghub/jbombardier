@@ -1,0 +1,37 @@
+<!--<json-formatter json="vm.model" open="1"></json-formatter>-->
+
+<div class="section">
+    <div class="section-header">Phase name</div>
+    <div class="section-result">{{vm.model.phaseName }}</div>
+</div>
+
+<div class="section">
+    <div class="section-header">Warmup</div>
+    <div class="section-result">{{vm.model.warmup }}</div>
+</div>
+
+<div class="section">
+    <div class="section-header">Duration</div>
+    <div class="section-result">{{vm.model.duration }}</div>
+</div>
+
+<div class="section full" ng-if="vm.model.capturedStatistics.length > 0">
+    <div class="section-header">Captured statistics</div>
+    <div class="section-result">
+        <!--<phaseresult ng-repeat="phase in vm.model.capturedStatistics" model="phase"></phaseresult>-->
+    </div>
+</div>
+
+<div class="section full" ng-if="vm.model.transactionResults.length > 0">
+    <div class="section-header">Transactions results</div>
+    <div class="section-result">
+        <transactionresult ng-repeat="phase in vm.model.transactionResults" model="phase"></transactionresult>
+    </div>
+</div>
+
+<div class="section full"  ng-if="vm.model.controllerResults.length > 0">>
+    <div class="section-header">ControllerResults results</div>
+    <div class="section-result">
+        <!--<transactionresult ng-repeat="phase in vm.model.controllerResults" model="phase"></transactionresult>-->
+    </div>
+</div>

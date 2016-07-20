@@ -1,0 +1,14 @@
+<h1 class="page-header">Configuration {{vm.configurationName}}</h1>
+
+<div class="panel panel-default">
+
+    <div class="panel-heading">
+        Configuration
+    </div>
+    <div class="panel-body">
+        <div>
+            <resultview ng-repeat="result in vm.results.lastXResults" model="result"></resultview>
+
+        </div>
+    </div>
+</div>

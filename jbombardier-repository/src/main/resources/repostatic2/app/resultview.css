@@ -1,0 +1,26 @@
+DIV.section {
+    float: left;
+    margin: 10px;
+    padding: 10px;
+    text-align: left;
+    min-width: 150px;
+    font-family: "Lato";
+}
+
+
+DIV.section-header {
+    font-size: 2em;
+    border-bottom: 1px solid black;
+}
+
+DIV.section-result {
+    font-size: 1.2em;
+    color: #686868;
+    padding: 10px;
+}
+
+DIV.section.full {
+    text-align: left;
+    width: 100%;
+    min-width: 100%;
+}

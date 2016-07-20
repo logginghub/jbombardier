@@ -1,0 +1,94 @@
+<div class="row">
+    <div class="section">
+        <div class="section-header">Test name</div>
+        <div class="section-result">{{vm.model.testName }}</div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="section col-lg-3">
+        <div class="section-header">Total Transactions</div>
+        <div class="section-result">{{vm.model.totalTransactionCount }}</div>
+    </div>
+
+    <div class="section col-lg-3">
+        <div class="section-header">Successful</div>
+        <div class="section-result">{{vm.model.successfulTransactionCount }}</div>
+    </div>
+
+    <div class="section col-lg-3">
+        <div class="section-header">Unsuccessful</div>
+        <div class="section-result">{{vm.model.unsuccessfulTransactionCount }}</div>
+    </div>
+</div>
+
+<div class="row">
+
+    <div class="section  col-lg-3">
+        <div class="section-header">Total Duration</div>
+        <div class="section-result">{{vm.model.successfulTransactionMeanTotalDuration / 1000.0 / 1000.0 }} ms</div>
+    </div>
+
+    <div class="section  col-lg-3">
+        <div class="section-header">Successful Duration</div>
+        <div class="section-result">{{vm.model.successfulTransactionMeanDuration / 1000.0 / 1000.0 }}  ms </div>
+    </div>
+
+    <div class="section col-lg-3">
+        <div class="section-header">Unsuccessful Duration</div>
+        <div class="section-result">{{vm.model.unsuccessfulTransactionMeanDuration / 1000.0 / 1000.0 }} ms</div>
+    </div>
+</div>
+
+<div class="row">
+
+    <div class="section  col-lg-3">
+        <div class="section-header">Target rate</div>
+        <div class="section-result">{{vm.model.successfulTransactionMeanTransactionsPerSecondTarget}}</div>
+    </div>
+
+    <div class="section  col-lg-3">
+        <div class="section-header">Threads</div>
+        <div class="section-result">{{vm.model.threads}}</div>
+    </div>
+
+    <div class="section col-lg-3">
+        <div class="section-header">Agents</div>
+        <div class="section-result">{{vm.model.agents}}</div>
+    </div>
+</div>
+
+
+<json-formatter json="vm.model" open="1"></json-formatter>
+
+
+<!--<div class="section">-->
+<!--<div class="section-header">Warmup</div>-->
+<!--<div class="section-result">{{vm.model.warmup }}</div>-->
+<!--</div>-->
+
+<!--<div class="section">-->
+<!--<div class="section-header">Duration</div>-->
+<!--<div class="section-result">{{vm.model.duration }}</div>-->
+<!--</div>-->
+
+<!--<div class="section full" ng-if="vm.model.capturedStatistics.length > 0">-->
+<!--<div class="section-header">Captured statistics</div>-->
+<!--<div class="section-result">-->
+<!--&lt;!&ndash;<phaseresult ng-repeat="phase in vm.model.capturedStatistics" model="phase"></phaseresult>&ndash;&gt;-->
+<!--</div>-->
+<!--</div>-->
+
+<!--<div class="section full" ng-if="vm.model.transactionResults.length > 0">-->
+<!--<div class="section-header">Transactions results</div>-->
+<!--<div class="section-result">-->
+<!--<transactionresult ng-repeat="phase in vm.model.transactionResults" model="phase"></transactionresult>-->
+<!--</div>-->
+<!--</div>-->
+
+<!--<div class="section full"  ng-if="vm.model.controllerResults.length > 0">>-->
+<!--<div class="section-header">ControllerResults results</div>-->
+<!--<div class="section-result">-->
+<!--&lt;!&ndash;<transactionresult ng-repeat="phase in vm.model.controllerResults" model="phase"></transactionresult>&ndash;&gt;-->
+<!--</div>-->
+<!--</div>-->

@@ -17,19 +17,24 @@
 package com.jbombardier.repository;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.jbombardier.JBombardierController;
 import com.jbombardier.console.model.result.RunResult;
+import com.jbombardier.repository.model.RepositoryConfigurationModel;
 import com.jbombardier.repository.model.RepositoryModel;
-import com.jbombardier.repository.model.RepositoryTestModel;
 import com.logginghub.utils.FileUtils;
 import com.logginghub.utils.TimeUtils;
 import com.logginghub.utils.logging.Logger;
+import com.logginghub.utils.observable.ObservableList;
 
 import java.io.File;
+import java.util.List;
 
 public class RepositoryController {
 
-    
+
     private static final Logger logger = Logger.getLoggerFor(RepositoryController.class);
     private RepositoryModel model;
 
@@ -37,8 +42,48 @@ public class RepositoryController {
         this.model = model;
     }
 
+    public String getConfiguration(String configurationName) {
+
+        RepositoryConfigurationModel repositoryConfigurationModel = model.getRepositoryConfigurationModel(configurationName);
+
+        List<RunResult> lastXResults = repositoryConfigurationModel.getLastXResults(10);
+
+        JsonObject container = new JsonObject();
+        JsonArray results = new JsonArray();
+        Gson gson = RepositoryWebView.getGson();
+
+        for (RunResult lastXResult : lastXResults) {
+            JsonObject result = gson.toJsonTree(lastXResult).getAsJsonObject();
+            results.add(result);
+        }
+
+        container.add("lastXResults", results);
+        container.add("resultCount", new JsonPrimitive(repositoryConfigurationModel.getCount()));
+        return container.toString();
+    }
+
     public RepositoryModel getModel() {
         return model;
+    }
+
+    public String getSummary() {
+
+        ObservableList<RepositoryConfigurationModel> testModels = model.getRepositoryConfigurationModels();
+
+        JsonArray results = new JsonArray();
+
+        for (RepositoryConfigurationModel testModel : testModels) {
+
+            // TODO : get rid of this once we've worked out who is creating nulls
+            if(testModel.getName().get() != null) {
+                JsonObject object = new JsonObject();
+                object.add("name", new JsonPrimitive(testModel.getName().get()));
+                object.add("results", new JsonPrimitive(testModel.getCount()));
+                results.add(object);
+            }
+        }
+
+        return results.toString();
     }
 
     public void postResult(String jsonResult) {
@@ -51,34 +96,34 @@ public class RepositoryController {
         FileUtils.write(jsonResult, jsonResultsFile);
     }
 
+    private void addResult(RunResult runResult) {
+        RepositoryConfigurationModel testModel = model.getRepositoryConfigurationModel(runResult.getConfigurationName());
+        testModel.add(runResult);
+    }
+
+    private File getFile(RunResult runResult) {
+
+        File dataFolder = new File(model.getDataPath().get());
+        File testFolder = new File(dataFolder, runResult.getConfigurationName());
+        File timeFolder = new File(testFolder, TimeUtils.toDailyFolderSplit(runResult.getStartTime()));
+
+        timeFolder.mkdirs();
+
+        File jsonResultsFile = JBombardierController.getJSONResultsFile(timeFolder, runResult.getConfigurationName(), runResult.getStartTime());
+        return jsonResultsFile;
+    }
+
     public void postResult(RunResult runResult) {
         File jsonResultsFile = getFile(runResult);
-        logger.debug("Posting result for test '{}' at '{}' to '{}'", runResult.getConfigurationName(), Logger.toDateString(
-                runResult.getStartTime()), jsonResultsFile.getAbsolutePath());
+        logger.debug("Posting result for test '{}' at '{}' to '{}'",
+                     runResult.getConfigurationName(),
+                     Logger.toDateString(runResult.getStartTime()),
+                     jsonResultsFile.getAbsolutePath());
         addResult(runResult);
 
         Gson gson = new Gson();
         String jsonResult = gson.toJson(runResult);
         FileUtils.write(jsonResult, jsonResultsFile);
-    }
-
-    private File getFile(RunResult runResult) {
-        
-        File dataFolder = new File(model.getDataPath().get());
-        File testFolder = new File(dataFolder, runResult.getConfigurationName());
-        File timeFolder = new File(testFolder, TimeUtils.toDailyFolderSplit(runResult.getStartTime()));
-        
-        timeFolder.mkdirs();
-
-        File jsonResultsFile = JBombardierController.getJSONResultsFile(timeFolder,
-                                                                        runResult.getConfigurationName(),
-                                                                        runResult.getStartTime());
-        return jsonResultsFile;
-    }
-
-    private void addResult(RunResult runResult) {
-        RepositoryTestModel testModel = model.getRepositoryTestModelForTest(runResult.getConfigurationName());
-        testModel.add(runResult);
     }
 
 }

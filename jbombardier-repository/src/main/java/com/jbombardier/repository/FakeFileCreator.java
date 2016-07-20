@@ -18,7 +18,7 @@ package com.jbombardier.repository;
 
 import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.console.model.result.TestRunResultBuilder;
-import com.jbombardier.repository.model.RepositoryTestModel;
+import com.jbombardier.repository.model.RepositoryConfigurationModel;
 import com.logginghub.utils.FactoryMapDecorator;
 import com.logginghub.utils.RandomWithAcceleration;
 import com.logginghub.utils.TimeUtils;
@@ -41,9 +41,9 @@ public class FakeFileCreator {
 
     public void createFiles(RepositoryController controller) {
 
-        RepositoryTestModel repositoryTestModelForTest = controller.getModel()
-                                                                   .getRepositoryTestModelForTest(EXAMPLE_TEST1);
-        if (!repositoryTestModelForTest.hasResults()) {
+        RepositoryConfigurationModel repositoryTestModelForConfiguration = controller.getModel()
+                                                                                     .getRepositoryConfigurationModel(EXAMPLE_TEST1);
+        if (!repositoryTestModelForConfiguration.hasResults()) {
             logger.info("Building fake results for {}", EXAMPLE_TEST1);
             buildExampleTestResults(controller);
         }

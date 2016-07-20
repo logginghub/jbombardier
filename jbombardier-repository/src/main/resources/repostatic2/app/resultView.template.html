@@ -1,0 +1,29 @@
+<div class="section">
+    <div class="section-header">Start time</div>
+    <div class="section-result">{{vm.model.startTime | date : 'medium' }}</div>
+</div>
+
+<div class="section">
+    <div class="section-header">Phases</div>
+    <div class="section-result">{{vm.model.phaseResults.length }}</div>
+</div>
+
+<div class="section">
+    <div class="section-header">Agents</div>
+    <div class="section-result">{{vm.model.agentResults.length }}</div>
+</div>
+
+<div class="section full">
+    <div class="section-header">Phase results</div>
+    <div class="section-result">
+        <phaseview ng-repeat="phase in vm.model.phaseResults" model="phase"></phaseview>
+    </div>
+</div>
+
+<div class="section full">
+    <div class="section-header">Agent results</div>
+    <div class="section-result">
+        <phaseview ng-repeat="phase in vm.model.phaseResults" model="phase"></phaseview>
+    </div>
+</div>
+

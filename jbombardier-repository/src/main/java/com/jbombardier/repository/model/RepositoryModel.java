@@ -16,44 +16,63 @@
 
 package com.jbombardier.repository.model;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.jbombardier.repository.RepositoryConfiguration;
 import com.logginghub.utils.logging.Logger;
 import com.logginghub.utils.observable.Observable;
 import com.logginghub.utils.observable.ObservableList;
 import com.logginghub.utils.observable.ObservableProperty;
-import com.jbombardier.repository.RepositoryConfiguration;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class RepositoryModel extends Observable {
 
     private static final Logger logger = Logger.getLoggerFor(RepositoryModel.class);
-    private ObservableList<RepositoryTestModel> testModels = new ObservableList<RepositoryTestModel>(new ArrayList<RepositoryTestModel>());
+    private ObservableList<RepositoryConfigurationModel> repositoryConfigurationModels = new ObservableList<RepositoryConfigurationModel>(new ArrayList<RepositoryConfigurationModel>());
     private ObservableProperty<String> dataPath = new ObservableProperty<String>(null);
 
-    private Map<String, RepositoryTestModel> repositoryTestModelByName = new HashMap<String, RepositoryTestModel>();
+    private Map<String, RepositoryConfigurationModel> repositoryTestModelByName = new HashMap<String, RepositoryConfigurationModel>();
 
-    public ObservableList<RepositoryTestModel> getTestModels() {
-        return testModels;
+    public ObservableList<RepositoryConfigurationModel> getRepositoryConfigurationModels() {
+        return repositoryConfigurationModels;
     }
 
-    public RepositoryTestModel getRepositoryTestModelForTest(String configurationName) {
+    public List<String> getConfigurationNames() {
+
+        Set<String> configurationNames = new HashSet<>();
+        for (RepositoryConfigurationModel repositoryConfigurationModel : repositoryConfigurationModels) {
+            String name = repositoryConfigurationModel.getName().get();
+            configurationNames.add(name);
+        }
+
+        List<String> sorted = new ArrayList<>(configurationNames);
+        Collections.sort(sorted);
+
+        return sorted;
+
+    }
+
+    public RepositoryConfigurationModel getRepositoryConfigurationModel(String configurationName) {
         synchronized (repositoryTestModelByName) {
-            RepositoryTestModel repositoryTestModel = repositoryTestModelByName.get(configurationName);
-            if (repositoryTestModel == null) {
-                repositoryTestModel = new RepositoryTestModel();
-                repositoryTestModel.getName().set(configurationName);
-                repositoryTestModelByName.put(configurationName, repositoryTestModel);
-                testModels.add(repositoryTestModel);
+            RepositoryConfigurationModel repositoryConfigurationModel = repositoryTestModelByName.get(configurationName);
+            if (repositoryConfigurationModel == null) {
+                repositoryConfigurationModel = new RepositoryConfigurationModel();
+                repositoryConfigurationModel.getName().set(configurationName);
+                repositoryTestModelByName.put(configurationName, repositoryConfigurationModel);
+                repositoryConfigurationModels.add(repositoryConfigurationModel);
             }
-            return repositoryTestModel;
+            return repositoryConfigurationModel;
         }
 
     }
 
     @Override public String toString() {
-        return "RepositoryModel{" + "testModels=" + testModels + ", repositoryTestModelByName=" + repositoryTestModelByName + '}';
+        return "RepositoryModel{" + "repositoryConfigurationModels=" + repositoryConfigurationModels + ", repositoryTestModelByName=" + repositoryTestModelByName + '}';
     }
 
     public ObservableProperty<String> getDataPath() {

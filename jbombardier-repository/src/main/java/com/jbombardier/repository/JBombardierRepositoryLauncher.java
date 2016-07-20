@@ -24,6 +24,8 @@ import com.logginghub.utils.FileUtils;
 import com.logginghub.utils.MainUtils;
 import com.logginghub.utils.WorkerThread;
 import com.logginghub.utils.logging.Logger;
+import org.rapidoid.setup.AppRestartListener;
+import org.rapidoid.setup.OnChanges;
 
 import java.io.File;
 
@@ -134,9 +136,26 @@ public class JBombardierRepositoryLauncher {
 
     public void start() {
         server.bind();
-        repositoryWebView.setHttpPort(configuration.getHttpPort());
-        repositoryWebView.bind(controller);
-        repositoryWebView.start();
+//        repositoryWebView.setHttpPort(configuration.getHttpPort());
+//        repositoryWebView.bind(controller);
+//        repositoryWebView.start();
+
+        RapidoidView rapidoidView = new RapidoidView();
+        rapidoidView.configure(controller);
+
+        OnChanges.addRestartListener(new AppRestartListener() {
+            @Override
+            public void beforeAppRestart() {
+               server.stop();
+            }
+
+            @Override
+            public void afterAppRestart() {
+
+            }
+        });
+
+
     }
 
     public void stop() {
@@ -151,6 +170,9 @@ public class JBombardierRepositoryLauncher {
     public static void main(String[] args) {
         LoggingUtils.setupRemoteVLLoggingFromSystemProperties();
         RepositoryConfiguration configuration = new RepositoryConfiguration();
+        if(args == null) {
+            args = new String[] {};
+        }
         configuration.setDataFolder(MainUtils.getStringArgument(args, 0, "build/data/"));
         runLauncher(configuration).start();
     }

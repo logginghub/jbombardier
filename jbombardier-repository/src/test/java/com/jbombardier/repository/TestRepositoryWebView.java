@@ -17,8 +17,8 @@
 package com.jbombardier.repository;
 
 import com.jbombardier.console.model.result.RunResult;
+import com.jbombardier.repository.model.RepositoryConfigurationModel;
 import com.jbombardier.repository.model.RepositoryModel;
-import com.jbombardier.repository.model.RepositoryTestModel;
 import com.logginghub.utils.Xml;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -40,7 +40,7 @@ public class TestRepositoryWebView {
 
     @Test public void testIndex() throws Exception {
 
-        RepositoryTestModel rtm = new RepositoryTestModel();
+        RepositoryConfigurationModel rtm = new RepositoryConfigurationModel();
         
         RunResult run1 = new RunResult();
         run1.setConfigurationName("Test1");
@@ -54,7 +54,7 @@ public class TestRepositoryWebView {
         rtm.add(run1);
         rtm.add(run2);
         
-        model.getTestModels().add(rtm);
+        model.getRepositoryConfigurationModels().add(rtm);
         
         String index = repositoryWebView.index();
         

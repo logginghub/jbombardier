@@ -16,14 +16,25 @@
 
 package com.jbombardier.repository;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import com.jbombardier.console.VelocityUtils;
+import com.jbombardier.console.model.result.PhaseResult;
 import com.jbombardier.console.model.result.RunResult;
 import com.jbombardier.console.model.result.TransactionResult;
+import com.jbombardier.repository.model.RepositoryConfigurationModel;
 import com.jbombardier.repository.model.RepositoryModel;
-import com.jbombardier.repository.model.RepositoryTestModel;
 import com.jbombardier.repository.model.ResultDelta;
 import com.jbombardier.repository.model.ResultDeltasForRun;
-import com.logginghub.utils.*;
+import com.logginghub.utils.CompareUtils;
+import com.logginghub.utils.FormattedRuntimeException;
+import com.logginghub.utils.HTMLBuilder2;
+import com.logginghub.utils.StringUtils;
+import com.logginghub.utils.VLPorts;
 import com.logginghub.utils.logging.Logger;
 import com.logginghub.utils.observable.ObservableList;
 import com.logginghub.web.JettyLauncher;
@@ -31,8 +42,15 @@ import com.logginghub.web.RequestContext;
 import com.logginghub.web.WebController;
 import org.apache.velocity.VelocityContext;
 
+import java.lang.reflect.Type;
 import java.text.NumberFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 @WebController(staticFiles = "/repostatic/", defaultUrl = "index") public class RepositoryWebView {
 
@@ -56,11 +74,26 @@ import java.util.*;
 
     public String index() {
         VelocityContext context = velocityHelper.buildContext();
-        ObservableList<RepositoryTestModel> testModels = model.getTestModels();
+        ObservableList<RepositoryConfigurationModel> testModels = model.getRepositoryConfigurationModels();
         context.put("tests", testModels);
         logger.info("Showing {} test models", testModels.size());
 
         return velocityHelper.help(context, "repository/velocity/index.vm");
+    }
+
+
+    public static Gson getGson() {
+        GsonBuilder gsonBuilder = new GsonBuilder();
+
+        gsonBuilder.registerTypeAdapter(Double.class, new JsonSerializer<Double>() {
+            public JsonElement serialize(Double src, Type typeOfSrc, JsonSerializationContext context) {
+                if (src.isNaN() || src.isInfinite())
+                    return new JsonPrimitive(src.toString());
+                return new JsonPrimitive(src);
+            }
+        }).create();
+
+        return gsonBuilder.create();
     }
 
     public String resultsSuccessPerSecond(String testName, String resultName) {
@@ -143,9 +176,9 @@ import java.util.*;
         long startTime = Long.parseLong(testStartTime);
 
         RunResult result = null;
-        RepositoryTestModel repositoryTestModelForTest = model.getRepositoryTestModelForTest(testname);
-        if (repositoryTestModelForTest != null) {
-            List<RunResult> lastXResults = repositoryTestModelForTest.getLastXResults(50);
+        RepositoryConfigurationModel repositoryTestModelForConfiguration = model.getRepositoryConfigurationModel(testname);
+        if (repositoryTestModelForConfiguration != null) {
+            List<RunResult> lastXResults = repositoryTestModelForConfiguration.getLastXResults(50);
             for (RunResult lastXResult : lastXResults) {
                 if (lastXResult.getStartTime() == startTime) {
                     result = lastXResult;
@@ -227,8 +260,8 @@ import java.util.*;
         table.getThead().row().cell("Test run time");
         HTMLBuilder2.Element tbody = table.getTbody();
 
-        RepositoryTestModel repositoryTestModelForTest = model.getRepositoryTestModelForTest(testname);
-        List<RunResult> lastXResults = repositoryTestModelForTest.getLastXResults(50);
+        RepositoryConfigurationModel repositoryTestModelForConfiguration = model.getRepositoryConfigurationModel(testname);
+        List<RunResult> lastXResults = repositoryTestModelForConfiguration.getLastXResults(50);
         for (RunResult lastXResult : lastXResults) {
             HTMLBuilder2.Element cell = tbody.row().cell();
             cell.a(StringUtils.format("/runs/{}/{}", testname, lastXResult.getStartTime()),
@@ -256,11 +289,27 @@ import java.util.*;
     public String overview(String testname) {
         VelocityContext context = velocityHelper.buildContext();
 
-        RepositoryTestModel repositoryTestModelForTest = model.getRepositoryTestModelForTest(testname);
-        List<RunResult> lastXResults = repositoryTestModelForTest.getLastXResults(100);
+        RepositoryConfigurationModel repositoryTestModelForConfiguration = model.getRepositoryConfigurationModel(testname);
+
+        List<RunResult> lastXResults = repositoryTestModelForConfiguration.getLastXResults(100);
         Set<String> testNames = new HashSet<String>();
+
         for (RunResult runResult : lastXResults) {
-        // TODO : refactor fix me
+
+
+            List<PhaseResult> phaseResults = runResult.getPhaseResults();
+
+            for (PhaseResult phaseResult : phaseResults) {
+                List<TransactionResult> transactionResults = phaseResult.getTransactionResults();
+                for (TransactionResult transactionResult : transactionResults) {
+
+                    String testName = transactionResult.getTestName();
+                    testNames.add(testName);
+
+                }
+            }
+
+            // TODO : refactor fix me
 //            Set<String> keySet = runResult.getTestResults().keySet();
 //            testNames.addAll(keySet);
         }
@@ -274,7 +323,7 @@ import java.util.*;
         String units = RequestContext.getRequestContext().getForm().getFirstValue("units", "ms");
         updateForUnits(resultsDeltas, units);
 
-        context.put("repositoryTestModel", repositoryTestModelForTest);
+        context.put("repositoryTestModel", repositoryTestModelForConfiguration);
         context.put("results", lastXResults);
         context.put("deltas", resultsDeltas);
         context.put("testNames", sortedNames);
@@ -286,8 +335,8 @@ import java.util.*;
     public String detail(String testname) {
         VelocityContext context = velocityHelper.buildContext();
 
-        RepositoryTestModel repositoryTestModelForTest = model.getRepositoryTestModelForTest(testname);
-        List<RunResult> lastXResults = repositoryTestModelForTest.getLastXResults(100);
+        RepositoryConfigurationModel repositoryTestModelForConfiguration = model.getRepositoryConfigurationModel(testname);
+        List<RunResult> lastXResults = repositoryTestModelForConfiguration.getLastXResults(100);
 
         Set<String> testNames = new HashSet<String>();
         for (RunResult runResult : lastXResults) {
@@ -305,7 +354,7 @@ import java.util.*;
         String units = RequestContext.getRequestContext().getForm().getFirstValue("units", "ms");
         updateForUnits(resultsDeltas, units);
 
-        context.put("repositoryTestModel", repositoryTestModelForTest);
+        context.put("repositoryTestModel", repositoryTestModelForConfiguration);
         context.put("results", lastXResults);
         context.put("deltas", resultsDeltas);
         context.put("testNames", sortedNames);
@@ -398,8 +447,8 @@ import java.util.*;
     }
 
     private List<TransactionResult> getResultsForTest(String testName, String resultName) {
-        RepositoryTestModel repositoryTestModelForTest = model.getRepositoryTestModelForTest(testName);
-        return repositoryTestModelForTest.getResultsForTest(resultName);
+        RepositoryConfigurationModel repositoryTestModelForConfiguration = model.getRepositoryConfigurationModel(testName);
+        return repositoryTestModelForConfiguration.getResultsForTest(resultName);
     }
 
     private List<TransactionResult> getSortedResultsForTest(String testName, String resultName) {
