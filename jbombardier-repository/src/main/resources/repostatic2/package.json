@@ -1,0 +1,38 @@
+{
+  "name": "jbombardier-repository",
+  "version": "1.0.0",
+  "description": "JBombardier Repository",
+  "main": "index.html",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "angular": "^1.5.7",
+    "angular-css": "^1.0.8",
+    "angular-route": "^1.5.7",
+    "bootstrap": "^3.3.6",
+    "bootstrap-webpack": "0.0.5",
+    "css-loader": "^0.23.1",
+    "exports-loader": "^0.6.3",
+    "expose-loader": "^0.7.1",
+    "extract-text-webpack-plugin": "^1.0.1",
+    "file-loader": "^0.9.0",
+    "html-loader": "^0.4.3",
+    "imports-loader": "^0.6.5",
+    "jquery": "^3.1.0",
+    "jsonformatter": "^0.6.0",
+    "less": "^2.7.1",
+    "less-loader": "^2.2.3",
+    "ngtemplate-loader": "^1.3.1",
+    "style-loader": "^0.13.1",
+    "url-loader": "^0.5.7",
+    "webpack": "^1.13.1",
+    "webpack-dev-server": "^1.14.1"
+  }
+}
